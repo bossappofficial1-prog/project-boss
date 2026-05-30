@@ -72,6 +72,7 @@ model Business {
   subscriptions         BusinessSubscription[] @relation("BusinessHistory")
   outlets               Outlet[]
   subscriptionInvoices  SubscriptionInvoice[]
+  stockTransfers        StockTransfer[]
 
   @@index([ownerId])
   @@index([subscriptionStatus])
@@ -185,6 +186,8 @@ model Outlet {
   attendances               Attendance[]
   ingredients               Ingredient[]
   purchaseOrders            PurchaseOrder[]
+  sentStockTransfers        StockTransfer[]            @relation("SentStockTransfers")
+  receivedStockTransfers    StockTransfer[]            @relation("ReceivedStockTransfers")
 
   @@index([businessId])
   @@index([slug])
@@ -305,6 +308,7 @@ model Product {
   service       ProductService?
   ticket        ProductTicket?
   recipe        Recipe?
+  stockTransferItems StockTransferItem[]
 
   @@index([outletId])
   @@index([type])
@@ -1278,4 +1282,46 @@ model PurchaseOrderItem {
   @@index([purchaseOrderId])
   @@index([productGoodsId])
   @@index([ingredientId])
+}
+
+enum StockTransferStatus {
+  PENDING
+  IN_TRANSIT
+  RECEIVED
+  CANCELLED
+}
+
+model StockTransfer {
+  id               String              @id @default(uuid())
+  businessId       String
+  senderOutletId   String
+  receiverOutletId String
+  status           StockTransferStatus @default(PENDING)
+  shippingDate     DateTime
+  note             String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  business         Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  senderOutlet     Outlet              @relation("SentStockTransfers", fields: [senderOutletId], references: [id], onDelete: Cascade)
+  receiverOutlet   Outlet              @relation("ReceivedStockTransfers", fields: [receiverOutletId], references: [id], onDelete: Cascade)
+  items            StockTransferItem[]
+
+  @@index([businessId])
+  @@index([senderOutletId])
+  @@index([receiverOutletId])
+  @@index([status])
+}
+
+model StockTransferItem {
+  id              String        @id @default(uuid())
+  stockTransferId String
+  productId       String
+  quantity        Int
+
+  stockTransfer   StockTransfer @relation(fields: [stockTransferId], references: [id], onDelete: Cascade)
+  product         Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([stockTransferId])
+  @@index([productId])
 }

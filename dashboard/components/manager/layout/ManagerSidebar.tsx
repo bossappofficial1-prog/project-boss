@@ -82,6 +82,7 @@ export default function ManagerSidebar() {
       "kelola-outlet": "OUTLET_MANAGEMENT",
       "kelola-staff": "OUTLET_MANAGEMENT",
       "transfer-outlet": "OUTLET_MANAGEMENT",
+      "stock-transfer": "STOCK_MANAGEMENT",
       "kelola-meja": "OUTLET_MANAGEMENT",
       reservations: "OUTLET_MANAGEMENT",
       products: "PRODUCT_MANAGEMENT",

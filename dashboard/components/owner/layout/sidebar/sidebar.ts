@@ -161,6 +161,13 @@ export const MENU_GROUPS: MenuGroup[] = [
         requiredTypes: [OutletType.RETAIL, OutletType.CUSTOM],
       },
       {
+        id: "stock-transfer",
+        name: "Transfer Stok",
+        href: "/owner/stock-transfer",
+        icon: ArrowRightLeft,
+        requiredTypes: [OutletType.RETAIL, OutletType.CUSTOM],
+      },
+      {
         id: "ingredients",
         name: "Bahan Baku",
         href: "/owner/ingredients",

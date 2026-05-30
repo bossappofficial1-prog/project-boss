@@ -16,13 +16,24 @@ const poppins = Poppins({
 
 // SEO Metadata
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3010'),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3010",
+  ),
   title: {
     default: "BOSS Dashboard",
-    template: "%s"
+    template: "%s",
   },
-  description: "Pantau outlet, transaksi, dan insight bisnis secara real-time lewat dashboard BOSS yang praktis.",
-  keywords: ["dashboard bisnis", "manajemen operasional", "monitor outlet", "pantau transaksi", "analytics bisnis", "sistem kasir", "manajemen stok"],
+  description:
+    "Pantau outlet, transaksi, dan insight bisnis secara real-time lewat dashboard BOSS yang praktis.",
+  keywords: [
+    "dashboard bisnis",
+    "manajemen operasional",
+    "monitor outlet",
+    "pantau transaksi",
+    "analytics bisnis",
+    "sistem kasir",
+    "manajemen stok",
+  ],
   authors: [{ name: "BOSS Team" }],
   creator: "BOSS Development Team",
   publisher: "BOSS",
@@ -37,31 +48,33 @@ export const metadata: Metadata = {
     googleBot: {
       index: true,
       follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
     },
   },
   openGraph: {
     type: "website",
     locale: "en_US",
     url: "/",
-    title: "BOSS Dashboard - Dukungan Operasional Bisnismu",
-    description: "Semua data outlet, transaksi, dan analitik bisnis kamu tersaji rapi dalam satu dashboard BOSS.",
+    title: "BOSS - Dukungan Operasional Bisnismu",
+    description:
+      "Semua data outlet, transaksi, dan analitik bisnis kamu tersaji rapi dalam satu dashboard BOSS.",
     siteName: "BOSS Dashboard",
     images: [
       {
-        url: "/og-image.jpg",
+        url: "/images/banner-op-dashboard.png",
         width: 1200,
         height: 630,
-        alt: "BOSS Dashboard",
+        alt: "BOSS",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
     title: "BOSS Dashboard - Dukungan Operasional Bisnismu",
-    description: "Kelola outlet, transaksi, dan insight bisnis cukup lewat satu dashboard BOSS.",
+    description:
+      "Kelola outlet, transaksi, dan insight bisnis cukup lewat satu dashboard BOSS.",
     images: ["/og-image.jpg"],
     creator: "@boss_dashboard",
   },
@@ -71,11 +84,8 @@ export const metadata: Metadata = {
       { url: "/icon.svg", type: "image/svg+xml" },
     ],
     shortcut: "/favicon.ico",
-    apple: [
-      { url: "/apple-touch-icon.png", sizes: "180x180" },
-    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
   },
-  manifest: "/manifest.json",
   other: {
     "msapplication-TileColor": "#2563eb",
     "msapplication-config": "/browserconfig.xml",
@@ -101,24 +111,24 @@ export const viewport: Viewport = {
 const structuredData = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  "name": "BOSS Dashboard",
-  "description": "Dashboard dukungan operasional bisnis",
-  "url": process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3010',
-  "applicationCategory": "BusinessApplication",
-  "operatingSystem": "Web Browser",
-  "offers": {
+  name: "BOSS Dashboard",
+  description: "Dashboard dukungan operasional bisnis",
+  url: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3010",
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "Web Browser",
+  offers: {
     "@type": "Offer",
-    "price": "0",
-    "priceCurrency": "IDR"
+    price: "0",
+    priceCurrency: "IDR",
   },
-  "creator": {
+  creator: {
     "@type": "Organization",
-    "name": "BOSS Development Team"
+    name: "BOSS Development Team",
   },
-  "publisher": {
+  publisher: {
     "@type": "Organization",
-    "name": "BOSS"
-  }
+    name: "BOSS",
+  },
 };
 
 export default function RootLayout({
@@ -130,13 +140,20 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
-        <link rel="canonical" href={process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3010'} />
+        <link
+          rel="canonical"
+          href={process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3010"}
+        />
         <meta name="theme-color" content="#eb2525" />
         <meta name="color-scheme" content="light dark" />
 
         {/* Preconnect to external domains for performance */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
 
         {/* Structured Data */}
         <script
@@ -174,14 +191,14 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${poppins.variable} font-poppins antialiased min-h-screen text-foreground`}>
+      <body
+        className={`${poppins.variable} font-poppins antialiased min-h-screen text-foreground`}
+      >
         <ThemeProvider defaultTheme="system">
           <LoadingProvider>
             <Suspense fallback={null}>
               <NavigationProvider>
-                <QueryProvider>
-                  {children}
-                </QueryProvider>
+                <QueryProvider>{children}</QueryProvider>
               </NavigationProvider>
             </Suspense>
           </LoadingProvider>

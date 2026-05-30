@@ -212,6 +212,34 @@
       "warning": "PIN Manager bersifat sangat rahasia. Hindari kombinasi angka yang mudah ditebak seperti urutan angka berurutan atau tanggal lahir."
     },
     {
+      "id": "outlet-transfer",
+      "role": "owner",
+      "category": "outlets",
+      "title": "Transfer Kepemilikan Outlet Bisnis",
+      "description": "Langkah mengalihkan kepemilikan operasional suatu outlet secara resmi ke akun bisnis mitra atau pengguna lain.",
+      "icon": "ArrowRightLeft",
+      "steps": [
+        {
+          "title": "Buka Menu Transfer Outlet",
+          "desc": "Klik menu 'Transfer Outlet' di bawah grup 'Manajemen Outlet' pada menu sebelah kiri."
+        },
+        {
+          "title": "Buat Permintaan Pengalihan",
+          "desc": "Klik tombol 'Buat Permintaan' atau form yang tersedia. Masukkan alamat email terdaftar dari pengguna/mitra bisnis tujuan yang akan menerima hak kepemilikan."
+        },
+        {
+          "title": "Kirim Permintaan Transfer",
+          "desc": "Pilih outlet yang ingin ditransfer, lalu berikan catatan penjelasan tambahan jika diperlukan. Setelah itu, klik tombol 'Kirim Permintaan' untuk diproses."
+        },
+        {
+          "title": "Konfirmasi dan Penerimaan oleh Mitra",
+          "desc": "Mitra bisnis tujuan harus masuk ke halaman yang sama di akun mereka, meninjau permintaan di tab 'Permintaan Masuk', lalu mengklik 'Terima Transfer' agar kepemilikan outlet berpindah sepenuhnya secara otomatis."
+        }
+      ],
+      "warning": "Setelah pengalihan disetujui oleh penerima, seluruh data transaksi, staff, dan katalog produk di outlet tersebut akan sepenuhnya berpindah ke akun bisnis penerima. Tindakan ini tidak dapat dibatalkan.",
+      "tip": "Pastikan akun tujuan memiliki sisa kuota outlet yang cukup pada paket langganan mereka untuk dapat menerima pengalihan outlet baru."
+    },
+    {
       "id": "manage-products",
       "role": "owner",
       "category": "products",
@@ -301,8 +329,8 @@
       "icon": "ArrowRightLeft",
       "steps": [
         {
-          "title": "Buka Menu Transfer Outlet",
-          "desc": "Klik menu 'Transfer Outlet' di menu sebelah kiri."
+          "title": "Buka Menu Transfer Stok",
+          "desc": "Klik menu 'Transfer Stok' di bawah grup 'Inventori' di menu sebelah kiri."
         },
         {
           "title": "Buat Permintaan Transfer Baru",

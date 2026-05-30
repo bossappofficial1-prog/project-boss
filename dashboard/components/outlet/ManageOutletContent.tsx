@@ -37,7 +37,6 @@ import { outletManagementApi, uploadApi } from "@/lib/api";
 import { EmptyOutletState } from "../ui/empty-outlet";
 import { useRouter } from "next/navigation";
 import { SectionHeader } from "../ui/section-header";
-import { TransferOutletDialog } from "./TransferOutletDialog";
 import {
   ReusableForm,
   type FormFieldConfig,
@@ -131,7 +130,6 @@ export default function ManageOutletContent() {
   const [isEditing, setIsEditing] = useState(false);
   const [isOperatingHoursModalOpen, setIsOperatingHoursModalOpen] =
     useState(false);
-  const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
 
   useEffect(() => {
     if (selectedOutlet) {
@@ -427,15 +425,6 @@ export default function ManageOutletContent() {
                   <Clock className="mr-2 h-3.5 w-3.5" />
                   Jam Operasional
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsTransferDialogOpen(true)}
-                  className="h-10 px-4 font-bold text-xs uppercase tracking-wider rounded-md border-border/60 hover:bg-muted/50 transition-all shadow-none"
-                >
-                  <ArrowRightLeft className="mr-2 h-3.5 w-3.5" />
-                  Transfer Outlet
-                </Button>
                 <Separator
                   orientation="vertical"
                   className="h-8 mx-1 hidden sm:block"
@@ -720,15 +709,6 @@ export default function ManageOutletContent() {
         onClose={() => setIsOperatingHoursModalOpen(false)}
         outletId={selectedOutlet?.id || ""}
       />
-
-      {selectedOutlet && (
-        <TransferOutletDialog
-          isOpen={isTransferDialogOpen}
-          onOpenChange={setIsTransferDialogOpen}
-          outletId={selectedOutlet.id}
-          outletName={selectedOutlet.name}
-        />
-      )}
     </div>
   );
 }

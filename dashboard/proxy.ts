@@ -53,6 +53,10 @@ export async function proxy(req: NextRequest) {
       return NextResponse.next();
     }
 
+    if (pathname.startsWith("/help")) {
+      return NextResponse.next();
+    }
+
     const cashierToken = req.cookies.get("cashier_token")?.value;
     if (!cashierToken) {
       return NextResponse.redirect(new URL("/auth/login/cashier", req.url));
