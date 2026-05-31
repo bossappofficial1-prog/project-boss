@@ -23,16 +23,16 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  themeColor: "#000000",
+  themeColor: "#eb2525",
 };
 
 export const metadata: Metadata = {
   title: {
-    default: "Boss",
-    template: "%s | Boss",
+    default: "BOSS - Pesan & Pantau Ordermu",
+    template: "%s | BOSS",
   },
   description:
-    "Urus operasional usaha, atur jadwal, dan jaga pelanggan kamu lebih gampang bareng BOSS.",
+    "Temukan outlet terdekat, pesan langsung, pantau status order, dan bayar — semua lewat aplikasi pelanggan BOSS.",
   icons: {
     icon: [
       { url: "/assets/logo/favicon.ico", type: "image/x-icon" },
@@ -54,21 +54,23 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Boss",
-    startupImage: [`${process.env.SITE_URL}/assets/logo/og-image.png`],
+    title: "BOSS",
+    startupImage: [
+      `${process.env.NEXT_PUBLIC_SITE_URL}/assets/logo/og-image.png`,
+    ],
   },
   openGraph: {
-    title: "Boss",
+    title: "BOSS - Pesan & Pantau Ordermu",
     description:
-      "BOSS bantu kamu merapikan operasional bisnis, jadwal layanan, sampai urusan pelanggan dalam satu tempat.",
-    url: "https://bossapp.id",
+      "Temukan outlet terdekat, pesan langsung, pantau status order, dan bayar — semua lewat aplikasi pelanggan BOSS.",
+    url: process.env.NEXT_PUBLIC_SITE_URL || "https://customer.bossapp.id",
     siteName: "BOSS",
     images: [
       {
-        url: `${process.env.SITE_URL}/assets/logo/og-image.png`,
+        url: `${process.env.NEXT_PUBLIC_SITE_URL}/assets/logo/og-image.png`,
         width: 1200,
         height: 630,
-        alt: "BOSS Business Management Platform",
+        alt: "BOSS - Aplikasi Pelanggan untuk Pesan dan Pantau Order",
       },
     ],
     locale: "id_ID",
@@ -76,55 +78,64 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Boss",
+    title: "BOSS - Pesan & Pantau Ordermu",
     description:
-      "Optimalkan operasional, jadwal, dan pengalaman pelanggan bisnis kamu cukup lewat BOSS.",
-    images: [`${process.env.SITE_URL}/assets/logo/og-image.png`],
+      "Temukan outlet terdekat, pesan langsung, pantau status order, dan bayar — semua lewat aplikasi pelanggan BOSS.",
+    images: [`${process.env.NEXT_PUBLIC_SITE_URL}/assets/logo/og-image.png`],
+  },
+  alternates: {
+    canonical: "https://customer.bossapp.id",
   },
   robots: {
     index: true,
     follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
   },
   keywords: [
-    "business management",
-    "scheduling",
-    "customer management",
-    "BOSS",
-    "business platform",
+    "pesan makanan online",
+    "aplikasi pelanggan",
+    "order tracking",
+    "cari outlet terdekat",
+    "bayar qris",
+    "boss customer app",
+    "pesan di tempat",
   ],
-  authors: [{ name: "BOSS Team" }],
-  creator: "BOSS Team",
+  authors: [{ name: "BOSS" }],
+  creator: "BOSS",
   publisher: "BOSS",
   category: "business",
 };
 
 const structuredData = {
   "@context": "https://schema.org",
-  "@type": "WebApplication",
-  name: "Boss",
-  description: "BOSS customer",
-  url: process.env.SITE_URL || "http://localhost:3000",
+  "@type": "MobileApplication",
+  name: "BOSS - Aplikasi Pelanggan",
+  description:
+    "Temukan outlet terdekat, pesan langsung, pantau status order, dan bayar lewat aplikasi pelanggan BOSS.",
+  url: process.env.NEXT_PUBLIC_SITE_URL || "https://customer.bossapp.id",
   applicationCategory: "BusinessApplication",
-  operatingSystem: "Web Browser",
+  operatingSystem: "Web Browser, iOS, Android",
+  inLanguage: "id-ID",
   offers: {
     "@type": "Offer",
     price: "0",
     priceCurrency: "IDR",
   },
+  featureList: [
+    "Cari outlet terdekat",
+    "Pesan menu langsung dari HP",
+    "Pantau status order real-time",
+    "Pembayaran QRIS dan digital",
+    "Riwayat transaksi pelanggan",
+  ],
   creator: {
     "@type": "Organization",
-    name: "BOSS Development Team",
+    name: "BOSS",
+    url: "https://bossapp.id",
   },
   publisher: {
     "@type": "Organization",
     name: "BOSS",
+    url: "https://bossapp.id",
   },
 };
 
@@ -135,15 +146,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Boss" />
+        <meta name="apple-mobile-web-app-title" content="BOSS" />
+        <meta name="geo.region" content="ID" />
+        <meta name="geo.placename" content="Indonesia" />
         <link
           rel="apple-touch-icon"
           sizes="180x180"
-          href="/assets/logo/icon-192x192.png"
+          href="/assets/logo/web-icon-192x192.png"
         />
         <link rel="icon" type="image/x-icon" href="/assets/logo/favicon.ico" />
         <link rel="shortcut icon" href="/assets/logo/favicon.ico" />
-        <meta name="theme-color" content="#eb2525" />
         <meta name="color-scheme" content="light dark" />
         <script
           type="application/ld+json"
