@@ -65,7 +65,7 @@ export const metadata: Metadata = {
     siteName: "BOSS",
     images: [
       {
-        url: `${process.env.NEXT_PUBLIC_SITE_URL}/assets/logo/og-image.png`,
+        url: `https://customer.bossapp.id/assets/logo/og-image.png`,
         width: 1200,
         height: 630,
         alt: "BOSS - Aplikasi Pelanggan untuk Pesan dan Pantau Order",
@@ -79,7 +79,7 @@ export const metadata: Metadata = {
     title: "BOSS - Pesan & Pantau Ordermu",
     description:
       "Temukan outlet terdekat, pesan langsung, pantau status order, dan bayar — semua lewat aplikasi pelanggan BOSS.",
-    images: [`${process.env.NEXT_PUBLIC_SITE_URL}/assets/logo/og-image.png`],
+    images: [`https://customer.bossapp.id/assets/logo/og-image.png`],
   },
   alternates: {
     canonical: "https://customer.bossapp.id",
