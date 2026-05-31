@@ -7,6 +7,7 @@ import { db } from "../../config/prisma";
 import { getOutletByIdService } from "../outlet.service";
 import { generateOrderCode, generateTicketCode } from "../../utils";
 import { getBusinessByIdService } from "../business.service";
+import { PlanLimitService } from "../plan-limit.service";
 
 export interface OrderCreationResult {
   order: Order;
@@ -102,6 +103,9 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
 
   const outlet = await getOutletByIdService(outletId);
   const business = await getBusinessByIdService(outlet.businessId);
+
+  // SECURITY: Validate that the business subscription is active and not expired
+  await PlanLimitService.assertSubscriptionActive(business.id);
 
   // 4. Start Transaction for Atomic Order Creation
   try {

@@ -1,4 +1,6 @@
 import { BaseService } from "./base.service";
+import { PlanLimitService } from "./plan-limit.service";
+import { db } from "../config/prisma";
 import { ReservationRepository } from "../repositories/reservation.repository";
 import { CreateReservationInput, GetReservationsQuery } from "../schemas/reservation.schema";
 import { OrderStatus, TableStatus } from "@prisma/client";
@@ -18,6 +20,15 @@ export class ReservationService extends BaseService {
     const bookingStart = new Date(data.bookingDate);
     const bookingEnd = addMinutes(bookingStart, data.durationMinutes);
     const now = new Date();
+
+    const outlet = await db.outlet.findUnique({
+      where: { id: data.outletId },
+      select: { businessId: true }
+    });
+    if (!outlet) {
+      this.notFound("Outlet tidak ditemukan");
+    }
+    await PlanLimitService.assertSubscriptionActive(outlet.businessId);
 
     if (bookingStart < now) {
       this.badRequest("Tidak dapat melakukan reservasi untuk waktu di masa lalu");

@@ -1,58 +1,42 @@
 import { Request, Response } from "express";
-import { asyncHandler } from "../middleware/error.middleware";
-import { ResponseUtil } from "../utils/response";
 import { HttpStatus } from "../constants/http-status";
-import {
-  createOutletService,
-  deleteOutletService,
-  getAllOutletsService,
-  getOutletByIdService,
-  getOutletsByBusinessIdService,
-  getFeaturedOutletsService,
-  updateOutletService,
-  findNearbyOutletsService,
-  findOutletsInViewportService,
-  updateOutletLocationService,
-  uploadQRISService,
-  getQRISService,
-  getOutletAnalytics,
-  getOutletRevenueTrend,
-  getOutletBySlugService,
-  getOutletSlugsService,
-} from "../service/outlet.service";
+import { BaseController } from "./base.controller";
+import { OutletService } from "../service/outlet.service";
 
-export const findNearbyOutletsController = asyncHandler(
-  async (req: Request, res: Response) => {
+class OutletController extends BaseController {
+  findNearbyOutlets = this.handler(async (req: Request, res: Response) => {
     const { latitude, longitude, radius, page, limit, search } = req.query;
 
-    // Validasi parameter koordinat
     if (!latitude || !longitude) {
-      return ResponseUtil.badRequest(
+      return this.error(
         res,
         "Latitude and longitude are required",
+        [],
+        HttpStatus.BAD_REQUEST,
       );
     }
     const latNum = parseFloat(latitude as string);
     const lngNum = parseFloat(longitude as string);
     if (isNaN(latNum) || isNaN(lngNum)) {
-      return ResponseUtil.badRequest(
+      return this.error(
         res,
         "Latitude and longitude must be valid numbers",
+        [],
+        HttpStatus.BAD_REQUEST,
       );
     }
 
     const parsedRadius = radius ? parseFloat(radius as string) : 5;
     if (parsedRadius > 50) {
-      // Batasi radius maksimal 50km untuk menghindari bounding box besar
-      return ResponseUtil.error(
+      return this.error(
         res,
         "Radius maksimal 50km",
-        undefined,
+        [],
         HttpStatus.BAD_REQUEST,
       );
     }
 
-    const outlets = await findNearbyOutletsService(
+    const result = await OutletService.findNearbyOutlets(
       latNum,
       lngNum,
       parsedRadius,
@@ -61,30 +45,24 @@ export const findNearbyOutletsController = asyncHandler(
       search as string,
     );
 
-    return ResponseUtil.paginated(
+    return this.paginated(
       res,
-      outlets.outlets,
-      outlets.page,
-      outlets.limit,
-      outlets.totalPages,
-      HttpStatus.OK,
+      result.outlets,
+      result.page,
+      result.limit,
+      result.totalPages,
     );
-  },
-);
+  });
 
-/**
- * GET /outlets/map?latMin=...&latMax=...&lngMin=...&lngMax=...&search=...
- * Mengembalikan outlet yang berada dalam viewport bounding box peta.
- * Redis-cached per bounding box dengan TTL 60 detik.
- */
-export const findOutletsInViewportController = asyncHandler(
-  async (req: Request, res: Response) => {
+  findOutletsInViewport = this.handler(async (req: Request, res: Response) => {
     const { latMin, latMax, lngMin, lngMax, search } = req.query;
 
     if (!latMin || !latMax || !lngMin || !lngMax) {
-      return ResponseUtil.badRequest(
+      return this.error(
         res,
         "latMin, latMax, lngMin, lngMax are required",
+        [],
+        HttpStatus.BAD_REQUEST,
       );
     }
 
@@ -94,13 +72,15 @@ export const findOutletsInViewportController = asyncHandler(
     const parsedLngMax = parseFloat(lngMax as string);
 
     if ([parsedLatMin, parsedLatMax, parsedLngMin, parsedLngMax].some(isNaN)) {
-      return ResponseUtil.badRequest(
+      return this.error(
         res,
         "Semua parameter bounding box harus berupa angka",
+        [],
+        HttpStatus.BAD_REQUEST,
       );
     }
 
-    const result = await findOutletsInViewportService(
+    const result = await OutletService.findOutletsInViewport(
       parsedLatMin,
       parsedLatMax,
       parsedLngMin,
@@ -108,160 +88,147 @@ export const findOutletsInViewportController = asyncHandler(
       search as string | undefined,
     );
 
-    return ResponseUtil.success(res, result.outlets, HttpStatus.OK);
-  },
-);
+    return this.success(res, result.outlets, HttpStatus.OK);
+  });
 
-export const updateOutletLocationController = asyncHandler(
-  async (req: Request, res: Response) => {
+  updateLocation = this.handler(async (req: Request, res: Response) => {
     const outletId = req.params.outletId as string;
     const { latitude, longitude } = req.body;
     const ownerId = req.storedUser!.id;
 
-    const outlet = await updateOutletLocationService(
+    const outlet = await OutletService.updateLocation(
       outletId,
       ownerId,
       parseFloat(latitude),
       parseFloat(longitude),
     );
 
-    return ResponseUtil.success(res, outlet, HttpStatus.OK);
-  },
-);
+    return this.success(res, outlet, HttpStatus.OK);
+  });
 
-export const createOutletController = asyncHandler(
-  async (req: Request, res: Response) => {
+  create = this.handler(async (req: Request, res: Response) => {
     const payload = req.body;
     const ownerId = req.storedUser!.id;
-    const outlet = await createOutletService(payload, ownerId);
-    return ResponseUtil.success(res, outlet, HttpStatus.CREATED);
-  },
-);
+    const outlet = await OutletService.create(payload, ownerId);
+    return this.success(res, outlet, HttpStatus.CREATED);
+  });
 
-export const getOutletByIdController = asyncHandler(
-  async (req: Request, res: Response) => {
+  getById = this.handler(async (req: Request, res: Response) => {
     const id = req.params.id as string;
-    const outlet = await getOutletByIdService(id);
-    return ResponseUtil.success(res, outlet);
-  },
-);
+    const outlet = await OutletService.getById(id);
+    return this.success(res, outlet);
+  });
 
-export const getOutletBySlugController = asyncHandler(
-  async (req: Request, res: Response) => {
+  getBySlug = this.handler(async (req: Request, res: Response) => {
     const slug = req.params.slug as string;
-    const outlet = await getOutletBySlugService(slug);
-    console.log("Outlet ditemukan:", outlet); // Debug log untuk memastikan outlet ditemukan
-    return ResponseUtil.success(res, outlet);
-  },
-);
+    const outlet = await OutletService.getBySlug(slug);
+    return this.success(res, outlet);
+  });
 
-export const getAllOutletsController = asyncHandler(
-  async (req: Request, res: Response) => {
+  getAll = this.handler(async (req: Request, res: Response) => {
     const { search, take, skip } = req.query;
 
-    const parsedTake = take ? parseInt(take as string) : 10; // Default 10 jika tidak disediakan
+    const parsedTake = take ? parseInt(take as string) : 10;
     const parsedSkip = skip ? parseInt(skip as string) : 0;
 
-    const { outlets, total } = await getAllOutletsService(
+    const { outlets, total } = await OutletService.getAll(
       search as string,
       parsedTake,
       parsedSkip,
     );
-    return ResponseUtil.paginated(res, outlets, total, parsedTake, parsedSkip);
-  },
-);
+    return this.paginated(
+      res,
+      outlets,
+      parsedSkip / parsedTake + 1,
+      parsedTake,
+      total,
+    );
+  });
 
-export const getOutletsByBusinessIdController = asyncHandler(
-  async (req: Request, res: Response) => {
+  getByBusinessId = this.handler(async (req: Request, res: Response) => {
     const businessId = req.params.businessId as string;
     const { search, take, skip } = req.query;
 
-    const parsedTake = take ? parseInt(take as string) : 10; // Default 10 jika tidak disediakan
+    const parsedTake = take ? parseInt(take as string) : 10;
     const parsedSkip = skip ? parseInt(skip as string) : 0;
 
-    const { outlets, total } = await getOutletsByBusinessIdService(
+    const { outlets, total } = await OutletService.getByBusinessId(
       businessId,
       search as string,
       parsedTake,
       parsedSkip,
     );
-    return ResponseUtil.paginated(res, outlets, total, parsedTake, parsedSkip);
-  },
-);
+    return this.paginated(
+      res,
+      outlets,
+      parsedSkip / parsedTake + 1,
+      parsedTake,
+      total,
+    );
+  });
 
-export const getFeaturedOutletsController = asyncHandler(
-  async (req: Request, res: Response) => {
-    const outlets = await getFeaturedOutletsService();
-    return ResponseUtil.success(res, outlets);
-  },
-);
+  getFeatured = this.handler(async (req: Request, res: Response) => {
+    const outlets = await OutletService.getFeatured();
+    return this.success(res, outlets);
+  });
 
-export const updateOutletController = asyncHandler(
-  async (req: Request, res: Response) => {
+  update = this.handler(async (req: Request, res: Response) => {
     const id = req.params.id as string;
     const payload = req.body;
     const ownerId = req.storedUser!.id;
-    const outlet = await updateOutletService(id, payload, ownerId);
-    return ResponseUtil.success(res, outlet);
-  },
-);
+    const outlet = await OutletService.update(id, payload, ownerId);
+    return this.success(res, outlet);
+  });
 
-export const deleteOutletController = asyncHandler(
-  async (req: Request, res: Response) => {
+  delete = this.handler(async (req: Request, res: Response) => {
     const id = req.params.id as string;
     const ownerId = req.storedUser!.id;
-    const outlet = await deleteOutletService(id, ownerId);
-    return ResponseUtil.success(res, outlet);
-  },
-);
+    const outlet = await OutletService.delete(id, ownerId);
+    return this.success(res, outlet);
+  });
 
-export const getOutletSlugsController = asyncHandler(
-  async (req: Request, res: Response) => {
-    const outlets = await getOutletSlugsService();
-    return ResponseUtil.success(res, outlets);
-  },
-);
+  getSlugs = this.handler(async (req: Request, res: Response) => {
+    const outlets = await OutletService.getSlugs();
+    return this.success(res, outlets);
+  });
 
-export const uploadQRISController = asyncHandler(
-  async (req: Request, res: Response) => {
-    const outletId = req.params.outletId as string;
+  uploadQRIS = this.handler(async (req: Request, res: Response) => {
+    const outletId = req.params.id as string;
     const ownerId = req.storedUser!.id;
-    const result = await uploadQRISService(outletId, ownerId, req.body.fileUrl);
+    const result = await OutletService.uploadQRIS(
+      outletId,
+      ownerId,
+      req.body.fileUrl,
+    );
 
-    return ResponseUtil.success(
+    return this.success(
       res,
       result,
       HttpStatus.OK,
       "QRIS berhasil diupload",
     );
-  },
-);
+  });
 
-export const getQRISController = asyncHandler(
-  async (req: Request, res: Response) => {
+  getQRIS = this.handler(async (req: Request, res: Response) => {
     const outletId = req.params.id as string;
+    const qrisData = await OutletService.getQRIS(outletId);
 
-    const qrisData = await getQRISService(outletId);
-
-    return ResponseUtil.success(
+    return this.success(
       res,
       qrisData,
       HttpStatus.OK,
       "Data QRIS berhasil diambil",
     );
-  },
-);
+  });
 
-type RevenueTimeframe = "7d" | "30d" | "3m" | "custom";
-
-export const getOutletRevenueTrendController = asyncHandler(
-  async (req: Request, res: Response) => {
+  getRevenueTrend = this.handler(async (req: Request, res: Response) => {
     const outletId = req.params.outletId as string;
     if (!outletId) {
-      return ResponseUtil.badRequest(res, "Outlet ID diperlukan");
+      return this.error(res, "Outlet ID diperlukan", [], HttpStatus.BAD_REQUEST);
     }
 
     const timeframeParam = (req.query.timeframe as string) ?? "30d";
+    type RevenueTimeframe = "7d" | "30d" | "3m" | "custom";
     const allowedTimeframes: RevenueTimeframe[] = ["7d", "30d", "3m", "custom"];
     const timeframe = allowedTimeframes.includes(
       timeframeParam as RevenueTimeframe,
@@ -272,26 +239,44 @@ export const getOutletRevenueTrendController = asyncHandler(
     const startDate = req.query.startDate as string | undefined;
     const endDate = req.query.endDate as string | undefined;
 
-    const trend = await getOutletRevenueTrend(outletId, {
+    const trend = await OutletService.getRevenueTrend(outletId, {
       timeframe,
       startDate,
       endDate,
     });
 
-    return ResponseUtil.success(res, trend);
-  },
-);
+    return this.success(res, trend);
+  });
 
-export const getOutletAnalyticsController = asyncHandler(
-  async (req: Request, res: Response) => {
+  getAnalytics = this.handler(async (req: Request, res: Response) => {
     const outletId = req.params.outletId as string;
 
     if (!outletId) {
-      return ResponseUtil.badRequest(res, "Outlet ID diperlukan");
+      return this.error(res, "Outlet ID diperlukan", [], HttpStatus.BAD_REQUEST);
     }
 
-    const analytics = await getOutletAnalytics(outletId);
+    const analytics = await OutletService.getAnalytics(outletId);
 
-    return ResponseUtil.success(res, analytics);
-  },
-);
+    return this.success(res, analytics);
+  });
+}
+
+export const outletController = new OutletController();
+
+// Legacy compatibility exports to prevent breaking other files
+export const findNearbyOutletsController = outletController.findNearbyOutlets;
+export const findOutletsInViewportController = outletController.findOutletsInViewport;
+export const updateOutletLocationController = outletController.updateLocation;
+export const createOutletController = outletController.create;
+export const getOutletByIdController = outletController.getById;
+export const getOutletBySlugController = outletController.getBySlug;
+export const getAllOutletsController = outletController.getAll;
+export const getOutletsByBusinessIdController = outletController.getByBusinessId;
+export const getFeaturedOutletsController = outletController.getFeatured;
+export const updateOutletController = outletController.update;
+export const deleteOutletController = outletController.delete;
+export const getOutletSlugsController = outletController.getSlugs;
+export const uploadQRISController = outletController.uploadQRIS;
+export const getQRISController = outletController.getQRIS;
+export const getOutletRevenueTrendController = outletController.getRevenueTrend;
+export const getOutletAnalyticsController = outletController.getAnalytics;

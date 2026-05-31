@@ -40,6 +40,7 @@ import { generateServiceOrderNotificationQueue } from "../queues/generate-servic
 import { socketUtils } from "../utils/socket.utils";
 import { config } from "../config";
 import { OrderRepository } from "../repositories/order.repository";
+import { PlanLimitService } from "./plan-limit.service";
 
 const TRANSACTION_FEE_RATE = 0.02;
 const TRANSACTION_BANK_FEE_RATE = 4000;
@@ -111,6 +112,9 @@ export class PaymentService {
     if (!outlet) {
       throw new AppError(Messages.OUTLET_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
+
+    // SECURITY: Validate that the business subscription is active and not expired
+    await PlanLimitService.assertSubscriptionActive(outlet.businessId);
 
     if (!outlet.isOpen) {
       throw new AppError(Messages.OUTLET_CLOSED, HttpStatus.BAD_REQUEST);

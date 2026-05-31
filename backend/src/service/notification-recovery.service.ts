@@ -1,6 +1,6 @@
 import { getRabbitMQChannel } from '../config/rabbitmq';
 import { NotificationMonitoringService } from '../service/notification-monitoring.service';
-import logger from '../utils/winston.logger';
+import logger from '../utils/pino.logger';
 
 /**
  * Emergency notification system recovery script

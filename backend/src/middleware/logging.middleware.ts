@@ -17,6 +17,12 @@ export const requestLogger = pinoHttp({
         if (res.statusCode >= 400) return "warn";
         return "info";
     },
+    customSuccessMessage: (req, res, responseTime) => {
+        return `${req.method} ${req.url} → ${res.statusCode} (${responseTime}ms)`;
+    },
+    customErrorMessage: (req, res, err) => {
+        return `${req.method} ${req.url} → ${res.statusCode} - ${err.message}`;
+    },
     serializers: {
         req(req) {
             return {

@@ -4,7 +4,7 @@ import { ResponseUtil } from '../utils/response';
 import { Channel } from 'amqplib';
 import { getRabbitMQChannel } from '../config/rabbitmq';
 import { HttpStatus } from '../constants/http-status';
-import logger from '../utils/winston.logger';
+import logger from '../utils/pino.logger';
 
 // Queue names - temporary fix until queue.ts is properly set up
 const NOTIFICATION_QUEUE = 'notification_queue';

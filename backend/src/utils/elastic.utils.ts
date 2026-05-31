@@ -1,5 +1,5 @@
 import { elasticClient } from '../config/elastic';
-import logger from './winston.logger';
+import logger from './pino.logger';
 
 // Index names
 export const ELASTIC_INDEXES = {

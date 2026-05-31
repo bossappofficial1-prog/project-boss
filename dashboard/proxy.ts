@@ -83,7 +83,10 @@ export async function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = req.cookies.get("token")?.value;
+  const ownerToken = req.cookies.get("owner_token")?.value;
+  const adminToken = req.cookies.get("admin_token")?.value;
+  const legacyToken = req.cookies.get("token")?.value;
+  const token = ownerToken || adminToken || legacyToken;
   const cashierToken = req.cookies.get("cashier_token")?.value;
 
   const isManagerOrCashierRoute =
@@ -130,6 +133,8 @@ export async function proxy(req: NextRequest) {
   // If token is invalid or expired, clear it and send to login
   if (!payload) {
     const response = NextResponse.redirect(new URL("/auth/login", req.url));
+    response.cookies.delete("owner_token");
+    response.cookies.delete("admin_token");
     response.cookies.delete("token");
     return response;
   }

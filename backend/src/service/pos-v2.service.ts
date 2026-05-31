@@ -11,6 +11,7 @@ import { getOutletByIdService } from "./outlet.service";
 import { CashierShiftService } from "./cashier-shift.service";
 import { deductStockForCompletedOrder } from "./order.service";
 import { db } from "../config/prisma";
+import { PlanLimitService } from "./plan-limit.service";
 
 const TABLE_ENABLED_OUTLET_TYPES = new Set(["FNB", "CUSTOM"]);
 
@@ -145,6 +146,10 @@ export class PosV2Service {
     const finalCashierId = payloadStaffId || cashierId;
 
     const outlet = await getOutletByIdService(outletId);
+
+    // SECURITY: Validate that the business subscription is active and not expired
+    await PlanLimitService.assertSubscriptionActive(outlet.businessId);
+
     const tableFeatureEnabled = TABLE_ENABLED_OUTLET_TYPES.has(outlet.type);
 
     let cashierShiftId: string | null = null;

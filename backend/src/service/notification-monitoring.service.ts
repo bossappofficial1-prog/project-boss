@@ -1,5 +1,5 @@
 import { getRabbitMQChannel } from '../config/rabbitmq';
-import logger from '../utils/winston.logger';
+import logger from '../utils/pino.logger';
 import { messagePublisher } from './message-publisher.service';
 
 export class NotificationMonitoringService {

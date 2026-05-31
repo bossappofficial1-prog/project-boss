@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <title>Laporan Penjualan Harian - {{businessName}}</title>
@@ -13,11 +14,11 @@
         }
 
         body {
-            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: white;
+            font-family: 'Poppins', -apple-system, sans-serif;
+            background: #ffffff;
             color: #0f172a;
             font-size: 11px;
-            line-height: 1.5;
+            line-height: 1.6;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
         }
@@ -25,46 +26,44 @@
         @media print {
             @page {
                 size: A4 portrait;
-                margin: 16mm 14mm;
+                margin: 14mm 13mm;
             }
         }
 
-        .report-wrapper {
+        .page {
             width: 100%;
-            padding: 4px;
         }
 
-        /* HEADER / KOP SURAT */
-        .header-container {
+        .header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid #cbd5e1;
-            padding-bottom: 18px;
-            margin-bottom: 20px;
+            align-items: flex-start;
+            margin-bottom: 18px;
+            padding-bottom: 16px;
+            border-bottom: 1.5px solid #e2e8f0;
         }
 
         .header-left {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
         }
 
         .logo-box {
-            width: 48px;
-            height: 48px;
+            width: 44px;
+            height: 44px;
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            border-radius: 10px; /* rounded-lg */
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
         }
 
         .logo-text {
-            color: #ef4444; /* Warm Coral-Red primary brand */
-            font-family: 'Poppins', sans-serif;
-            font-size: 16px;
+            color: #ef4444;
+            font-size: 14px;
             font-weight: 800;
             letter-spacing: 0.5px;
         }
@@ -76,185 +75,232 @@
             border-radius: 10px;
         }
 
-        .header-info h1 {
-            font-family: 'Poppins', sans-serif;
-            font-size: 18px;
-            font-weight: 700; /* Page title font-semibold tracking-tight */
+        .header-brand h1 {
+            font-size: 17px;
+            font-weight: 700;
             color: #0f172a;
             letter-spacing: -0.3px;
-            margin-bottom: 2px;
+            line-height: 1.2;
         }
 
-        .header-info p {
-            font-size: 10px;
+        .header-brand p {
+            font-size: 9.5px;
             color: #64748b;
-            font-weight: 500;
+            margin-top: 3px;
         }
 
         .header-right {
             text-align: right;
         }
 
-        .doc-badge {
+        .doc-type {
             display: inline-block;
-            background-color: #fff5f5; /* Coral background shade */
-            border: 1px solid #fed7d7;
-            border-radius: 4px; /* rounded-sm */
-            padding: 4px 10px;
-            font-size: 9px;
+            background: #fff1f2;
+            border: 1px solid #fecdd3;
+            border-radius: 4px;
+            padding: 3px 9px;
+            font-size: 7.5px;
             font-weight: 700;
-            color: #ef4444; /* Warm Coral-Red primary brand */
+            color: #ef4444;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 6px;
+            letter-spacing: 0.8px;
+            margin-bottom: 5px;
         }
 
         .doc-number {
-            font-family: 'Fira Code', monospace; /* Mono for tech values */
-            font-size: 11px;
+            font-family: 'Fira Code', monospace;
+            font-size: 10.5px;
+            font-weight: 600;
+            color: #0f172a;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .doc-meta {
+            font-size: 8.5px;
+            color: #94a3b8;
+        }
+
+        .meta-bar {
+            display: flex;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            background: #f8fafc;
+        }
+
+        .meta-bar-item {
+            flex: 1;
+            padding: 9px 14px;
+            border-right: 1px solid #e2e8f0;
+        }
+
+        .meta-bar-item:last-child {
+            border-right: none;
+        }
+
+        .meta-bar-label {
+            font-size: 7.5px;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        .meta-bar-value {
+            font-size: 10px;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .section-title {
+            font-size: 8.5px;
             font-weight: 700;
             color: #0f172a;
-        }
-
-        /* METADATA BOX */
-        .meta-container {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px; /* rounded-lg */
-            padding: 12px 16px;
-            margin-bottom: 22px;
-        }
-
-        .meta-grid {
-            display: flex;
-            justify-content: space-between;
-            font-size: 9px;
-            color: #64748b;
-        }
-
-        .meta-item strong {
-            color: #334155;
-            font-weight: 600;
-        }
-
-        /* SECTION TITLE */
-        .section-title {
-            font-family: 'Poppins', sans-serif;
-            font-size: 12px;
-            font-weight: 700; /* Section title: font-semibold */
-            color: #0f172a;
             text-transform: uppercase;
-            letter-spacing: 0.8px;
-            margin-bottom: 12px;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 7px;
         }
 
         .section-title::before {
             content: '';
-            display: inline-block;
+            display: block;
             width: 3px;
-            height: 12px;
-            background-color: #ef4444; /* Warm Coral-Red primary brand accent */
+            height: 11px;
+            background: #ef4444;
             border-radius: 2px;
+            flex-shrink: 0;
         }
 
-        /* OVERVIEW DASHBOARD CARDS */
-        .overview-cards {
+        .kpi-grid {
             display: flex;
-            gap: 12px;
-            margin-bottom: 24px;
+            gap: 10px;
+            margin-bottom: 22px;
         }
 
-        .card {
+        .kpi-card {
             flex: 1;
-            border-radius: 10px; /* rounded-lg */
-            padding: 14px 12px;
+            border-radius: 10px;
+            padding: 13px 14px;
             border: 1px solid;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
         }
 
-        .card-label {
-            font-size: 8px;
+        .kpi-label {
+            font-size: 7.5px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 6px;
+            letter-spacing: 0.6px;
+            margin-bottom: 7px;
         }
 
-        .card-value {
-            font-size: 14px;
+        .kpi-value {
+            font-family: 'Fira Code', monospace;
+            font-size: 13px;
             font-weight: 700;
-            font-family: 'Fira Code', monospace; /* Mono for currency/tech values */
             letter-spacing: -0.3px;
+            line-height: 1;
+            margin-bottom: 5px;
         }
 
-        /* CARD COLOR THEMES */
-        .card.revenue-card {
-            background-color: #ecfdf5;
-            border-color: #a7f3d0;
-        }
-        .card.revenue-card .card-label {
-            color: #047857;
-        }
-        .card.revenue-card .card-value {
-            color: #10b981; /* positive/growth color */
+        .kpi-sub {
+            font-size: 8px;
         }
 
-        .card.expense-card {
-            background-color: #fef2f2;
+        .kpi-revenue {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+
+        .kpi-revenue .kpi-label {
+            color: #15803d;
+        }
+
+        .kpi-revenue .kpi-value {
+            color: #16a34a;
+        }
+
+        .kpi-revenue .kpi-sub {
+            color: #15803d;
+        }
+
+        .kpi-expense {
+            background: #fef2f2;
             border-color: #fecaca;
         }
-        .card.expense-card .card-label {
+
+        .kpi-expense .kpi-label {
             color: #b91c1c;
         }
-        .card.expense-card .card-value {
-            color: #ef4444; /* destructive/negative color */
+
+        .kpi-expense .kpi-value {
+            color: #dc2626;
         }
 
-        .card.profit-pos-card {
-            background-color: #ecfdf5;
-            border-color: #a7f3d0;
-        }
-        .card.profit-pos-card .card-label {
-            color: #047857;
-        }
-        .card.profit-pos-card .card-value {
-            color: #10b981;
+        .kpi-expense .kpi-sub {
+            color: #b91c1c;
         }
 
-        .card.profit-neg-card {
-            background-color: #fef2f2;
+        .kpi-profit-pos {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+
+        .kpi-profit-pos .kpi-label {
+            color: #15803d;
+        }
+
+        .kpi-profit-pos .kpi-value {
+            color: #16a34a;
+        }
+
+        .kpi-profit-pos .kpi-sub {
+            color: #15803d;
+        }
+
+        .kpi-profit-neg {
+            background: #fef2f2;
             border-color: #fecaca;
         }
-        .card.profit-neg-card .card-label {
+
+        .kpi-profit-neg .kpi-label {
             color: #b91c1c;
         }
-        .card.profit-neg-card .card-value {
-            color: #ef4444;
+
+        .kpi-profit-neg .kpi-value {
+            color: #dc2626;
         }
 
-        .card.trx-card {
-            background-color: #f8fafc;
+        .kpi-profit-neg .kpi-sub {
+            color: #b91c1c;
+        }
+
+        .kpi-trx {
+            background: #f8fafc;
             border-color: #e2e8f0;
         }
-        .card.trx-card .card-label {
+
+        .kpi-trx .kpi-label {
             color: #475569;
         }
-        .card.trx-card .card-value {
+
+        .kpi-trx .kpi-value {
             color: #0f172a;
         }
 
-        /* DATA TABLE */
-        .table-container {
-            border: 1px solid #cbd5e1;
-            border-radius: 10px; /* rounded-lg */
+        .kpi-trx .kpi-sub {
+            color: #64748b;
+        }
+
+        .table-wrap {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
             overflow: hidden;
-            margin-bottom: 24px;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.02);
+            margin-bottom: 22px;
         }
 
         table {
@@ -263,22 +309,24 @@
             text-align: left;
         }
 
+        thead tr {
+            background: #0f172a;
+        }
+
         th {
-            background-color: #0f172a;
             color: #ffffff;
-            font-size: 8px;
+            font-size: 7.5px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 10px 14px;
-            border: none;
+            letter-spacing: 0.6px;
+            padding: 9px 12px;
         }
 
         td {
-            padding: 12px 14px; /* py-3 px-4 */
-            border-bottom: 1px solid #e2e8f0;
+            padding: 10px 12px;
             color: #334155;
             font-size: 10px;
+            border-bottom: 1px solid #f1f5f9;
         }
 
         tr:last-child td {
@@ -286,114 +334,152 @@
         }
 
         tr:nth-child(even) td {
-            background-color: #f8fafc;
+            background: #fafafa;
         }
 
         tr {
             page-break-inside: avoid;
         }
 
-        .text-right {
-            text-align: right;
+        .tr-total td {
+            background: #f1f5f9 !important;
+            border-top: 1.5px solid #cbd5e1;
+            font-weight: 700;
+            color: #0f172a;
         }
 
-        .text-center {
+        .tc {
             text-align: center;
         }
 
-        .text-semibold {
+        .tr {
+            text-align: right;
+        }
+
+        .fw6 {
             font-weight: 600;
             color: #0f172a;
         }
 
-        .text-bold {
-            font-weight: 700;
-            color: #0f172a;
+        .mono {
+            font-family: 'Fira Code', monospace;
         }
 
-        .text-success {
-            color: #10b981;
+        .muted {
+            color: #94a3b8;
+            font-size: 8.5px;
+            margin-top: 1px;
+        }
+
+        .val-pos {
+            color: #16a34a;
             font-weight: 600;
             font-family: 'Fira Code', monospace;
         }
 
-        .text-danger {
-            color: #ef4444;
+        .val-neg {
+            color: #dc2626;
             font-weight: 600;
             font-family: 'Fira Code', monospace;
         }
 
-        .text-profit-pos {
-            color: #10b981;
+        .val-profit-pos {
+            color: #16a34a;
             font-weight: 700;
             font-family: 'Fira Code', monospace;
         }
 
-        .text-profit-neg {
-            color: #ef4444;
+        .val-profit-neg {
+            color: #dc2626;
             font-weight: 700;
             font-family: 'Fira Code', monospace;
         }
 
-        .text-mono {
+        .row-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            background: #f1f5f9;
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+            font-size: 8.5px;
+            font-weight: 600;
+            color: #94a3b8;
+        }
+
+        .margin-pos {
+            color: #16a34a;
+            font-weight: 700;
             font-family: 'Fira Code', monospace;
         }
 
-        /* SUMMARY ROW */
-        .summary-row td {
-            background-color: #f1f5f9 !important;
+        .margin-neg {
+            color: #dc2626;
             font-weight: 700;
-            color: #0f172a;
-            border-top: 2px solid #cbd5e1;
-            padding: 12px 14px;
+            font-family: 'Fira Code', monospace;
         }
 
-        /* SIGNATURE SECTION */
-        .signature-section {
-            margin-top: 36px;
+        .footer {
+            margin-top: 28px;
+            padding-top: 14px;
+            border-top: 1.5px solid #e2e8f0;
             display: flex;
-            justify-content: flex-end;
+            justify-content: space-between;
+            align-items: flex-end;
             page-break-inside: avoid;
+        }
+
+        .footer-note {
+            font-size: 8px;
+            color: #94a3b8;
+            max-width: 360px;
+            line-height: 1.6;
+        }
+
+        .footer-note strong {
+            color: #64748b;
         }
 
         .signature-box {
             text-align: center;
-            width: 180px;
-            background-color: #f8fafc;
+            width: 160px;
+            background: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-radius: 10px; /* rounded-lg */
-            padding: 14px;
+            border-radius: 10px;
+            padding: 12px 14px;
         }
 
-        .signature-box .signer-title {
-            font-size: 8px;
+        .sig-title {
+            font-size: 7.5px;
             color: #94a3b8;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
-        .signature-box .signature-line {
-            font-family: 'Poppins', sans-serif;
-            font-weight: 800;
-            color: #ef4444; /* Warm Coral-Red primary brand */
-            font-size: 11px;
-            letter-spacing: 0.5px;
+        .sig-name {
+            font-weight: 700;
+            color: #0f172a;
+            font-size: 10px;
             border-top: 1px dashed #cbd5e1;
             padding-top: 6px;
+            letter-spacing: 0.2px;
         }
 
-        .signature-box .signer-sub {
-            font-size: 8px;
-            color: #64748b;
+        .sig-sub {
+            font-size: 7.5px;
+            color: #94a3b8;
             margin-top: 2px;
         }
     </style>
 </head>
+
 <body>
-    <div class="report-wrapper">
-        <!-- Kop Surat -->
-        <div class="header-container">
+    <div class="page">
+
+        <div class="header">
             <div class="header-left">
                 <div class="logo-box">
                     {{#if logoBase64}}
@@ -402,92 +488,121 @@
                     <div class="logo-text">BOSS</div>
                     {{/if}}
                 </div>
-                <div class="header-info">
+                <div class="header-brand">
                     <h1>Laporan Penjualan Harian</h1>
                     <p>{{businessName}} &bull; Pemilik: {{ownerName}}</p>
                 </div>
             </div>
             <div class="header-right">
-                <div class="doc-badge">Dokumen Resmi</div>
-                <div class="doc-number">{{docNumber}}</div>
+                <div class="doc-type">Dokumen Resmi</div>
+                <span class="doc-number">{{docNumber}}</span>
+                <div class="doc-meta">Dicetak: {{generatedAt}}</div>
             </div>
         </div>
 
-        <!-- Metadata -->
-        <div class="meta-container">
-            <div class="meta-grid">
-                <div class="meta-item">Tanggal Laporan: <strong>{{date}}</strong></div>
-                <div class="meta-item">Metode Pengiriman: <strong>Email Otomatis (Cron)</strong></div>
-                <div class="meta-item">Dibuat Pada: <strong>{{generatedAt}}</strong></div>
+        <div class="meta-bar">
+            <div class="meta-bar-item">
+                <div class="meta-bar-label">Tanggal Laporan</div>
+                <div class="meta-bar-value">{{date}}</div>
+            </div>
+            <div class="meta-bar-item">
+                <div class="meta-bar-label">Periode</div>
+                <div class="meta-bar-value">Harian</div>
+            </div>
+            <div class="meta-bar-item">
+                <div class="meta-bar-label">Metode Pengiriman</div>
+                <div class="meta-bar-value">Email Otomatis</div>
+            </div>
+            <div class="meta-bar-item">
+                <div class="meta-bar-label">Jumlah Outlet</div>
+                <div class="meta-bar-value">{{outletCount}} Outlet</div>
             </div>
         </div>
 
-        <!-- Ringkasan Bisnis -->
         <div class="section-title">Ringkasan Finansial Bisnis</div>
-        <div class="overview-cards">
-            <div class="card revenue-card">
-                <div class="card-label">Total Pendapatan</div>
-                <div class="card-value">{{formatRupiah totalRevenue}}</div>
+        <div class="kpi-grid">
+            <div class="kpi-card kpi-revenue">
+                <div class="kpi-label">Total Pendapatan</div>
+                <div class="kpi-value">{{formatRupiah totalRevenue}}</div>
+                <div class="kpi-sub">Rata-rata {{formatRupiah avgRevenuePerTrx}} / trx</div>
             </div>
-            <div class="card expense-card">
-                <div class="card-label">Total Pengeluaran</div>
-                <div class="card-value">{{formatRupiah totalExpense}}</div>
+            <div class="kpi-card kpi-expense">
+                <div class="kpi-label">Total Pengeluaran</div>
+                <div class="kpi-value">{{formatRupiah totalExpense}}</div>
+                <div class="kpi-sub">{{expenseRatio}}% dari pendapatan</div>
             </div>
-            <div class="card {{#if isNetProfitPositive}}profit-pos-card{{else}}profit-neg-card{{/if}}">
-                <div class="card-label">Laba Bersih</div>
-                <div class="card-value">{{formatRupiah netProfit}}</div>
+            <div class="kpi-card {{#if isNetProfitPositive}}kpi-profit-pos{{else}}kpi-profit-neg{{/if}}">
+                <div class="kpi-label">Laba Bersih</div>
+                <div class="kpi-value">{{formatRupiah netProfit}}</div>
+                <div class="kpi-sub">Margin {{profitMargin}}% &bull; {{#if
+                    isNetProfitPositive}}Surplus{{else}}Defisit{{/if}}</div>
             </div>
-            <div class="card trx-card">
-                <div class="card-label">Total Transaksi</div>
-                <div class="card-value">{{totalTransactions}} Trx</div>
+            <div class="kpi-card kpi-trx">
+                <div class="kpi-label">Total Transaksi</div>
+                <div class="kpi-value">{{totalTransactions}}</div>
+                <div class="kpi-sub">Transaksi selesai hari ini</div>
             </div>
         </div>
 
-        <!-- Rincian Per Outlet -->
         <div class="section-title">Rincian Performa Per Outlet</div>
-        <div class="table-container">
+        <div class="table-wrap">
             <table>
                 <thead>
                     <tr>
-                        <th class="text-center" style="width: 40px;">No</th>
+                        <th class="tc" style="width:36px;">No</th>
                         <th>Nama Outlet</th>
-                        <th class="text-center" style="width: 110px;">Jumlah Transaksi</th>
-                        <th class="text-right" style="width: 130px;">Pendapatan</th>
-                        <th class="text-right" style="width: 130px;">Pengeluaran</th>
-                        <th class="text-right" style="width: 130px;">Laba Bersih</th>
+                        <th class="tc" style="width:80px;">Transaksi</th>
+                        <th class="tr" style="width:115px;">Pendapatan</th>
+                        <th class="tr" style="width:115px;">Pengeluaran</th>
+                        <th class="tr" style="width:115px;">Laba Bersih</th>
+                        <th class="tc" style="width:60px;">Margin</th>
                     </tr>
                 </thead>
                 <tbody>
                     {{#each outlets}}
                     <tr>
-                        <td class="text-center text-semibold text-mono" style="color: #94a3b8;">{{rowNumber @index}}</td>
-                        <td class="text-semibold">{{name}}</td>
-                        <td class="text-center text-mono">{{transactionCount}} Trx</td>
-                        <td class="text-right text-success">{{formatRupiah revenue}}</td>
-                        <td class="text-right text-danger">{{formatRupiah expense}}</td>
-                        <td class="text-right {{#if isNetProfitPositive}}text-profit-pos{{else}}text-profit-neg{{/if}}">{{formatRupiah netProfit}}</td>
+                        <td class="tc"><span class="row-num">{{rowNumber @index}}</span></td>
+                        <td class="fw6">
+                            {{name}}
+                            {{#if outletType}}<div class="muted">{{outletType}}</div>{{/if}}
+                        </td>
+                        <td class="tc mono">{{transactionCount}} Trx</td>
+                        <td class="tr val-pos">{{formatRupiah revenue}}</td>
+                        <td class="tr val-neg">{{formatRupiah expense}}</td>
+                        <td class="tr {{#if isNetProfitPositive}}val-profit-pos{{else}}val-profit-neg{{/if}}">
+                            {{formatRupiah netProfit}}</td>
+                        <td class="tc {{#if isNetProfitPositive}}margin-pos{{else}}margin-neg{{/if}}">{{profitMargin}}%
+                        </td>
                     </tr>
                     {{/each}}
-                    <!-- Ringkasan Total -->
-                    <tr class="summary-row">
-                        <td class="text-center" colspan="2">TOTAL KESELURUHAN</td>
-                        <td class="text-center text-mono">{{totalTransactions}} Trx</td>
-                        <td class="text-right text-success">{{formatRupiah totalRevenue}}</td>
-                        <td class="text-right text-danger">{{formatRupiah totalExpense}}</td>
-                        <td class="text-right {{#if isNetProfitPositive}}text-profit-pos{{else}}text-profit-neg{{/if}}">{{formatRupiah netProfit}}</td>
+                    <tr class="tr-total">
+                        <td class="tc" colspan="2">TOTAL KESELURUHAN</td>
+                        <td class="tc mono">{{totalTransactions}} Trx</td>
+                        <td class="tr val-pos">{{formatRupiah totalRevenue}}</td>
+                        <td class="tr val-neg">{{formatRupiah totalExpense}}</td>
+                        <td class="tr {{#if isNetProfitPositive}}val-profit-pos{{else}}val-profit-neg{{/if}}">
+                            {{formatRupiah netProfit}}</td>
+                        <td class="tc {{#if isNetProfitPositive}}margin-pos{{else}}margin-neg{{/if}}">{{profitMargin}}%
+                        </td>
                     </tr>
                 </tbody>
             </table>
         </div>
 
-        <!-- Tanda Tangan -->
-        <div class="signature-section">
+        <div class="footer">
+            <div class="footer-note">
+                <strong>Catatan:</strong> Laporan ini dibuat otomatis oleh BOSS untuk periode {{date}}.
+                Seluruh angka bersumber dari transaksi kasir yang telah diselesaikan.
+                Harap simpan dokumen ini sebagai arsip keuangan harian bisnis Anda.
+            </div>
             <div class="signature-box">
-                <div class="signer-title">Dokumen Dibuat Oleh</div>
-                <div class="signature-line">BOSS SYSTEM</div>
-                <div class="signer-sub">Asisten Keuangan Digital</div>
+                <div class="sig-title">Laporan Resmi</div>
+                <div class="sig-name">{{businessName}}</div>
+                <div class="sig-sub">{{date}}</div>
             </div>
         </div>
+
     </div>
 </body>
+
 </html>

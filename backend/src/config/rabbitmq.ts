@@ -1,6 +1,6 @@
 import * as amqp from 'amqplib';
 import { config } from '.';
-import logger from '../utils/winston.logger';
+import logger from '../utils/pino.logger';
 
 let channel: amqp.Channel;
 let connection: amqp.Connection | any;

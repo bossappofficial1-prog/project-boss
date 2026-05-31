@@ -4,7 +4,7 @@ import { AppError } from '../errors/app-error';
 import { SocketEmitter } from '../socket/socket-emiiter';
 import { MidtransWebhookPayloadType } from '../types/Others';
 import { socketUtils } from '../utils/socket.utils';
-import logger from '../utils/winston.logger';
+import logger from '../utils/pino.logger';
 
 // Base interface for all events
 interface BaseEvent<T, P> {

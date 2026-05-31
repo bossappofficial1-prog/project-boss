@@ -40,7 +40,11 @@ export async function findTransactionsByFilter(filter: TransactionsFilter) {
   if (query) {
     where.OR = [
       { externalId: { contains: query, mode: "insensitive" } },
-      { order: { guestCustomer: { name: { contains: query, mode: "insensitive" } } } },
+      {
+        order: {
+          guestCustomer: { name: { contains: query, mode: "insensitive" } },
+        },
+      },
     ];
   }
 
@@ -163,9 +167,14 @@ export async function computeTotalsByFilter(
 
   if (normalizedStatuses?.length) {
     orderWhere.paymentStatus =
-      normalizedStatuses.length === 1 ? normalizedStatuses[0] : { in: normalizedStatuses };
+      normalizedStatuses.length === 1
+        ? normalizedStatuses[0]
+        : { in: normalizedStatuses };
     orderWhere.transaction = {
-      status: normalizedStatuses.length === 1 ? normalizedStatuses[0] : { in: normalizedStatuses },
+      status:
+        normalizedStatuses.length === 1
+          ? normalizedStatuses[0]
+          : { in: normalizedStatuses },
     };
   } else {
     orderWhere.paymentStatus = PaymentStatus.SUCCESS;
@@ -206,7 +215,9 @@ export async function computeTotalsByFilter(
   }
 
   if (query) {
-    expenseWhere.OR = [{ description: { contains: query, mode: "insensitive" } }];
+    expenseWhere.OR = [
+      { description: { contains: query, mode: "insensitive" } },
+    ];
   }
 
   const orders = await db.order.findMany({
@@ -218,9 +229,13 @@ export async function computeTotalsByFilter(
   const total_revenue = orders.reduce((acc, order) => {
     return acc + (order.totalAmount > 0 ? order.totalAmount : 0);
   }, 0);
-  const expAgg = await db.expense.aggregate({ where: expenseWhere, _sum: { amount: true } });
+  const expAgg = await db.expense.aggregate({
+    where: expenseWhere,
+    _sum: { amount: true },
+  });
 
-  const total_expense = expAgg._sum && expAgg._sum.amount ? Number(expAgg._sum.amount) : 0;
+  const total_expense =
+    expAgg._sum && expAgg._sum.amount ? Number(expAgg._sum.amount) : 0;
   const total_margin_pendapatan = total_revenue - total_expense;
 
   return {
@@ -240,30 +255,38 @@ export async function computeCountsByFilter(filter: {
 }) {
   const { outletId, userOutletIds, status, startDate, endDate, query } = filter;
 
-  const transactionWhere: any = {
-    order: {
-      outletId: outletId ? outletId : { in: userOutletIds },
-    },
+  const orderWhere: Prisma.OrderWhereInput = {
+    outletId: outletId ? outletId : { in: userOutletIds },
   };
 
-  if (status && status !== "ALL") {
-    transactionWhere.status = status;
+  const normalizedStatuses: PaymentStatus[] | undefined = (() => {
+    if (status && status !== "ALL") {
+      return [status as PaymentStatus];
+    }
+    return [PaymentStatus.SUCCESS, PaymentStatus.PROOF_SUBMITTED];
+  })();
+
+  if (normalizedStatuses?.length) {
+    orderWhere.paymentStatus =
+      normalizedStatuses.length === 1
+        ? normalizedStatuses[0]
+        : { in: normalizedStatuses };
   }
 
   if (startDate || endDate) {
-    transactionWhere.createdAt = {};
-    if (startDate) transactionWhere.createdAt.gte = new Date(startDate);
+    orderWhere.createdAt = {};
+    if (startDate) orderWhere.createdAt.gte = new Date(startDate);
     if (endDate) {
       const endDateTime = new Date(endDate);
       endDateTime.setHours(23, 59, 59, 999);
-      transactionWhere.createdAt.lte = endDateTime;
+      orderWhere.createdAt.lte = endDateTime;
     }
   }
 
   if (query) {
-    transactionWhere.OR = [
-      { externalId: { contains: query, mode: "insensitive" } },
-      { order: { guestCustomer: { name: { contains: query, mode: "insensitive" } } } },
+    orderWhere.OR = [
+      { transaction: { externalId: { contains: query, mode: "insensitive" } } },
+      { guestCustomer: { name: { contains: query, mode: "insensitive" } } },
     ];
   }
 
@@ -282,10 +305,12 @@ export async function computeCountsByFilter(filter: {
   }
 
   if (query) {
-    expenseWhere.OR = [{ description: { contains: query, mode: "insensitive" } }];
+    expenseWhere.OR = [
+      { description: { contains: query, mode: "insensitive" } },
+    ];
   }
 
-  const transactionCount = await db.transaction.count({ where: transactionWhere });
+  const transactionCount = await db.order.count({ where: orderWhere });
   const expenseCount = await db.expense.count({ where: expenseWhere });
 
   return { transactionCount, expenseCount };

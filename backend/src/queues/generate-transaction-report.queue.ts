@@ -7,7 +7,7 @@ import { generateTransactionReportPDF, TransactionReportData } from "../service/
 import { EmailService } from "../service/email.service";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
-import logger from "../utils/winston.logger";
+import logger from "../utils/pino.logger";
 
 interface GenerateTransactionReportPayload {
     businessId: string;

@@ -7,6 +7,7 @@ import {
   ServiceStatus,
 } from "@prisma/client";
 import { db } from "../config/prisma";
+import { redis } from "../config/redis";
 import { CreateOutletInput, UpdateOutletInput } from "../schemas/outlet.schema";
 import { generateOutletId, StringUtil } from "../utils";
 
@@ -732,5 +733,27 @@ export class OutletRepository {
       lowStockProducts,
       paymentOrders,
     };
+  }
+
+  static async syncGeoLocation(id: string, longitude: number, latitude: number) {
+    try {
+      await redis.geoadd("outlets:geo", longitude, latitude, id);
+    } catch (err) {
+      console.error("Gagal melakukan sinkronisasi geopasial ke Redis:", err);
+    }
+  }
+
+  static async findAllWithCoordinates() {
+    return db.outlet.findMany({
+      where: {
+        latitude: { not: null },
+        longitude: { not: null },
+      },
+      select: {
+        id: true,
+        latitude: true,
+        longitude: true,
+      },
+    });
   }
 }

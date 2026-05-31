@@ -18,6 +18,7 @@ import {
 import { UserRepository } from "../repositories/user.repository";
 import { StaffRepository } from "../repositories/staff.repository";
 import { redis } from "../config/redis";
+import { RedisUtils } from "../utils/redis.utils";
 import { randomUUID } from "crypto";
 import { messagePublisher } from "./message-publisher.service";
 import { BusinessRepository } from "../repositories/business.repository";
@@ -95,6 +96,26 @@ export class AuthService extends BaseService {
       );
     }
 
+    // Pastikan akun staff aktif
+    if (staff.status !== "ACTIVE") {
+      this.forbidden(
+        "Akun kasir Anda dinonaktifkan atau sedang tidak aktif. Hubungi owner untuk mengaktifkan akun.",
+      );
+    }
+
+    // Pastikan outlet tempat staff bertugas aktif/buka
+    if (!staff.outlet) {
+      this.forbidden(
+        "Data outlet tidak ditemukan untuk akun kasir ini.",
+      );
+    }
+
+    if (!staff.outlet.isOpen) {
+      this.forbidden(
+        "Outlet saat ini sedang tutup. Kasir tidak diperbolehkan login pada outlet yang tutup.",
+      );
+    }
+
     const isPasswordValid = await BcryptUtil.compare(
       data.password,
       staff.password,
@@ -105,6 +126,7 @@ export class AuthService extends BaseService {
     }
 
     // Simpan session kasir di Redis
+    // Simpan session kasir di Redis menggunakan RedisUtils
     const staffSession = {
       id: staff.id,
       username: staff.username,
@@ -113,13 +135,17 @@ export class AuthService extends BaseService {
       businessId: staff.outlet?.businessId,
       userType: "CASHIER",
       role: staff.role,
+      status: staff.status,
+      outletIsOpen: staff.outlet?.isOpen || false,
     };
 
-    await redis.set(
+    // Bersihkan cache status kasir yang lama agar ditarik segar dari DB
+    await RedisUtils.del(`session:cashier:check:${staff.id}`);
+
+    await RedisUtils.set(
       `session:cashier:${staff.id}`,
-      JSON.stringify(staffSession),
-      "EX",
-      60 * 60 * 24,
+      staffSession,
+      60 * 60 * 24
     );
 
     const token = JwtUtil.generate({
@@ -160,6 +186,26 @@ export class AuthService extends BaseService {
       this.unauthorized(Messages.INVALID_CREDENTIALS);
     }
 
+    // Pastikan akun manager aktif
+    if (staff.status !== "ACTIVE") {
+      this.forbidden(
+        "Akun manager Anda dinonaktifkan atau sedang tidak aktif. Hubungi owner.",
+      );
+    }
+
+    // Pastikan outlet tempat manager bertugas aktif/buka
+    if (!staff.outlet) {
+      this.forbidden(
+        "Data outlet tidak ditemukan untuk akun manager ini.",
+      );
+    }
+
+    if (!staff.outlet.isOpen) {
+      this.forbidden(
+        "Outlet saat ini sedang tutup. Manager tidak diperbolehkan login pada outlet yang tutup.",
+      );
+    }
+
     const privileges = staff.privileges.map((p) => p.privilege);
 
     const managerSession = {
@@ -171,13 +217,17 @@ export class AuthService extends BaseService {
       userType: "MANAGER",
       role: "MANAGER",
       privileges,
+      status: staff.status,
+      outletIsOpen: staff.outlet?.isOpen || false,
     };
 
-    await redis.set(
+    // Bersihkan cache status kasir/manager yang lama agar ditarik segar dari DB
+    await RedisUtils.del(`session:cashier:check:${staff.id}`);
+
+    await RedisUtils.set(
       `session:cashier:${staff.id}`,
-      JSON.stringify(managerSession),
-      "EX",
-      60 * 60 * 24,
+      managerSession,
+      60 * 60 * 24
     );
 
     const token = JwtUtil.generate({
@@ -206,6 +256,22 @@ export class AuthService extends BaseService {
 
     if (!staff) {
       this.notFound("Staff tidak ditemukan");
+    }
+
+    if (staff.status !== "ACTIVE") {
+      this.forbidden(
+        "Akun kasir Anda dinonaktifkan atau sedang tidak aktif. Hubungi owner.",
+      );
+    }
+
+    if (!staff.outlet) {
+      this.forbidden("Data outlet tidak ditemukan untuk akun kasir ini.");
+    }
+
+    if (!staff.outlet.isOpen) {
+      this.forbidden(
+        "Outlet saat ini sedang tutup. Kasir tidak diperbolehkan bertransaksi pada outlet yang tutup.",
+      );
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

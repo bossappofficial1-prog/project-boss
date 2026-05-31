@@ -1,25 +1,5 @@
 import { Router } from "express";
-import multer from "multer";
-import path from "path";
-import { randomUUID } from "crypto";
-import {
-    createOutletController,
-    deleteOutletController,
-    getAllOutletsController,
-    getOutletByIdController,
-    getOutletsByBusinessIdController,
-    getFeaturedOutletsController,
-    updateOutletController,
-    findNearbyOutletsController,
-    findOutletsInViewportController,
-    updateOutletLocationController,
-    uploadQRISController,
-    getQRISController,
-    getOutletAnalyticsController,
-    getOutletRevenueTrendController,
-    getOutletBySlugController,
-    getOutletSlugsController
-} from "../controller/outlet.controller";
+import { outletController } from "../controller/outlet.controller";
 import {
     createTransferRequestController,
     acceptTransferRequestController,
@@ -37,11 +17,11 @@ import { UserRole } from "@prisma/client";
 const outletRouter = Router();
 
 // Rute Publik
-outletRouter.get("/", getAllOutletsController);
-outletRouter.get("/featured", getFeaturedOutletsController);
-outletRouter.get("/nearby", findNearbyOutletsController);
-outletRouter.get("/map", findOutletsInViewportController);
-outletRouter.get("/slugs", getOutletSlugsController);
+outletRouter.get("/", outletController.getAll);
+outletRouter.get("/featured", outletController.getFeatured);
+outletRouter.get("/nearby", outletController.findNearbyOutlets);
+outletRouter.get("/map", outletController.findOutletsInViewport);
+outletRouter.get("/slugs", outletController.getSlugs);
 
 // Transfer Routes (Must be before /:id)
 outletRouter.get("/transfers/incoming", protect, getIncomingTransfersController);
@@ -50,15 +30,15 @@ outletRouter.post("/transfers/:id/accept", protect, acceptTransferRequestControl
 outletRouter.post("/transfers/:id/reject", protect, rejectTransferRequestController);
 outletRouter.delete("/transfers/:id/cancel", protect, cancelTransferRequestController);
 
-outletRouter.get("/:id", getOutletByIdController);
-outletRouter.get("/slug/:slug", getOutletBySlugController);
-outletRouter.get("/business/:businessId", getOutletsByBusinessIdController);
+outletRouter.get("/:id", outletController.getById);
+outletRouter.get("/slug/:slug", outletController.getBySlug);
+outletRouter.get("/business/:businessId", outletController.getByBusinessId);
 
 // Rute yang dilindungi dan hanya untuk Owner
-outletRouter.post("/", protect, authorize(UserRole.OWNER), requireActiveSubscription, validateSchema(createOutletSchema), createOutletController);
-outletRouter.patch("/:id", protect, authorize(UserRole.OWNER), requireActiveSubscription, validateSchema(updateOutletSchema), updateOutletController);
-outletRouter.delete("/:id", protect, authorize(UserRole.OWNER), requireActiveSubscription, deleteOutletController);
-outletRouter.patch("/:outletId/location", protect, authorize(UserRole.OWNER), requireActiveSubscription, validateSchema(updateOutletLocationSchema), updateOutletLocationController);
+outletRouter.post("/", protect, authorize(UserRole.OWNER), requireActiveSubscription, validateSchema(createOutletSchema), outletController.create);
+outletRouter.patch("/:id", protect, authorize(UserRole.OWNER), requireActiveSubscription, validateSchema(updateOutletSchema), outletController.update);
+outletRouter.delete("/:id", protect, authorize(UserRole.OWNER), requireActiveSubscription, outletController.delete);
+outletRouter.patch("/:outletId/location", protect, authorize(UserRole.OWNER), requireActiveSubscription, validateSchema(updateOutletLocationSchema), outletController.updateLocation);
 outletRouter.post("/:outletId/transfer", protect, authorize(UserRole.OWNER), createTransferRequestController);
 
 // QRIS Management Routes
@@ -67,16 +47,16 @@ outletRouter.post(
     protect,
     authorize(UserRole.OWNER),
     requireActiveSubscription,
-    uploadQRISController
+    outletController.uploadQRIS
 );
 
 outletRouter.get(
     "/:id/qris",
-    getQRISController
+    outletController.getQRIS
 );
 
-outletRouter.get("/:outletId/revenue-trend", getOutletRevenueTrendController);
+outletRouter.get("/:outletId/revenue-trend", outletController.getRevenueTrend);
 
-outletRouter.get("/:outletId/analytics", getOutletAnalyticsController)
+outletRouter.get("/:outletId/analytics", outletController.getAnalytics);
 
 export default outletRouter;

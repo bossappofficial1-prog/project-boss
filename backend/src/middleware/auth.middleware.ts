@@ -6,6 +6,8 @@ import { Messages } from "../constants/message";
 import { JwtUtil } from "../utils";
 import { StaffRole, UserRole } from "@prisma/client";
 import { redis } from "../config/redis";
+import { db } from "../config/prisma";
+import { RedisUtils } from "../utils/redis.utils";
 import {
   AUTH_COOKIE_NAMES,
   clearAuthCookie,
@@ -199,7 +201,7 @@ export const protect = asyncHandler(
 );
 
 export const authorize = (...roles: (UserRole | StaffRole)[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
     const user = getAuthUser(req, roles);
     if (!user) {
       return next(new AppError(Messages.UNAUTHORIZED, HttpStatus.FORBIDDEN));
@@ -207,6 +209,61 @@ export const authorize = (...roles: (UserRole | StaffRole)[]) => {
     // Promote matched staff session to storedUser so downstream controllers work
     if (user === req.storedCashier) {
       req.storedUser = user as any;
+
+      try {
+        const cacheKey = `session:cashier:check:${user.id}`;
+        
+        // Coba ambil status dari Redis via RedisUtils
+        let statusCheck = await RedisUtils.get<{ isActive: boolean; outletIsOpen: boolean }>(cacheKey);
+
+        if (!statusCheck) {
+          // Cache miss -> Query DB
+          const staff = await db.staff.findUnique({
+            where: { id: user.id },
+            include: { outlet: true },
+          });
+
+          if (!staff) {
+            return next(
+              new AppError("Akun kasir tidak ditemukan", HttpStatus.UNAUTHORIZED),
+            );
+          }
+
+          statusCheck = {
+            isActive: staff.status === "ACTIVE",
+            outletIsOpen: staff.outlet?.isOpen || false,
+          };
+
+          // Simpan ke Redis cache berdurasi 10 detik
+          await RedisUtils.set(cacheKey, statusCheck, 10);
+        }
+
+        if (!statusCheck.isActive) {
+          return next(
+            new AppError(
+              "Akun kasir Anda dinonaktifkan atau sedang tidak aktif. Hubungi owner.",
+              HttpStatus.FORBIDDEN,
+            ),
+          );
+        }
+
+        if (!statusCheck.outletIsOpen) {
+          return next(
+            new AppError(
+              "Outlet saat ini sedang tutup. Kasir tidak diperbolehkan bertransaksi pada outlet yang tutup.",
+              HttpStatus.FORBIDDEN,
+            ),
+          );
+        }
+      } catch (err) {
+        console.error("Gagal melakukan verifikasi keamanan kasir:", err);
+        return next(
+          new AppError(
+            "Gagal memverifikasi status kasir. Silakan coba beberapa saat lagi.",
+            HttpStatus.INTERNAL_SERVER_ERROR,
+          ),
+        );
+      }
     }
     next();
   };

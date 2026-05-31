@@ -2,6 +2,8 @@ import { ServiceStatus } from "@prisma/client";
 import { HttpStatus } from "../constants/http-status";
 import { Messages } from "../constants/message";
 import { AppError } from "../errors/app-error";
+import { BaseService } from "./base.service";
+import { db } from "../config/prisma";
 import { OutletRepository } from "../repositories/outlet.repository";
 import { CreateOutletInput, UpdateOutletInput } from "../schemas/outlet.schema";
 import { getBusinessByOwnerIdService } from "./business.service";
@@ -61,9 +63,12 @@ export async function createOutletService(
   await PlanLimitService.assertCanCreateOutlet(business.id);
   try {
     const outlet = await OutletRepository.create(data);
+    if (outlet.latitude !== null && outlet.longitude !== null) {
+      await OutletRepository.syncGeoLocation(outlet.id, outlet.longitude, outlet.latitude);
+    }
     await EventPublisher.publishOutletCreated(outlet);
     await PlanLimitService.invalidateUsageCache(business.id);
-    await invalidateMapCache();
+    await invalidateMapCache(outlet.id);
     return outlet;
   } catch (error: any) {
     if (error.code == "P2002") {
@@ -184,70 +189,227 @@ async function deleteKeysByPattern(pattern: string) {
 /**
  * Hapus seluruh cache yang berkaitan dengan map outlet.
  */
-export async function invalidateMapCache() {
+export async function invalidateMapCache(outletId?: string) {
   await deleteKeysByPattern("outlets:map:*");
+  if (outletId) {
+    await redis.del(`outlets:detail:${outletId}`);
+  } else {
+    await deleteKeysByPattern("outlets:detail:*");
+  }
 }
 
-/**
- * Cari outlet berdasarkan bounding box viewport peta.
- * Menggunakan Redis cache dengan TTL 24 jam (86400 detik) untuk efisiensi maksimal.
- * Cache akan di-invalidate secara aktif melalui service saat ada penambahan/perubahan data outlet.
- */
-export async function findOutletsInViewportService(
-  latMin: number,
-  latMax: number,
-  lngMin: number,
-  lngMax: number,
-  search?: string,
-) {
-  // Validasi bounding box
-  if (latMin >= latMax || lngMin >= lngMax) {
-    throw new AppError(
-      "Invalid bounding box: min harus lebih kecil dari max",
-      HttpStatus.BAD_REQUEST,
-    );
-  }
-  if (latMin < -90 || latMax > 90 || lngMin < -180 || lngMax > 180) {
-    throw new AppError(
-      "Bounding box di luar range koordinat yang valid",
-      HttpStatus.BAD_REQUEST,
-    );
-  }
+export class OutletService extends BaseService {
+  static create = createOutletService;
+  static getSlugs = getOutletSlugsService;
+  static findNearbyOutlets = findNearbyOutletsService;
+  static updateLocation = updateOutletLocationService;
+  static getById = getOutletByIdService;
+  static getBySlug = getOutletBySlugService;
+  static getAll = getAllOutletsService;
+  static getByBusinessId = getOutletsByBusinessIdService;
+  static update = updateOutletService;
+  static delete = deleteOutletService;
+  static getFeatured = getFeaturedOutletsService;
+  static uploadQRIS = uploadQRISService;
+  static getQRIS = getQRISService;
+  static getRevenueTrend = getOutletRevenueTrend;
+  static getAnalytics = getOutletAnalytics;
 
-  // Bangun cache key dengan rounding 4 desimal untuk cache hit yang lebih optimal
-  const r = (n: number) => Math.round(n * 10000) / 10000;
-  const cacheKey = `outlets:map:${r(latMin)}:${r(latMax)}:${r(lngMin)}:${r(lngMax)}${search ? `:${search.trim().toLowerCase()}` : ""}`;
-
-  // Cek Redis cache dulu
-  try {
-    const cached = await redis.get(cacheKey);
-    if (cached) {
-      return { outlets: JSON.parse(cached), fromCache: true };
+  /**
+   * Cari outlet berdasarkan bounding box viewport peta menggunakan Redis Geospatial.
+   * Dan melakukan fallback ke database query jika Redis Geospatial bermasalah.
+   */
+  static async findOutletsInViewport(
+    latMin: number,
+    latMax: number,
+    lngMin: number,
+    lngMax: number,
+    search?: string,
+  ) {
+    // Validasi bounding box
+    if (latMin >= latMax || lngMin >= lngMax) {
+      this.badRequest("Invalid bounding box: min harus lebih kecil dari max");
     }
-  } catch {
-    // Kalau Redis error, lanjut ke DB tanpa crash
+    if (latMin < -90 || latMax > 90 || lngMin < -180 || lngMax > 180) {
+      this.badRequest("Bounding box di luar range koordinat yang valid");
+    }
+
+    // Rounding 4 desimal untuk normalisasi cache key
+    const r = (n: number) => Math.round(n * 10000) / 10000;
+    const cacheKey = `outlets:map:${r(latMin)}:${r(latMax)}:${r(lngMin)}:${r(lngMax)}${search ? `:${search.trim().toLowerCase()}` : ""}`;
+
+    // Cek Redis JSON cache dulu
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        return { outlets: JSON.parse(cached), fromCache: true };
+      }
+    } catch {
+      // Abaikan jika Redis error, lanjut ke Geospatial / DB
+    }
+
+    // Pastikan geospatial cache terisi (self-heating cache)
+    try {
+      const exists = await redis.zcard("outlets:geo");
+      if (exists === 0) {
+        const allOutlets = await OutletRepository.findAllWithCoordinates();
+        if (allOutlets.length > 0) {
+          const pipeline = redis.pipeline();
+          for (const outlet of allOutlets) {
+            if (outlet.longitude !== null && outlet.latitude !== null) {
+              pipeline.geoadd("outlets:geo", outlet.longitude, outlet.latitude, outlet.id);
+            }
+          }
+          await pipeline.exec();
+        }
+      }
+    } catch (err) {
+      console.warn("Gagal memanaskan geospatial cache:", err);
+    }
+
+    // Hitung parameter untuk pencarian Geosearch BYBOX
+    const centerLng = (lngMin + lngMax) / 2;
+    const centerLat = (latMin + latMax) / 2;
+    // Jarak 1 derajat lintang = 110.57 km
+    const heightKm = Math.abs(latMax - latMin) * 110.57;
+    // Jarak 1 derajat bujur = 111.32 km * cos(lat)
+    const widthKm = Math.abs(lngMax - lngMin) * 111.32 * Math.cos(((latMin + latMax) * Math.PI) / 360);
+
+    let outlets: any[] = [];
+    let fromGeospatial = false;
+
+    try {
+      // Query pencarian bounding box geospatial dengan Redis
+      const outletIds = await redis.geosearch(
+        "outlets:geo",
+        "FROMLONLAT",
+        centerLng,
+        centerLat,
+        "BYBOX",
+        widthKm,
+        heightKm,
+        "km"
+      ) as string[];
+
+      if (outletIds && outletIds.length > 0) {
+        const keys = outletIds.map(id => `outlets:detail:${id}`);
+        const cachedData = await redis.mget(...keys);
+
+        const cachedOutlets: any[] = [];
+        const missingIds: string[] = [];
+
+        for (let i = 0; i < outletIds.length; i++) {
+          const id = outletIds[i];
+          const data = cachedData[i];
+          if (data) {
+            try {
+              cachedOutlets.push(JSON.parse(data));
+            } catch {
+              missingIds.push(id);
+            }
+          } else {
+            missingIds.push(id);
+          }
+        }
+
+        let fetchedOutlets: any[] = [];
+        if (missingIds.length > 0) {
+          fetchedOutlets = await db.outlet.findMany({
+            where: {
+              id: { in: missingIds }
+            },
+            include: {
+              business: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+              operatingHours: true,
+              _count: {
+                select: {
+                  staff: true,
+                  products: true,
+                },
+              },
+            },
+          });
+
+          // Simpan outlet yang di-fetch baru ke Redis detail cache
+          if (fetchedOutlets.length > 0) {
+            const pipeline = redis.pipeline();
+            for (const o of fetchedOutlets) {
+              pipeline.set(`outlets:detail:${o.id}`, JSON.stringify(o), "EX", 86400); // 24 jam
+            }
+            await pipeline.exec();
+          }
+        }
+
+        const allRawOutlets = [...cachedOutlets, ...fetchedOutlets];
+
+        // Filter pencarian nama secara case-insensitive di memori
+        let filteredOutlets = allRawOutlets;
+        if (search && search.trim() !== "") {
+          const searchLower = search.trim().toLowerCase();
+          filteredOutlets = allRawOutlets.filter(o => o.name && o.name.toLowerCase().includes(searchLower));
+        }
+
+        const outletsWithStatus = mapOutletsWithOpenStatus(filteredOutlets);
+        outlets = removeOperatingHoursFromOutlets(outletsWithStatus);
+        fromGeospatial = true;
+      }
+    } catch (err) {
+      console.warn("Redis GEOSEARCH/MGET bermasalah, menggunakan fallback query database:", err);
+      // Fallback ke standard database query
+      const outletsRaw = await db.outlet.findMany({
+        where: {
+          AND: [
+            { latitude: { gte: latMin } },
+            { latitude: { lte: latMax } },
+            { longitude: { gte: lngMin } },
+            { longitude: { lte: lngMax } },
+            { latitude: { not: null } },
+            { longitude: { not: null } },
+            ...(search && search.trim() !== "" ? [{
+              name: { contains: search.trim(), mode: "insensitive" as const }
+            }] : [])
+          ]
+        },
+        include: {
+          business: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          operatingHours: true,
+          _count: {
+            select: {
+              staff: true,
+              products: true,
+            },
+          },
+        },
+      });
+
+      const outletsWithStatus = mapOutletsWithOpenStatus(outletsRaw);
+      outlets = removeOperatingHoursFromOutlets(outletsWithStatus);
+    }
+
+    // Simpan hasil ke cache JSON (TTL 24 jam)
+    try {
+      if (outlets.length > 0) {
+        await redis.set(cacheKey, JSON.stringify(outlets), "EX", 86400);
+      }
+    } catch {
+      // Abaikan jika gagal simpan cache
+    }
+
+    return { outlets, fromCache: false, fromGeospatial };
   }
-
-  // Cache MISS — query database
-  const outletsRaw = await OutletRepository.findByBoundingBox(
-    latMin,
-    latMax,
-    lngMin,
-    lngMax,
-    search,
-  );
-  const outletsWithStatus = mapOutletsWithOpenStatus(outletsRaw);
-  const outlets = removeOperatingHoursFromOutlets(outletsWithStatus);
-
-  // Simpan ke Redis (TTL 24 jam)
-  try {
-    await redis.set(cacheKey, JSON.stringify(outlets), "EX", 86400);
-  } catch {
-    // Kalau Redis error saat set, tetap return data tanpa crash
-  }
-
-  return { outlets, fromCache: false };
 }
+
+export const findOutletsInViewportService = OutletService.findOutletsInViewport;
 
 export async function updateOutletLocationService(
   outletId: string,
@@ -283,7 +445,8 @@ export async function updateOutletLocationService(
     latitude,
     longitude,
   });
-  await invalidateMapCache();
+  await OutletRepository.syncGeoLocation(outletId, longitude, latitude);
+  await invalidateMapCache(outletId);
   return updated;
 }
 
@@ -419,6 +582,11 @@ export async function updateOutletService(
 
   const updatedOutlet = await OutletRepository.update(id, data);
 
+  // Sinkronisasikan ke Redis Geospatial jika koordinat diperbarui
+  if (updatedOutlet && updatedOutlet.latitude !== null && updatedOutlet.longitude !== null) {
+    await OutletRepository.syncGeoLocation(id, updatedOutlet.longitude, updatedOutlet.latitude);
+  }
+
   if (data.image && outlet.image && updatedOutlet) {
     ImageService.deleteImageByUrl(outlet.image);
   }
@@ -429,7 +597,7 @@ export async function updateOutletService(
   redis.del(`user:${ownerId}`);
   if (data.manualQrImageUrl && outlet.manualQrImageUrl)
     ImageService.deleteImageByUrl(outlet.manualQrImageUrl);
-  await invalidateMapCache();
+  await invalidateMapCache(id);
   return updatedOutlet;
 }
 
@@ -443,10 +611,18 @@ export async function deleteOutletService(id: string, ownerId: string) {
     );
   }
   const deletedOutlet = await OutletRepository.delete(id);
+  
+  // Hapus dari indeks geopasial Redis
+  try {
+    await redis.zrem("outlets:geo", id);
+  } catch (err) {
+    console.warn("Gagal menghapus outlet dari indeks geospatial:", err);
+  }
+
   redis.del(`user:${ownerId}`);
   if (outlet.image) ImageService.deleteImageByUrl(outlet.image);
   await PlanLimitService.invalidateUsageCache(business.id);
-  await invalidateMapCache();
+  await invalidateMapCache(id);
   return deletedOutlet;
 }
 

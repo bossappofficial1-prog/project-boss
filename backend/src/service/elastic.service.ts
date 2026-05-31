@@ -11,7 +11,7 @@ import {
     ORDER_INDEX_MAPPING,
     BUSINESS_INDEX_MAPPING
 } from '../config/elastic-mappings';
-import logger from '../utils/winston.logger';
+import logger from '../utils/pino.logger';
 import { getAllOutletsService } from './outlet.service';
 import { Outlet } from '@prisma/client';
 
