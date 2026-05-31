@@ -60,7 +60,7 @@ export default function CashierLayoutClient({
       if (typeof window === "undefined") return undefined;
 
       try {
-        const rawData = sessionStorage.getItem(CASHIER_SESSION_CACHE_KEY);
+        const rawData = localStorage.getItem(CASHIER_SESSION_CACHE_KEY) || sessionStorage.getItem(CASHIER_SESSION_CACHE_KEY);
         return rawData ? JSON.parse(rawData) : undefined;
       } catch {
         return undefined;
@@ -144,6 +144,7 @@ export default function CashierLayoutClient({
       await apiClient.post("/auth/logout");
       if (typeof window !== "undefined") {
         sessionStorage.removeItem(CASHIER_SESSION_CACHE_KEY);
+        localStorage.removeItem(CASHIER_SESSION_CACHE_KEY);
       }
       queryClient.removeQueries({ queryKey: ["cashier-auth"] });
       toast.success("Logout berhasil");
@@ -158,10 +159,9 @@ export default function CashierLayoutClient({
     if (!cashierData || typeof window === "undefined") return;
 
     try {
-      sessionStorage.setItem(
-        CASHIER_SESSION_CACHE_KEY,
-        JSON.stringify(cashierData),
-      );
+      const dataStr = JSON.stringify(cashierData);
+      sessionStorage.setItem(CASHIER_SESSION_CACHE_KEY, dataStr);
+      localStorage.setItem(CASHIER_SESSION_CACHE_KEY, dataStr);
     } catch {
       // ignore session storage failures
     }
@@ -170,8 +170,30 @@ export default function CashierLayoutClient({
   useEffect(() => {
     if (!isCashierAuthError) return;
 
-    toast.error("Sesi login tidak valid, silakan login kembali");
     if (typeof window !== "undefined") {
+      // Jangan redirect jika sedang offline
+      if (!navigator.onLine) {
+        toast.warning("Koneksi internet terputus. Menggunakan sesi kasir lokal.");
+        return;
+      }
+
+      // Ambil error response status jika ada (dari Axios / Fetch)
+      const err = isCashierAuthError as any;
+      const status = err?.response?.status || err?.status;
+      
+      // Jika error bukan karena 401/403 (misalnya Network Error / DNS Error / Server down), jangan paksa logout
+      if (status && status !== 401 && status !== 403) {
+        toast.warning("Gagal memperbarui sesi kasir dari server. Menggunakan sesi lokal.");
+        return;
+      }
+      
+      // Jika memang tidak ada status (misal Axios Network Error karena putus koneksi di tengah jalan), jangan paksa redirect
+      if (!status && err?.message?.toLowerCase().includes("network error")) {
+        toast.warning("Gagal memperbarui sesi kasir karena masalah jaringan. Menggunakan sesi lokal.");
+        return;
+      }
+
+      toast.error("Sesi login tidak valid, silakan login kembali");
       window.location.href = "/auth/login/cashier";
     }
   }, [isCashierAuthError]);

@@ -43,7 +43,62 @@ export function saveOfflineOrder(order: any) {
 export function usePosV2Products(outletId: string, search?: string) {
     return useQuery({
         queryKey: [...KEYS.products(outletId), search],
-        queryFn: () => posV2Api.getProducts(outletId, search),
+        queryFn: async () => {
+            const cacheKey = `boss_products_cache_${outletId}`;
+            const isOffline = typeof window !== "undefined" && !navigator.onLine;
+
+            if (isOffline) {
+                const cached = localStorage.getItem(cacheKey);
+                if (cached) {
+                    try {
+                        const parsed = JSON.parse(cached);
+                        if (search) {
+                            const query = search.toLowerCase();
+                            const filtered = parsed.products.filter((p: any) => 
+                                p.name.toLowerCase().includes(query) || 
+                                p.sku?.toLowerCase().includes(query) || 
+                                p.barcode?.toLowerCase().includes(query)
+                            );
+                            return { products: filtered };
+                        }
+                        return parsed;
+                    } catch (e) {
+                        console.error("Gagal parse cache produk:", e);
+                    }
+                }
+                return { products: [] };
+            }
+
+            try {
+                const data = await posV2Api.getProducts(outletId, search);
+                // Hanya cache data lengkap (tanpa filter search) agar bisa difilter offline secara akurat
+                if (!search) {
+                    localStorage.setItem(cacheKey, JSON.stringify(data));
+                }
+                return data;
+            } catch (err) {
+                console.warn("Gagal mengambil produk, menggunakan cache lokal:", err);
+                const cached = localStorage.getItem(cacheKey);
+                if (cached) {
+                    try {
+                        const parsed = JSON.parse(cached);
+                        if (search) {
+                            const query = search.toLowerCase();
+                            const filtered = parsed.products.filter((p: any) => 
+                                p.name.toLowerCase().includes(query) || 
+                                p.sku?.toLowerCase().includes(query) || 
+                                p.barcode?.toLowerCase().includes(query)
+                            );
+                            return { products: filtered };
+                        }
+                        return parsed;
+                    } catch (e) {
+                        // ignore
+                    }
+                }
+                throw err;
+            }
+        },
         enabled: !!outletId,
         staleTime: 30_000,
     });
@@ -52,16 +107,52 @@ export function usePosV2Products(outletId: string, search?: string) {
 export function usePosV2CashSummary(outletId: string) {
     return useQuery({
         queryKey: KEYS.cashSummary(outletId),
-        queryFn: () => posV2Api.getCashSummary(outletId),
+        queryFn: async () => {
+            const cacheKey = `boss_cash_summary_cache_${outletId}`;
+            const isOffline = typeof window !== "undefined" && !navigator.onLine;
+
+            if (isOffline) {
+                const cached = localStorage.getItem(cacheKey);
+                return cached ? JSON.parse(cached) : null;
+            }
+
+            try {
+                const data = await posV2Api.getCashSummary(outletId);
+                localStorage.setItem(cacheKey, JSON.stringify(data));
+                return data;
+            } catch (err) {
+                const cached = localStorage.getItem(cacheKey);
+                if (cached) return JSON.parse(cached);
+                return null;
+            }
+        },
         enabled: !!outletId,
-        refetchInterval: 60_000,
+        refetchInterval: typeof window !== "undefined" && navigator.onLine ? 60_000 : false,
     });
 }
 
 export function usePosV2RecentOrders(outletId: string) {
     return useQuery({
         queryKey: KEYS.recentOrders(outletId),
-        queryFn: () => posV2Api.getRecentOrders(outletId),
+        queryFn: async () => {
+            const cacheKey = `boss_recent_orders_cache_${outletId}`;
+            const isOffline = typeof window !== "undefined" && !navigator.onLine;
+
+            if (isOffline) {
+                const cached = localStorage.getItem(cacheKey);
+                return cached ? JSON.parse(cached) : [];
+            }
+
+            try {
+                const data = await posV2Api.getRecentOrders(outletId);
+                localStorage.setItem(cacheKey, JSON.stringify(data));
+                return data;
+            } catch (err) {
+                const cached = localStorage.getItem(cacheKey);
+                if (cached) return JSON.parse(cached);
+                return [];
+            }
+        },
         enabled: !!outletId,
         staleTime: 15_000,
     });
@@ -70,7 +161,25 @@ export function usePosV2RecentOrders(outletId: string) {
 export function usePosV2OpenOrders(outletId: string) {
     return useQuery({
         queryKey: KEYS.openOrders(outletId),
-        queryFn: () => posV2Api.getOpenOrders(outletId),
+        queryFn: async () => {
+            const cacheKey = `boss_open_orders_cache_${outletId}`;
+            const isOffline = typeof window !== "undefined" && !navigator.onLine;
+
+            if (isOffline) {
+                const cached = localStorage.getItem(cacheKey);
+                return cached ? JSON.parse(cached) : [];
+            }
+
+            try {
+                const data = await posV2Api.getOpenOrders(outletId);
+                localStorage.setItem(cacheKey, JSON.stringify(data));
+                return data;
+            } catch (err) {
+                const cached = localStorage.getItem(cacheKey);
+                if (cached) return JSON.parse(cached);
+                return [];
+            }
+        },
         enabled: !!outletId,
         staleTime: 10_000,
     });
@@ -96,7 +205,25 @@ export function usePosV2AvailableStaff(productId: string, slotId: string) {
 export function usePosV2OutletQris(outletId: string) {
     return useQuery({
         queryKey: KEYS.outletQris(outletId),
-        queryFn: () => posV2Api.getOutletQris(outletId),
+        queryFn: async () => {
+            const cacheKey = `boss_qris_cache_${outletId}`;
+            const isOffline = typeof window !== "undefined" && !navigator.onLine;
+
+            if (isOffline) {
+                const cached = localStorage.getItem(cacheKey);
+                return cached ? JSON.parse(cached) : null;
+            }
+
+            try {
+                const data = await posV2Api.getOutletQris(outletId);
+                localStorage.setItem(cacheKey, JSON.stringify(data));
+                return data;
+            } catch (err) {
+                const cached = localStorage.getItem(cacheKey);
+                if (cached) return JSON.parse(cached);
+                return null;
+            }
+        },
         enabled: !!outletId,
         staleTime: 5 * 60_000,
     });

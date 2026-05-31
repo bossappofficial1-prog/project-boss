@@ -8,6 +8,7 @@ import {
   type UpdateLoyaltyTierRequest,
   type CreateLoyaltyRewardRequest,
   type UpdateLoyaltyRewardRequest,
+  type LoyaltyReward,
 } from "@/lib/apis/loyalty";
 
 const KEYS = {
@@ -23,9 +24,27 @@ const KEYS = {
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 export function useLoyaltyConfig(outletId: string) {
-  return useQuery({
+  return useQuery<LoyaltyConfig | null>({
     queryKey: KEYS.config(outletId),
-    queryFn: () => loyaltyApi.getConfig(outletId),
+    queryFn: async () => {
+      const cacheKey = `boss_loyalty_config_cache_${outletId}`;
+      const isOffline = typeof window !== "undefined" && !navigator.onLine;
+
+      if (isOffline) {
+        const cached = localStorage.getItem(cacheKey);
+        return cached ? (JSON.parse(cached) as LoyaltyConfig) : null;
+      }
+
+      try {
+        const data = await loyaltyApi.getConfig(outletId);
+        localStorage.setItem(cacheKey, JSON.stringify(data));
+        return data;
+      } catch (err) {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) return JSON.parse(cached) as LoyaltyConfig;
+        throw err;
+      }
+    },
     enabled: !!outletId,
     staleTime: 1000 * 60 * 5,
   });
@@ -88,9 +107,27 @@ export function useDeleteLoyaltyTier() {
 
 // ─── Rewards ──────────────────────────────────────────────────────────────────
 export function useLoyaltyRewards(outletId: string, includeInactive = false) {
-  return useQuery({
+  return useQuery<LoyaltyReward[]>({
     queryKey: [...KEYS.rewards(outletId), includeInactive],
-    queryFn: () => loyaltyApi.getRewards(outletId, includeInactive),
+    queryFn: async () => {
+      const cacheKey = `boss_loyalty_rewards_cache_${outletId}_${includeInactive}`;
+      const isOffline = typeof window !== "undefined" && !navigator.onLine;
+
+      if (isOffline) {
+        const cached = localStorage.getItem(cacheKey);
+        return cached ? (JSON.parse(cached) as LoyaltyReward[]) : [];
+      }
+
+      try {
+        const data = await loyaltyApi.getRewards(outletId, includeInactive);
+        localStorage.setItem(cacheKey, JSON.stringify(data));
+        return data;
+      } catch (err) {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) return JSON.parse(cached) as LoyaltyReward[];
+        return [];
+      }
+    },
     enabled: !!outletId,
     staleTime: 1000 * 60 * 5,
   });
