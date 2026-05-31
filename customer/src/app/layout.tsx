@@ -55,9 +55,7 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "default",
     title: "BOSS",
-    startupImage: [
-      `${process.env.NEXT_PUBLIC_SITE_URL}/assets/logo/og-image.png`,
-    ],
+    startupImage: [`https://customer.bossapp.id/assets/logo/og-image.png`],
   },
   openGraph: {
     title: "BOSS - Pesan & Pantau Ordermu",

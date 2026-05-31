@@ -75,7 +75,7 @@ export const metadata: Metadata = {
     title: "BOSS Dashboard - Dukungan Operasional Bisnismu",
     description:
       "Kelola outlet, transaksi, dan insight bisnis cukup lewat satu dashboard BOSS.",
-    images: ["/og-image.jpg"],
+    images: ["/images/banner-op-dashboard.png"],
     creator: "@boss_dashboard",
   },
   icons: {
