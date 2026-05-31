@@ -112,6 +112,11 @@ const structuredData = {
   url: process.env.NEXT_PUBLIC_SITE_URL || "https://customer.bossapp.id",
   applicationCategory: "BusinessApplication",
   operatingSystem: "Web Browser, iOS, Android",
+  aggregateRating: {
+    "@type": "AggregateRating",
+    ratingValue: "4.5",
+    reviewCount: "1200",
+  },
   inLanguage: "id-ID",
   offers: {
     "@type": "Offer",

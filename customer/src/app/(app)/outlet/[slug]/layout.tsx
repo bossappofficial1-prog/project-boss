@@ -8,7 +8,15 @@ type Params = Promise<{ slug: string }>;
 const BASE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://customer.bossapp.id";
 const FALLBACK_IMAGE = `${BASE_URL}/assets/logo/og-image.png`;
-const DAYS = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+const DAYS = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
 
 async function getOutlet(slug: string): Promise<OutletDetails | null> {
   return serverFetch<OutletDetails>(`/outlets/slug/${slug}`, {
@@ -197,6 +205,11 @@ export default async function Layout({
 
   const image = resolveImage(outlet);
   const canonicalUrl = `${BASE_URL}/outlet/${slug}`;
+  const instagramUrl = outlet.instagramUrl
+    ? outlet.instagramUrl.startsWith("https")
+      ? outlet.instagramUrl
+      : `https://instagram.com/${outlet.instagramUrl}`
+    : undefined;
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -206,7 +219,8 @@ export default async function Layout({
     image,
     url: canonicalUrl,
     telephone: outlet.phone || undefined,
-    sameAs: outlet.instagramUrl ? [outlet.instagramUrl] : undefined,
+    priceRange: "$$",
+    sameAs: outlet.instagramUrl ? [instagramUrl] : undefined,
     address: outlet.address
       ? {
           "@type": "PostalAddress",
