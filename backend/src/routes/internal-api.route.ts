@@ -15,11 +15,12 @@ import { createPosOrderController, getPosCashSummaryController } from '../contro
 import { validateSchema } from '../middleware/zod.middleware';
 import { createPosOrderSchema } from '../schemas/pos-order.schema';
 import { authorize, protect } from '../middleware/auth.middleware';
+import { protectInternal } from '../middleware/internal-auth.middleware';
 
 const router = Router();
 
 // Endpoint untuk mendapatkan transaksi yang akan kedaluwarsa
-router.get('/expiring-transactions', getExpiringTransactions);
+router.get('/expiring-transactions', protectInternal, getExpiringTransactions);
 
 // Endpoint POS untuk kasir dashboard
 router.post(
@@ -38,19 +39,19 @@ router.get(
 );
 
 // Endpoint untuk menandai bahwa pengingat telah dikirim
-router.post('/order/:orderId/mark-reminder-sent', markReminderSent);
+router.post('/order/:orderId/mark-reminder-sent', protectInternal, markReminderSent);
 
 // Endpoint untuk mendapatkan detail pesanan
-router.get('/order/:orderId', getOrderDetails);
+router.get('/order/:orderId', protectInternal, getOrderDetails);
 
 // Endpoint untuk mendapatkan antrian outlet
-router.get('/outlet-queue/:outletId', getOutletQueue);
+router.get('/outlet-queue/:outletId', protectInternal, getOutletQueue);
 
 // Endpoint untuk consumer memperbarui status pembayaran
-router.post('/orders/update-payment-status', updatePaymentStatus);
+router.post('/orders/update-payment-status', protectInternal, updatePaymentStatus);
 
 // Endpoint test untuk WhatsApp notification
-router.post('/test/whatsapp', asyncHandler(async (req: Request, res: Response) => {
+router.post('/test/whatsapp', protectInternal, asyncHandler(async (req: Request, res: Response) => {
     const { orderId, phoneNumber } = req.body;
     console.log(`🧪 Testing WhatsApp notification for order: ${orderId || 'TEST123'}`);
 
@@ -64,7 +65,9 @@ router.post('/test/whatsapp', asyncHandler(async (req: Request, res: Response) =
     }
 
     return ResponseUtil.success(res, { message: 'WhatsApp test notification sent' });
-}));// Endpoint untuk mengirim notifikasi posisi antrian
-router.post('/send-queue-notification', sendQueueNotification);
+}));
+
+// Endpoint untuk mengirim notifikasi posisi antrian
+router.post('/send-queue-notification', protectInternal, sendQueueNotification);
 
 export default router;

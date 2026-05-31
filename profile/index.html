@@ -4,204 +4,241 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-
-  <!-- ═══ PRIMARY SEO ═══ -->
-  <title>
-    BOSS — Platform Kasir, KDS & Manajemen Bisnis untuk UMKM Indonesia
-  </title>
+  
+  <title>BOSS - Aplikasi Kasir & Manajemen Bisnis UMKM Indonesia</title>
   <meta name="description"
-    content="BOSS — platform all-in-one untuk Owner, Kasir, Kitchen, dan Pelanggan. POS kasir, Kitchen Display System, manajemen stok, aplikasi pelanggan, dan laporan bisnis. Multi-outlet, QRIS, real-time. Coba gratis." />
+    content="BOSS - aplikasi kasir (POS), Kitchen Display System, manajemen stok, laporan keuangan, dan aplikasi pelanggan untuk UMKM Indonesia. Coba gratis 35 hari, tanpa kartu kredit." />
   <meta name="keywords"
-    content="aplikasi kasir, pos umkm, kitchen display system, kds, software kasir, aplikasi antrian, manajemen stok, qris umkm, bossapp, business one stop system, kasir online, aplikasi pelanggan, e-commerce umkm, multi outlet" />
+    content="aplikasi kasir gratis, pos umkm indonesia, kitchen display system, kds, software kasir online, manajemen stok umkm, qris kasir, business one stop system, kasir digital, aplikasi antrian pelanggan, multi outlet pos, laporan keuangan umkm" />
   <meta name="author" content="BOSS" />
   <meta name="robots" content="index, follow" />
   <meta name="theme-color" content="#06060a" />
+
+  <meta name="geo.region" content="ID" />
+  <meta name="geo.placename" content="Indonesia" />
   <link rel="canonical" href="https://bossapp.id/" />
+  <link rel="alternate" hreflang="id" href="https://bossapp.id/" />
+  <link rel="alternate" hreflang="x-default" href="https://bossapp.id/" />
 
   <!-- ═══ FAVICON ═══ -->
   <link rel="icon" type="image/png" href="https://profile.bossapp.id/boss-icon.png" />
   <link rel="apple-touch-icon" href="https://profile.bossapp.id/boss-icon.png" />
 
-  <!-- ═══ OPEN GRAPH / FACEBOOK / WHATSAPP ═══ -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://bossapp.id/" />
-  <meta property="og:title" content="BOSS — Platform Kasir, KDS & Manajemen Bisnis untuk UMKM" />
+  <meta property="og:title" content="BOSS - Aplikasi Kasir & Manajemen Bisnis UMKM Indonesia" />
   <meta property="og:description"
-    content="Platform all-in-one untuk Owner, Kasir, Kitchen, dan Pelanggan. POS, KDS, stok, antrian, laporan — tanpa instalasi." />
-  <meta property="og:image" content="https://profile.bossapp.id/boss-icon.png" />
+    content="Platform all-in-one untuk Owner, Kasir, Dapur, dan Pelanggan. POS, KDS, stok, antrian, laporan keuangan — coba gratis 35 hari." />
+  <meta property="og:image" content="https://profile.bossapp.id/boss-og-cover.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="BOSS - Platform Kasir dan Manajemen Bisnis UMKM Indonesia" />
   <meta property="og:site_name" content="BOSS" />
+  <meta property="og:locale" content="id_ID" />
 
   <!-- ═══ TWITTER ═══ -->
-  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:url" content="https://bossapp.id/" />
-  <meta name="twitter:title" content="BOSS — Platform Kasir, KDS & Manajemen Bisnis" />
-  <meta name="twitter:description" content="Platform all-in-one untuk Owner, Kasir, Kitchen, dan Pelanggan." />
-  <meta name="twitter:image" content="https://profile.bossapp.id/boss-icon.png" />
+  <meta name="twitter:title" content="BOSS - Aplikasi Kasir & Manajemen Bisnis UMKM" />
+  <meta name="twitter:description"
+    content="Platform all-in-one untuk Owner, Kasir, Dapur, dan Pelanggan. Coba gratis 35 hari." />
+  <meta name="twitter:image" content="https://profile.bossapp.id/boss-og-cover.png" />
+  <meta name="twitter:image:alt" content="BOSS - Aplikasi Kasir UMKM Indonesia" />
 
+  <!-- ═══ SCHEMA: WebSite ═══ -->
   <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "BOSS",
+      "url": "https://bossapp.id/",
+      "description": "Platform kasir dan manajemen bisnis all-in-one untuk UMKM Indonesia.",
+      "inLanguage": "id-ID",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://bossapp.id/?s={search_term_string}",
+        "query-input": "required name=search_term_string"
+      },
+      "sameAs": [
+        "https://cashier.bossapp.id/",
+        "https://dashboard.bossapp.id/"
+      ]
+    }
+  </script>
+
+  <!-- ═══ SCHEMA: SoftwareApplication ═══ -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "BOSS (Business One Stop System)",
+      "url": "https://bossapp.id/",
+      "screenshot": "https://profile.bossapp.id/boss-og-cover.png",
+      "operatingSystem": "Web Browser, iOS, Android",
+      "applicationCategory": "BusinessApplication",
+      "applicationSubCategory": "POS Kasir Online, Manajemen Bisnis, Kitchen Display System",
+      "inLanguage": "id-ID",
+      "offers": [
+        {
+          "@type": "Offer",
+          "name": "Trial",
+          "price": "0",
+          "priceCurrency": "IDR",
+          "description": "Gratis 35 hari, fitur dasar tanpa kartu kredit."
+        },
+        {
+          "@type": "Offer",
+          "name": "Basic",
+          "priceCurrency": "IDR",
+          "description": "Hingga 2 outlet, fitur kasir & stok lengkap."
+        },
+        {
+          "@type": "Offer",
+          "name": "Pro",
+          "priceCurrency": "IDR",
+          "description": "Outlet & staff tanpa batas, dashboard terpusat, semua fitur."
+        }
+      ],
+      "description": "BOSS adalah platform kasir (POS), manajemen stok, antrian, Kitchen Display System, dan aplikasi pelanggan untuk UMKM Indonesia. Satu platform untuk Owner, Kasir, Dapur, dan Pelanggan.",
+      "featureList": [
+        "POS Kasir Digital dengan manajemen meja",
+        "Antrian pelanggan real-time (kanban)",
+        "Kitchen Display System (KDS) 3 lane",
+        "Manajemen stok & supplier dengan kalkulator HPP",
+        "Laporan keuangan: P&L, Business Health, Peak Hours",
+        "Multi-outlet: transfer stok, dashboard global, staff management",
+        "Aplikasi pelanggan: cari outlet, pesan, bayar, tracking",
+        "Pembayaran digital: QRIS, Virtual Account, Manual",
+        "PWA: offline support, push notification, installable"
+      ],
+      "potentialAction": {
+        "@type": "ViewAction",
+        "target": "https://bossapp.id/#harga",
+        "name": "Lihat Paket & Harga"
+      },
+      "creator": {
+        "@type": "Organization",
         "name": "BOSS",
         "url": "https://bossapp.id/",
         "sameAs": [
           "https://cashier.bossapp.id/",
           "https://dashboard.bossapp.id/"
         ]
+      },
+      "audience": {
+        "@type": "Audience",
+        "audienceType": "UMKM Indonesia, Pemilik Bisnis, Kasir, Chef/Koki"
       }
-    </script>
+    }
+  </script>
 
+  <!-- ═══ SCHEMA: BreadcrumbList ═══ -->
   <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
-        "name": "BOSS (Business One Stop System)",
-        "operatingSystem": "Web Browser, iOS, Android",
-        "applicationCategory": "BusinessApplication",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "IDR"
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Beranda",
+          "item": "https://bossapp.id/"
         },
-        "description": "Platform kasir (POS), manajemen stok, antrian, kitchen display, dan aplikasi pelanggan untuk UMKM Indonesia. Satu platform untuk Owner, Kasir, Kitchen, dan Pelanggan.",
-        "featureList": [
-          "POS Kasir Digital dengan manajemen meja",
-          "Antrian pelanggan real-time (kanban)",
-          "Pesanan barang multi-status",
-          "Manajemen meja & bill (generate, cetak, bayar)",
-          "Purchase Order Bahan (POB)",
-          "Pengeluaran harian dengan kategori & lampiran",
-          "Reservasi meja dari kasir",
-          "Scan tiket via QR code",
-          "Kitchen Display System (KDS) 3 lane",
-          "Dashboard KPI dengan revenue & order chart",
-          "Manajemen produk dengan kategori & import/export",
-          "Manajemen stok & supplier dengan kalkulator HPP",
-          "Manajemen order multi-status per outlet",
-          "Manajemen pelanggan dengan histori transaksi",
-          "Laporan keuangan: P&L, Business Health, Peak Hours",
-          "Tools analitik: BEP, Target Sales, Profit Margin",
-          "Multi-outlet: transfer stok, dashboard global, staff management",
-          "Aplikasi pelanggan: cari outlet, pesan, bayar, tracking",
-          "Pembayaran digital: QRIS, Virtual Account, Manual",
-          "PWA: offline support, push notification, installable"
-        ],
-        "creator": {
-          "@type": "Organization",
-          "name": "BOSS",
-          "sameAs": [
-            "https://bossapp.id/",
-            "https://cashier.bossapp.id/",
-            "https://dashboard.bossapp.id/"
-          ]
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Fitur",
+          "item": "https://bossapp.id/#fitur"
         },
-        "audience": {
-          "@type": "Audience",
-          "audienceType": "UMKM Indonesia, Pemilik Bisnis, Kasir, Koki"
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Harga",
+          "item": "https://bossapp.id/#harga"
         },
-        "applicationSubCategory": "POS Kasir Online, Manajemen Bisnis, Kitchen Display System"
-      }
-    </script>
+        {
+          "@type": "ListItem",
+          "position": 4,
+          "name": "FAQ",
+          "item": "https://bossapp.id/#faq"
+        }
+      ]
+    }
+  </script>
 
+  <!-- ═══ SCHEMA: FAQPage ═══ -->
   <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-          {
-            "@type": "ListItem",
-            "position": 1,
-            "name": "Beranda",
-            "item": "https://bossapp.id/"
-          },
-          {
-            "@type": "ListItem",
-            "position": 2,
-            "name": "Fitur",
-            "item": "https://bossapp.id/#fitur"
-          },
-          {
-            "@type": "ListItem",
-            "position": 3,
-            "name": "Harga",
-            "item": "https://bossapp.id/#harga"
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Apakah BOSS benar-benar gratis?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Ya, paket Trial sepenuhnya gratis selama 35 hari. Anda bisa mencoba fitur-fitur dasar tanpa kartu kredit."
           }
-        ]
-      }
-    </script>
-
-  <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        "mainEntity": [
-          {
-            "@type": "Question",
-            "name": "Apakah BOSS benar-benar gratis?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Ya, paket Trial sepenuhnya gratis selama 35 hari. Anda bisa mencoba fitur-fitur dasar tanpa kartu kredit."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Apakah bisa dipakai di HP?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Ya, BOSS berbasis web responsif — bisa diakses dari browser HP, tablet, maupun komputer tanpa instalasi."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Apakah mendukung pembayaran digital?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Ya, BOSS mendukung QRIS, Virtual Account, dan pembayaran manual. Semua transaksi tercatat otomatis."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Bisa untuk jenis bisnis apa saja?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "BOSS cocok untuk warung makan, kafe, toko retail, barbershop, salon, laundry, apotek, service bisnis, dan hampir semua UMKM."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Apakah bisa untuk banyak cabang?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Ya, paket Basic mendukung 2 outlet, dan Pro mendukung outlet dan staff tanpa batas dengan dashboard terpusat."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Apa itu Kitchen Display System?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "KDS adalah layar digital untuk dapur dengan 3 lane: Antrian, Dimasak, Siap Saji. Notifikasi suara otomatis saat order baru."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Bagaimana cara upgrade paket?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Upgrade kapan saja dari dashboard owner. Pilih paket Basic atau Pro, bayar, dan fitur aktif langsung dengan pro-rate otomatis."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Apakah data bisnis saya aman?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Data dienkripsi, disimpan di cloud aman, backup otomatis. Setiap akses staff tercatat untuk audit trail."
-            }
+        },
+        {
+          "@type": "Question",
+          "name": "Apakah BOSS bisa dipakai di HP?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Ya, BOSS berbasis web responsif — bisa diakses dari browser HP, tablet, maupun komputer tanpa instalasi apapun."
           }
-        ]
-      }
-    </script>
+        },
+        {
+          "@type": "Question",
+          "name": "Apakah BOSS mendukung pembayaran digital seperti QRIS?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Ya, BOSS mendukung QRIS, Virtual Account, dan pembayaran manual. Semua transaksi tercatat otomatis di laporan keuangan."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "BOSS cocok untuk jenis bisnis apa saja?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "BOSS cocok untuk warung makan, kafe, toko retail, barbershop, salon, laundry, apotek, dan hampir semua jenis UMKM di Indonesia."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Apakah BOSS bisa digunakan untuk banyak cabang?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Ya, paket Basic mendukung hingga 2 outlet, dan paket Pro mendukung outlet dan staff tanpa batas dengan dashboard terpusat."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Apa itu Kitchen Display System (KDS) di BOSS?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "KDS adalah layar digital untuk dapur dengan 3 lane: Antrian, Dimasak, dan Siap Saji. Dilengkapi notifikasi suara otomatis setiap ada order baru masuk."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Bagaimana cara upgrade paket BOSS?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Upgrade kapan saja langsung dari dashboard owner. Pilih paket Basic atau Pro, lakukan pembayaran, dan fitur langsung aktif dengan hitungan pro-rate otomatis."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Apakah data bisnis saya aman di BOSS?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Data bisnis Anda disimpan di cloud dan dibackup secara otomatis. Setiap akses staff tercatat sehingga aktivitas bisnis selalu bisa dipantau."
+          }
+        }
+      ]
+    }
+  </script>
 
   <!-- Prevent Flash of Incorrect Theme -->
   <script>

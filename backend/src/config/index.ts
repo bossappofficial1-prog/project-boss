@@ -72,4 +72,5 @@ export const config = {
     publicVapidKey: process.env.PUBLIC_VAPID_KEY || "",
     privateVapidKey: process.env.PRIVATE_VAPID_KEY || "",
   },
+  INTERNAL_API_KEY: process.env.INTERNAL_API_KEY || "rahasia-internal-key-abc-123",
 } as const;
