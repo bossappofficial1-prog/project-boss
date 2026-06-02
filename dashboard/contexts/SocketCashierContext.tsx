@@ -3,8 +3,6 @@
 import { getSocket } from "@/lib/socket-v2";
 import { formatCurrency } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
-import { ShoppingBag, User, CreditCard, ArrowRight } from "lucide-react";
-import { useRouter } from "next/navigation";
 import React, {
   createContext,
   useContext,
@@ -18,6 +16,29 @@ import { SOCKET_EVENT, type SocketEvents } from "@/types/socket";
 
 const SocketCashierContext = createContext<Socket | null>(null);
 
+const speakText = (text: string) => {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "id-ID";
+
+  const setVoiceAndSpeak = () => {
+    const voices = window.speechSynthesis.getVoices();
+    const indonesianVoice = voices.find(
+      (v) =>
+        v.lang.includes("id") || v.name.toLowerCase().includes("indonesia"),
+    );
+    if (indonesianVoice) utterance.voice = indonesianVoice;
+    window.speechSynthesis.speak(utterance);
+  };
+
+  if (window.speechSynthesis.getVoices().length) {
+    setVoiceAndSpeak();
+  } else {
+    window.speechSynthesis.onvoiceschanged = setVoiceAndSpeak;
+  }
+};
+
 export const SocketCashierProvider = ({
   children,
   outletId,
@@ -27,78 +48,47 @@ export const SocketCashierProvider = ({
 }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const notifAudioRef = useRef<HTMLAudioElement | null>(null);
-  const router = useRouter();
   const qc = useQueryClient();
 
   useEffect(() => {
-    const socketInstance = getSocket();
-    setSocket(socketInstance);
+    setSocket(getSocket());
   }, []);
 
   useEffect(() => {
     if (!socket || !outletId) return;
 
-    const joinOutlet = (payload: any) => {
-      if (!socket && !outletId) return;
-      if (!notifAudioRef.current) {
-        notifAudioRef.current = new Audio("/sounds/order-incoming.wav");
-        notifAudioRef.current.load();
-      }
-      qc.invalidateQueries({ queryKey: ["badge-count", outletId] });
-
-      notifAudioRef.current
-        .play()
-        .catch((err) => console.warn("Audio gagal diputar:", err));
-
-      // Text-to-Speech verbal announcement
-      if (typeof window !== "undefined" && "speechSynthesis" in window) {
-        const itemsName = payload.itemsDescription || "Produk";
-
-        // Format the currency amount verbally in Indonesian
-        const verbalAmount = new Intl.NumberFormat("id-ID", {
-          style: "currency",
-          currency: "IDR",
-          maximumFractionDigits: 0,
-        }).format(payload.amount);
-
-        const verbalText = `Ada pesanan masuk, ${itemsName}, senilai ${verbalAmount}`;
-
-        setTimeout(() => {
-          const utterance = new SpeechSynthesisUtterance(verbalText);
-          utterance.lang = "id-ID";
-
-          // Search for Indonesian voice
-          const voices = window.speechSynthesis.getVoices();
-          const indonesianVoice = voices.find(
-            (voice) =>
-              voice.lang.includes("id") ||
-              voice.name.toLowerCase().includes("indonesia"),
-          );
-          if (indonesianVoice) {
-            utterance.voice = indonesianVoice;
-          }
-
-          window.speechSynthesis.speak(utterance);
-        }, 800);
-      }
-    };
-
     const handleConnect = () => {
-      console.log(
-        `[SocketCashier] Connected/Reconnected for outlet: ${outletId}`,
-      );
-      // Re-join the outlet room upon every successful connection
       socket.emit("cashier:join", outletId);
       socket.emit(SOCKET_EVENT.JOIN_OUTLET, { outletId });
     };
 
-    // If the socket is somehow already connected when this runs, join immediately
-    if (socket.connected) {
-      handleConnect();
-    }
+    const handleOrderEvent = (payload: any) => {
+      qc.invalidateQueries({ queryKey: ["badge-count", outletId] });
 
-    socket.on("connect", handleConnect);
-    socket.on("orderEvent", joinOutlet);
+      if (!notifAudioRef.current) {
+        notifAudioRef.current = new Audio("/sounds/order-incoming.wav");
+        notifAudioRef.current.load();
+      }
+
+      const audio = notifAudioRef.current;
+      const itemsName = payload.itemsDescription || "Produk";
+      const verbalAmount = new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        maximumFractionDigits: 0,
+      }).format(payload.amount);
+
+      audio.onended = () =>
+        speakText(
+          `Bukti pembayaran baru telah dikirim: ${itemsName}, senilai ${verbalAmount}`,
+        );
+      audio.play().catch((err) => {
+        console.warn("Audio gagal diputar:", err);
+        speakText(
+          `Bukti pembayaran baru telah dikirim: ${itemsName}, senilai ${verbalAmount}`,
+        );
+      });
+    };
 
     const handlePaymentNew = (
       payload: SocketEvents[typeof SOCKET_EVENT.PAYMENT_NEW],
@@ -116,12 +106,16 @@ export const SocketCashierProvider = ({
       qc.invalidateQueries({ queryKey: ["orders-v2"] });
     };
 
+    if (socket.connected) handleConnect();
+
+    socket.on("connect", handleConnect);
+    socket.on("orderEvent", handleOrderEvent);
     socket.on(SOCKET_EVENT.PAYMENT_NEW, handlePaymentNew);
     socket.on(SOCKET_EVENT.ORDER_STATUS_CHANGED, handleOrderStatusChanged);
 
     return () => {
       socket.off("connect", handleConnect);
-      socket.off("orderEvent", joinOutlet);
+      socket.off("orderEvent", handleOrderEvent);
       socket.off(SOCKET_EVENT.PAYMENT_NEW, handlePaymentNew);
       socket.off(SOCKET_EVENT.ORDER_STATUS_CHANGED, handleOrderStatusChanged);
     };

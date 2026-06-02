@@ -105,9 +105,7 @@ export class AuthService extends BaseService {
 
     // Pastikan outlet tempat staff bertugas aktif/buka
     if (!staff.outlet) {
-      this.forbidden(
-        "Data outlet tidak ditemukan untuk akun kasir ini.",
-      );
+      this.forbidden("Data outlet tidak ditemukan untuk akun kasir ini.");
     }
 
     if (!staff.outlet.isOpen) {
@@ -126,7 +124,6 @@ export class AuthService extends BaseService {
     }
 
     // Simpan session kasir di Redis
-    // Simpan session kasir di Redis menggunakan RedisUtils
     const staffSession = {
       id: staff.id,
       username: staff.username,
@@ -145,7 +142,7 @@ export class AuthService extends BaseService {
     await RedisUtils.set(
       `session:cashier:${staff.id}`,
       staffSession,
-      60 * 60 * 24
+      60 * 60 * 24,
     );
 
     const token = JwtUtil.generate({
@@ -195,9 +192,7 @@ export class AuthService extends BaseService {
 
     // Pastikan outlet tempat manager bertugas aktif/buka
     if (!staff.outlet) {
-      this.forbidden(
-        "Data outlet tidak ditemukan untuk akun manager ini.",
-      );
+      this.forbidden("Data outlet tidak ditemukan untuk akun manager ini.");
     }
 
     if (!staff.outlet.isOpen) {
@@ -227,7 +222,7 @@ export class AuthService extends BaseService {
     await RedisUtils.set(
       `session:cashier:${staff.id}`,
       managerSession,
-      60 * 60 * 24
+      60 * 60 * 24,
     );
 
     const token = JwtUtil.generate({

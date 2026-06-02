@@ -700,12 +700,22 @@ export async function getQRISService(outletId: string) {
     throw new AppError(Messages.OUTLET_NOT_FOUND, HttpStatus.NOT_FOUND);
   }
 
+  // Auto-repair/decode QRIS string if manualQrImageUrl is present but qrisString is empty/null
+  let qrisString = outlet.qrisString;
+  if (outlet.manualQrImageUrl && !qrisString) {
+    const decoded = await decodeQRFromUrl(outlet.manualQrImageUrl);
+    if (decoded) {
+      qrisString = decoded;
+      await OutletRepository.update(outlet.id, { qrisString });
+    }
+  }
+
   return {
     outletId: outlet.id,
     outletName: outlet.name,
     businessName: outlet.business.name,
     qrisImageUrl: outlet.manualQrImageUrl,
-    qrisString: outlet.qrisString,
+    qrisString: qrisString,
   };
 }
 

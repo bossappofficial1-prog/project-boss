@@ -24,7 +24,7 @@ export const sendQueueNotification = asyncHandler(
             const channel: Channel = getRabbitMQChannel();
 
             // Pastikan exchange dan queue ada
-            await channel.assertExchange(NOTIFICATION_EXCHANGE, 'direct', { durable: true });
+            await channel.assertExchange(NOTIFICATION_EXCHANGE, 'fanout', { durable: true });
             await channel.assertQueue(NOTIFICATION_QUEUE, {
                 durable: true,
                 arguments: {

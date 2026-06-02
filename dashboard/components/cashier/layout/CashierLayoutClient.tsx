@@ -56,16 +56,6 @@ export default function CashierLayoutClient({
     retry: 1,
     refetchOnWindowFocus: false,
     refetchOnMount: true, // Force background validation on mount to check for session expiration
-    initialData: () => {
-      if (typeof window === "undefined") return undefined;
-
-      try {
-        const rawData = localStorage.getItem(CASHIER_SESSION_CACHE_KEY) || sessionStorage.getItem(CASHIER_SESSION_CACHE_KEY);
-        return rawData ? JSON.parse(rawData) : undefined;
-      } catch {
-        return undefined;
-      }
-    },
   });
 
   const [mounted, setMounted] = React.useState(false);
@@ -73,11 +63,17 @@ export default function CashierLayoutClient({
   useEffect(() => {
     setMounted(true);
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").then((reg) => {
-        console.log("Service Worker registered in dashboard with scope:", reg.scope);
-      }).catch((err) => {
-        console.error("Dashboard Service Worker registration failed:", err);
-      });
+      navigator.serviceWorker
+        .register("/sw.js")
+        .then((reg) => {
+          console.log(
+            "Service Worker registered in dashboard with scope:",
+            reg.scope,
+          );
+        })
+        .catch((err) => {
+          console.error("Dashboard Service Worker registration failed:", err);
+        });
     }
   }, []);
 
@@ -94,8 +90,10 @@ export default function CashierLayoutClient({
         const orders = JSON.parse(raw);
         if (orders.length === 0) return;
 
-        toast.info(`Koneksi kembali terhubung! Sinkronisasi ${orders.length} transaksi offline sedang berjalan... 📡`);
-        
+        toast.info(
+          `Koneksi kembali terhubung! Sinkronisasi ${orders.length} transaksi offline sedang berjalan... 📡`,
+        );
+
         let successCount = 0;
         const remainingOrders = [];
 
@@ -107,19 +105,27 @@ export default function CashierLayoutClient({
             await posV2Api.createOrder(cleanOrder);
             successCount++;
           } catch (err) {
-            console.error("Gagal sinkronisasi satu transaksi, akan dicoba nanti:", err);
+            console.error(
+              "Gagal sinkronisasi satu transaksi, akan dicoba nanti:",
+              err,
+            );
             remainingOrders.push(order);
           }
         }
 
         if (remainingOrders.length > 0) {
-          localStorage.setItem(OFFLINE_ORDERS_KEY, JSON.stringify(remainingOrders));
+          localStorage.setItem(
+            OFFLINE_ORDERS_KEY,
+            JSON.stringify(remainingOrders),
+          );
         } else {
           localStorage.removeItem(OFFLINE_ORDERS_KEY);
         }
 
         if (successCount > 0) {
-          toast.success(`Sukses! ${successCount} transaksi offline berhasil disinkronisasikan ke server. 🎉`);
+          toast.success(
+            `Sukses! ${successCount} transaksi offline berhasil disinkronisasikan ke server. 🎉`,
+          );
           queryClient.invalidateQueries({ queryKey: ["pos-v2"] });
         }
       } catch (e) {
@@ -173,23 +179,29 @@ export default function CashierLayoutClient({
     if (typeof window !== "undefined") {
       // Jangan redirect jika sedang offline
       if (!navigator.onLine) {
-        toast.warning("Koneksi internet terputus. Menggunakan sesi kasir lokal.");
+        toast.warning(
+          "Koneksi internet terputus. Menggunakan sesi kasir lokal.",
+        );
         return;
       }
 
       // Ambil error response status jika ada (dari Axios / Fetch)
       const err = isCashierAuthError as any;
       const status = err?.response?.status || err?.status;
-      
+
       // Jika error bukan karena 401/403 (misalnya Network Error / DNS Error / Server down), jangan paksa logout
       if (status && status !== 401 && status !== 403) {
-        toast.warning("Gagal memperbarui sesi kasir dari server. Menggunakan sesi lokal.");
+        toast.warning(
+          "Gagal memperbarui sesi kasir dari server. Menggunakan sesi lokal.",
+        );
         return;
       }
-      
+
       // Jika memang tidak ada status (misal Axios Network Error karena putus koneksi di tengah jalan), jangan paksa redirect
       if (!status && err?.message?.toLowerCase().includes("network error")) {
-        toast.warning("Gagal memperbarui sesi kasir karena masalah jaringan. Menggunakan sesi lokal.");
+        toast.warning(
+          "Gagal memperbarui sesi kasir karena masalah jaringan. Menggunakan sesi lokal.",
+        );
         return;
       }
 
@@ -255,7 +267,7 @@ export default function CashierLayoutClient({
     return (
       <div className="min-h-screen text-slate-900 transition-colors dark:text-slate-50">
         <header className="sticky top-0 z-10 border-b border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="mx-auto flex max-w-[1500px] items-center justify-between px-4 py-3">
+          <div className="mx-auto flex max-w-375 items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
               <ShoppingBag className="h-6 w-6 text-blue-600" />
               <div>
@@ -287,7 +299,7 @@ export default function CashierLayoutClient({
     <>
       <FeatureGuideOverlay />
       <SocketCashierProvider outletId={outletData.id}>
-        <CashierOutletProvider outlet={outletData}>
+        <CashierOutletProvider outlet={outletData as any}>
           <CashierContext.Provider value={{ cashierData, outletData }}>
             <PrinterProvider>
               <div className="min-h-screen bg-slate-50 dark:bg-slate-950">

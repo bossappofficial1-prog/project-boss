@@ -8,6 +8,9 @@ export const config = {
   CLIENT_URL: process.env.CLIENT_URL?.includes(", ")
     ? process.env.CLIENT_URL.split(", ")
     : process.env.CLIENT_URL || "http://localhost:3000",
+  FRONTEND_URL: process.env.CLIENT_URL?.includes(", ")
+    ? process.env.CLIENT_URL.split(", ")[0]
+    : process.env.CLIENT_URL || "http://localhost:3000",
   BASE_URL: process.env.BASE_URL || "http://localhost:6789",
   JWT_SECRET: process.env.JWT_SECRET || "rahasia-123-!@#",
   SERVICE: process.env.SERVICE_NAME || "service-1",

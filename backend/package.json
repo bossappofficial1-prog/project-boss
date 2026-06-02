@@ -4,6 +4,8 @@
   "main": "dist/src/index.js",
   "scripts": {
     "dev": "bun --watch src/index.ts",
+    "worker:dev": "bun --watch src/worker.ts",
+    "worker:start": "bun dist/src/worker.js",
     "build": "bun run build:clean && swc src --out-dir dist --copy-files",
     "build:clean": "rm -rf dist",
     "start": "bun dist/src/index.js",

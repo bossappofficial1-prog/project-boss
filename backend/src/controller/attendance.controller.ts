@@ -11,9 +11,6 @@ class AttendanceController extends BaseController {
     if (!user || user.userType !== "CASHIER") {
       return this.error(res, "Khusus kasir", undefined, HttpStatus.FORBIDDEN);
     }
-    if (user.outletId && user.outletId !== outletId) {
-      return this.error(res, "Outlet tidak sesuai sesi kasir", undefined, HttpStatus.FORBIDDEN);
-    }
 
     const attendance = await AttendanceService.clockIn({
       staffId: user.id,

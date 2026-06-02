@@ -133,31 +133,19 @@ class MessagePublisherService {
     }
 
     async publishWhatsAppPaymentSuccess(orderId: string) {
-        await this.publish(EXCHANGE_NAMES.NOTIFICATION, '', {
-            type: 'WHATSAPP_PAYMENT_SUCCESS',
-            payload: { orderId }
-        });
+        // Disabled: Twilio/WhatsApp notifications removed
     }
 
     async publishWhatsAppOrderConfirmation(orderId: string) {
-        await this.publish(EXCHANGE_NAMES.NOTIFICATION, '', {
-            type: 'WHATSAPP_ORDER_CONFIRMATION',
-            payload: { orderId }
-        });
+        // Disabled: Twilio/WhatsApp notifications removed
     }
 
     async publishWhatsAppPickupReminder(orderId: string) {
-        await this.publish(EXCHANGE_NAMES.NOTIFICATION, '', {
-            type: 'WHATSAPP_PICKUP_REMINDER',
-            payload: { orderId }
-        });
+        // Disabled: Twilio/WhatsApp notifications removed
     }
 
     async publishWhatsAppPaymentAndOrderUpdate(orderId: string, orderStatus: string) {
-        await this.publish(EXCHANGE_NAMES.NOTIFICATION, '', {
-            type: 'WHATSAPP_PAYMENT_AND_ORDER_UPDATE',
-            payload: { orderId, orderStatus }
-        });
+        // Disabled: Twilio/WhatsApp notifications removed
     }
 }
 

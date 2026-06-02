@@ -1,4 +1,5 @@
 import path from "path";
+import { decodeQRFromUrl } from "../utils/qr-decoder";
 import { getOrderByIdService } from "./order.service";
 import {
   PaymentStatus,
@@ -185,10 +186,10 @@ export class PaymentService {
     return { transactionFeeTotal, applicationFee, grossAmount };
   }
 
-  private buildManualInstructions(
+  private async buildManualInstructions(
     outlet: OutletWithBusiness,
     manualType: ManualPaymentType,
-  ): ManualPaymentInstructions {
+  ): Promise<ManualPaymentInstructions> {
     if (!outlet) {
       throw new AppError(Messages.OUTLET_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
@@ -206,10 +207,22 @@ export class PaymentService {
           HttpStatus.BAD_REQUEST,
         );
       }
+
+      // Auto-repair/decode QRIS string if manualQrImageUrl is present but qrisString is empty/null
+      let qrisString = outlet.qrisString;
+      if (!qrisString) {
+        const decoded = await decodeQRFromUrl(outlet.manualQrImageUrl);
+        if (decoded) {
+          qrisString = decoded;
+          // Dynamically update the database so we don't have to decode on every request
+          await OutletRepository.update(outlet.id, { qrisString });
+        }
+      }
+
       return {
         ...baseInstruction,
         qrImageUrl: outlet.manualQrImageUrl,
-        qrisString: outlet.qrisString,
+        qrisString: qrisString,
       };
     }
 
@@ -438,6 +451,14 @@ export class PaymentService {
       price: applicationFee,
       quantity: 1,
     });
+    if (totalTax > 0) {
+      itemDetails.push({
+        id: "tax",
+        name: "Pajak",
+        price: totalTax,
+        quantity: 1,
+      });
+    }
 
     const orderId: string = generateOrderCode({
       name: outlet?.name ?? "Order",
@@ -474,7 +495,10 @@ export class PaymentService {
     }
 
     if (isManualFlow && manualType) {
-      const instructions = this.buildManualInstructions(outlet!, manualType);
+      const instructions = await this.buildManualInstructions(
+        outlet!,
+        manualType,
+      );
 
       try {
         await this.createOrderAndItems(
@@ -518,13 +542,6 @@ export class PaymentService {
         try {
           orderExpiryJob.add(orderId);
           orderNotificationJob.add(orderId);
-          SocketEmitter.getInstance().emitToCashier(outletId, {
-            orderId,
-            amount: grossAmount,
-            paymentMethod: manualType,
-            customerName: customerDetails.name,
-            timestamp: new Date(),
-          });
           SocketEmitter.getInstance().emitToBusinessOutlet(outletId, {
             orderId,
             amount: grossAmount,
@@ -843,6 +860,26 @@ export class PaymentService {
       ) {
         await generateServiceOrderNotificationQueue.add({ orderId });
       }
+
+      // Fetch products and their goods/units to build a precise itemsDescription
+      const productIds = transaction.order.items.map((item) => item.productId);
+      const products = await this.productRepo.findManyByIds(productIds);
+      const productMap = new Map(products.map((p) => [p.id, p]));
+
+      SocketEmitter.getInstance().emitToCashier(transaction.order.outletId, {
+        orderId,
+        amount: transaction.amount,
+        paymentMethod: transaction.manualMethod,
+        customerName: transaction.order.guestCustomer?.name ?? "-",
+        timestamp: new Date(),
+        itemsDescription: transaction.order.items
+          .map((item) => {
+            const product = productMap.get(item.productId);
+            const unit = product?.type === "GOODS" ? (product.goods?.unit || "pcs") : (product?.type === "TICKET" ? "tiket" : "pcs");
+            return `${item.product.name} sebanyak ${item.quantity} ${unit}`;
+          })
+          .join(", "),
+      });
 
       SocketEmitter.getInstance().emitNotificationToOutlet(
         transaction.order.outletId,
@@ -1200,6 +1237,15 @@ export async function createMidtransTransactionService(
       id: "app_fee",
       name: "Biaya Admin Aplikasi (3%)",
       price: appFee,
+      quantity: 1,
+    });
+  }
+
+  if (order.taxAmount > 0) {
+    itemDetails.push({
+      id: "tax",
+      name: "Pajak",
+      price: Math.round(order.taxAmount),
       quantity: 1,
     });
   }

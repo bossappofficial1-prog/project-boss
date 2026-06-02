@@ -19,10 +19,14 @@ export async function connectRabbitMQ() {
 
         connection.on('error', (err: Error) => {
             logger.error('RabbitMQ connection error', err);
+            (channel as any) = null;
+            connection = null;
         });
 
         connection.on('close', () => {
             logger.error('RabbitMQ connection closed. Reconnecting...');
+            (channel as any) = null;
+            connection = null;
             handleDisconnect();
         });
 
@@ -30,6 +34,8 @@ export async function connectRabbitMQ() {
         logger.info('Connected to RabbitMQ');
     } catch (error) {
         logger.error('Failed to connect to RabbitMQ', error);
+        (channel as any) = null;
+        connection = null;
         handleDisconnect();
     }
 }

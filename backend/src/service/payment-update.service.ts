@@ -34,6 +34,13 @@ export async function handlePaymentSuccess(orderId: string) {
     let orderStatus: OrderStatus = order.orderStatus as OrderStatus;
     const bookingSlotItem = order.items.find((item: any) => item.bookingSlot);
     const bookingSlot = (bookingSlotItem as any)?.bookingSlot;
+
+    const hasService = order.items.some(item => item.product.type === 'SERVICE');
+    const hasTicket = order.items.some(item => item.product.type === 'TICKET');
+    const hasNonRetailGoods = order.items.some(
+        item => item.product.type === 'GOODS' && order.outlet.type !== 'RETAIL'
+    );
+
     if (bookingSlot) {
         orderStatus = OrderStatus.PROCESSING;
         await db.bookingSlot.update({
@@ -41,9 +48,13 @@ export async function handlePaymentSuccess(orderId: string) {
             data: { status: 'BOOKED' },
         });
         await messagePublisher.publishServiceOrderProcessing(order.id);
-    } else if (order.items.some(item => item.product.type === 'SERVICE')) {
+    } else if (hasService) {
         orderStatus = OrderStatus.PROCESSING;
         await messagePublisher.publishServiceOrderProcessing(order.id);
+    } else if (hasNonRetailGoods) {
+        orderStatus = OrderStatus.PROCESSING;
+    } else if (hasTicket) {
+        orderStatus = OrderStatus.COMPLETED;
     } else {
         orderStatus = OrderStatus.READY;
     }
@@ -119,7 +130,11 @@ export async function handlePaymentSuccess(orderId: string) {
     order.paymentStatus = PaymentStatus.SUCCESS;
 
     // Terbitkan event setelah transaksi database selesai
-    await messagePublisher.publishOrderStatusUpdate(order.id, orderStatus);
+    try {
+        await messagePublisher.publishOrderStatusUpdate(order.id, orderStatus);
+    } catch (publishError) {
+        console.error('❌ Failed to publish order status update to RabbitMQ:', publishError);
+    }
 
     // Kirim notifikasi WhatsApp terpadu untuk pembayaran berhasil dan status pesanan
     try {
@@ -149,7 +164,14 @@ export async function handlePaymentSuccess(orderId: string) {
                 itemsDescription,
                 timestamp: new Date()
             });
-            console.log(`📡 Emitted payment_success event for outlet ${outletId}`);
+            SocketEmitter.getInstance().emitToCashier(outletId, {
+                orderId: order.id,
+                amount: order.totalAmount!,
+                itemsDescription,
+                customerName: order.guestCustomer?.name || 'Customer',
+                timestamp: new Date()
+            });
+            console.log(`📡 Emitted payment_success and orderEvent to cashier at outlet ${outletId}`);
 
             // Trigger web push notification to staff of this outlet
             try {

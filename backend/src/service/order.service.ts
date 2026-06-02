@@ -1260,6 +1260,34 @@ export async function expirePaymentOrder(orderId: string) {
     return;
   }
 
+  // Jika order memiliki transaksi Midtrans online yang masih pending,
+  // cek status terbarunya langsung ke Midtrans sebelum di-expire.
+  if (
+    order.transaction &&
+    !order.transaction.isManual &&
+    order.transaction.status === "PENDING"
+  ) {
+    try {
+      const { snap } = await import("../config/midtrans.js");
+      const statusResponse = await snap.transaction.status(order.id);
+      const transactionStatus = statusResponse.transaction_status?.toLowerCase();
+      const fraudStatus = statusResponse.fraud_status?.toLowerCase();
+
+      const isSuccessfulCapture = transactionStatus === 'capture'
+        ? fraudStatus !== 'challenge'
+        : false;
+
+      if (transactionStatus === 'settlement' || isSuccessfulCapture) {
+        console.log(`[EXPIRY_CHECK] Order ${orderId} was paid on Midtrans (status: ${statusResponse.transaction_status}). Triggering handlePaymentSuccess and skipping expiration.`);
+        const { handlePaymentSuccess } = await import("./payment-update.service.js");
+        await handlePaymentSuccess(orderId);
+        return;
+      }
+    } catch (error: any) {
+      console.warn(`[EXPIRY_CHECK] Failed to fetch Midtrans status for order ${orderId}: ${error.message}`);
+    }
+  }
+
   await db.$transaction(async (tx) => {
     for (const item of order.items) {
       if (item.product.type === "GOODS" && item.product.goods) {
