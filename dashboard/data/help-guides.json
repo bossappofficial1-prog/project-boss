@@ -826,28 +826,37 @@
       "id": "cashier-reservations",
       "role": "cashier",
       "category": "tables",
-      "title": "Buat Reservasi Meja",
-      "description": "Mencatat reservasi meja untuk tanggal hari ini langsung dari kasir.",
+      "title": "Alur Reservasi Meja & Pemesanan Kasir",
+      "description": "Panduan lengkap kasir dari membuat booking baru, melakukan check-in kedatangan tamu, menghubungkan pesanan menu ke meja di POS, hingga menyelesaikan reservasi via menu Meja & Bill.",
       "icon": "CalendarCheck",
       "steps": [
         {
           "title": "Buka Menu Reservasi Meja",
-          "desc": "Klik menu 'Reservasi Meja' untuk melihat daftar reservasi hari ini."
+          "desc": "Klik menu 'Reservasi Meja' di bilah navigasi utama kasir untuk melihat daftar seluruh booking meja yang dijadwalkan hari ini."
         },
         {
-          "title": "Klik Buat Reservasi",
-          "desc": "Tekan tombol 'Buat Reservasi' di kanan atas untuk membuka form input."
+          "title": "Buat Booking/Reservasi Baru",
+          "desc": "Klik tombol 'Buat Reservasi' di pojok kanan atas. Lengkapi formulir input: Nama Tamu, Nomor Telepon, Tanggal Reservasi, Jam Mulai, Durasi (menit), dan Jumlah Tamu. Gunakan pemilih meja untuk memilih meja yang kosong pada jam tersebut, lalu klik tombol 'Buat Reservasi' untuk menyimpan."
         },
         {
-          "title": "Isi Detail Tamu",
-          "desc": "Lengkapi Nama Tamu, Nomor Telepon, Tanggal Reservasi, Jam Mulai, Durasi (menit), dan Jumlah Tamu."
+          "title": "Konfirmasi Kedatangan & Masuk ke POS",
+          "desc": "Ketika pelanggan reservasi tiba di outlet, cari kartu reservasi mereka di daftar. Klik tombol 'Konfirmasi' pada kartu tersebut. Status reservasi akan berubah menjadi 'Active' (kuning/ON_GOING). Pada saat yang sama, meja tersebut berubah status menjadi 'OCCUPIED' dan data reservasi ini otomatis masuk ke daftar 'Tersimpan' di Terminal POS."
         },
         {
-          "title": "Pilih Meja & Simpan",
-          "desc": "Gunakan bagian 'Pilih Meja' untuk memilih meja tersedia, tambahkan Catatan bila perlu, lalu klik 'Buat Reservasi'."
+          "title": "Hubungkan Pesanan & Tambah Menu di POS",
+          "desc": "Buka Terminal Kasir ('POS'), lalu klik tab 'Tersimpan' di panel katalog sebelah kiri. Cari pesanan berdasarkan nama pelanggan reservasi atau nomor meja mereka, kemudian klik 'Lanjutkan Bayar'. Anda kini dapat menambahkan produk menu makanan atau minuman ke keranjang belanja sesuai pesanan tamu tersebut."
+        },
+        {
+          "title": "Proses Pembayaran Akhir & Selesai (Meja & Bill)",
+          "desc": "Setelah pelanggan selesai bersantap dan ingin membayar, masuk ke menu 'Meja & Bill' di navigasi kasir. Cari nomor meja aktif tersebut, klik tombol 'Bill' untuk mencetak tagihan sementara, atau klik 'Bayar' untuk memproses pembayaran langsung di POS. Setelah pembayaran lunas (Tunai/QRIS), status meja otomatis terbebas menjadi 'AVAILABLE' (kosong) kembali."
+        },
+        {
+          "title": "Batalkan Reservasi (Jika Batal/No-Show)",
+          "desc": "Jika pelanggan membatalkan reservasi atau tidak datang melewati batas toleransi waktu, temukan kartu reservasi mereka di daftar lalu klik tombol 'Batalkan'. Status reservasi akan berubah menjadi 'Batal' (merah/CANCELLED) sehingga meja terbebas dari booking."
         }
       ],
-      "tip": "Periksa jam operasional outlet yang tampil di form agar reservasi tidak di luar jam buka."
+      "tip": "Gunakan tab 'Tersimpan' di POS untuk terus menambah pesanan menu jika pelanggan memesan makanan tambahan di tengah kunjungan mereka.",
+      "warning": "Meja yang terikat pada reservasi aktif (ON_GOING) tidak boleh diubah atau dipilih untuk pelanggan walk-in lain secara manual di POS agar tidak terjadi bentrok transaksi."
     },
     {
       "id": "cashier-expenses",
@@ -981,6 +990,42 @@
       "tip": "Gunakan kode akun yang sistematis (contoh: kepala 1 untuk Aset, kepala 2 untuk Kewajiban, kepala 3 untuk Ekuitas) agar pengelompokan laporan keuangan Anda rapi dan mudah dianalisis.",
       "warning": "Transaksi jurnal umum yang sudah diposting akan langsung mempengaruhi nilai aset dan laba ditahan secara real-time. Lakukan pengecekan ganda pada nominal Debit & Kredit untuk menghindari kekeliruan laporan keuangan.",
       "requirePro": true
+    },
+    {
+      "id": "cashier-claim-points",
+      "role": "cashier",
+      "category": "pos",
+      "title": "Klaim Poin & Tukar Reward Pelanggan di Kasir",
+      "description": "Panduan lengkap kasir untuk mencocokkan member pelanggan, mengklaim potongan harga langsung berbasis poin, atau menukarkan poin dengan hadiah katalog reward.",
+      "icon": "Gift",
+      "steps": [
+        {
+          "title": "Masukkan Data Telepon Pelanggan",
+          "desc": "Pada menu Terminal Kasir, pastikan status 'Walk-in' dinonaktifkan. Masukkan nama lengkap dan nomor telepon pelanggan pada kolom input yang tersedia. Jika nomor telepon yang dimasukkan memiliki panjang 10 digit atau lebih, sistem kasir akan secara otomatis memverifikasi keanggotaan mereka."
+        },
+        {
+          "title": "Otomatisasi Deteksi Member",
+          "desc": "Jika nomor telepon terdaftar, profil member, tier keanggotaan, dan saldo poin pelanggan akan langsung muncul secara otomatis di layar. Jika nomor telepon belum terdaftar, Anda dapat menekan tombol 'Daftarkan Member' untuk meregistrasikan pelanggan baru tersebut secara instan."
+        },
+        {
+          "title": "Pilih Mode Klaim: Katalog atau Langsung",
+          "desc": "Pada bagian 'Loyalty & Poin', Anda akan melihat tab mode penukaran: pilih 'Katalog' jika pelanggan ingin menukar poin dengan hadiah khusus dari bisnis, atau pilih 'Langsung' jika pelanggan ingin memotong total belanja menggunakan saldo poin mereka secara langsung."
+        },
+        {
+          "title": "Metode A: Tukar Reward dari Katalog",
+          "desc": "Pada tab 'Katalog', pilih jenis reward yang diinginkan dari menu dropdown (contoh: '🏆 [50 Poin] Hadiah Flat Rp 10.000'). Sistem hanya akan menampilkan daftar reward yang poinnya mencukupi dengan saldo poin pelanggan saat ini. Pilih reward tersebut untuk otomatis menerapkan potongan harga di keranjang."
+        },
+        {
+          "title": "Metode B: Klaim Potongan Langsung",
+          "desc": "Pada tab 'Langsung', masukkan jumlah poin yang ingin dikonversi langsung menjadi potongan diskon (contoh: 1 Poin = Rp 1.000). Ketik nominal poin di kolom input atau klik tombol 'Max' untuk menggunakan jumlah poin maksimal yang bisa memotong total belanja. Diskon potongan poin akan otomatis ditambahkan ke ringkasan belanja."
+        },
+        {
+          "title": "Selesaikan Pembayaran & Sisa Poin",
+          "desc": "Lanjutkan proses pembayaran dengan menekan tombol 'Bayar' dan pilih metode pembayaran. Setelah transaksi berhasil diselesaikan, poin pelanggan akan langsung terpotong secara otomatis sesuai jumlah poin yang telah diklaim."
+        }
+      ],
+      "tip": "Gunakan fitur pencarian cepat nomor WhatsApp pelanggan untuk meminimalkan kesalahan identitas member saat transaksi.",
+      "warning": "Mode penukaran langsung hanya dapat digunakan jika nilai subtotal pesanan lebih besar daripada nilai minimal konversi poin yang berlaku di outlet."
     }
   ]
 }

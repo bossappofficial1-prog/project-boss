@@ -5,6 +5,7 @@ import { ReservationRepository } from "../repositories/reservation.repository";
 import { CreateReservationInput, GetReservationsQuery } from "../schemas/reservation.schema";
 import { OrderStatus, TableStatus } from "@prisma/client";
 import { addMinutes, startOfDay, endOfDay, getDay } from "date-fns";
+import { generateOrderCode } from "../utils";
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   RESERVED: ["ON_GOING", "CANCELLED"],
@@ -23,7 +24,7 @@ export class ReservationService extends BaseService {
 
     const outlet = await db.outlet.findUnique({
       where: { id: data.outletId },
-      select: { businessId: true }
+      select: { businessId: true, name: true }
     });
     if (!outlet) {
       this.notFound("Outlet tidak ditemukan");
@@ -69,6 +70,11 @@ export class ReservationService extends BaseService {
     }
 
     try {
+      const orderId = generateOrderCode(
+        { name: outlet.name, maxLength: 12 },
+        { randomLength: 6 }
+      );
+
       const reservation = await ReservationRepository.createReservationTransaction(
         data.tableId,
         bookingStart,
@@ -79,6 +85,7 @@ export class ReservationService extends BaseService {
           phone: data.customerPhone,
         },
         {
+          id: orderId,
           totalAmount: 0,
           bookingDate: bookingStart,
           bookingDurationMinutes: data.durationMinutes,

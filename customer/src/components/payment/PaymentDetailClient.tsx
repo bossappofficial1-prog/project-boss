@@ -1,7 +1,12 @@
 "use client";
 
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { cn, formatCurrency, formatDateTime, copyToClipboard } from "@/lib/utils";
+import {
+  cn,
+  formatCurrency,
+  formatDateTime,
+  copyToClipboard,
+} from "@/lib/utils";
 import { useAppBarV2 } from "@/context/AppBarContextV2";
 import { useLocale, useTranslations } from "@/hooks/useI18n";
 import type {
@@ -259,9 +264,7 @@ function getMidtransVa(
   return null;
 }
 
-function getMidtransQr(
-  midtrans?: PaymentDetailMidtrans | null,
-): string | null {
+function getMidtransQr(midtrans?: PaymentDetailMidtrans | null): string | null {
   if (!midtrans) return null;
   const qrAction = midtrans.actions?.find(
     (a) => a.name === "generate-qr-code" || a.name === "deeplink-redirect",
@@ -334,7 +337,7 @@ export function PaymentDetailClient({
   const t = useTranslations("paymentDetail");
   const tComp = useTranslations("paymentComponents");
   const locale = useLocale();
-  const router = useRouter()
+  const router = useRouter();
 
   const [paymentData, setPaymentData] = useState<PaymentDetailData>(payment);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -407,7 +410,7 @@ export function PaymentDetailClient({
       subtitle: orderId,
       showBackButton: true,
       onLeftClick() {
-        router.push('/orders')
+        router.push("/orders");
       },
     });
     return () => resetAppBar();
@@ -502,44 +505,6 @@ export function PaymentDetailClient({
       {showCountdown && (
         <CountdownTimer expiryTime={expiryTime!} compact={false} />
       )}
-
-      {/* Awaiting Verification Notice */}
-      {isAwaitingVerification && (
-        <div className="rounded-md border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 p-3 flex items-start gap-3">
-          <Clock className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">
-              Menunggu Konfirmasi Pembayaran
-            </p>
-            <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5 leading-relaxed">
-              Bukti pembayaran Anda telah dikirim dan sedang ditinjau oleh pihak outlet. Anda akan menerima notifikasi setelah pembayaran dikonfirmasi.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Operating Hours Confirmation Notice */}
-      {/* {normalizedStatus === "SUCCESS" && paymentData.outletInfo && !paymentData.outletInfo.isWithinOperatingHours && paymentData.outletInfo.todaySchedule?.isOpen && (
-        <div className="rounded-md border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-3 flex items-start gap-3">
-          <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">
-              Konfirmasi Sesuai Jam Operasional
-            </p>
-            <p className="text-[11px] text-blue-600 dark:text-blue-400 mt-0.5 leading-relaxed">
-              Pembayaran Anda berhasil! Pesanan akan dikonfirmasi saat jam operasional outlet{" "}
-              <span className="font-semibold">
-                {paymentData.outletInfo.name}
-              </span>{" "}
-              (buka pukul{" "}
-              <span className="font-semibold">
-                {new Date(paymentData.outletInfo.todaySchedule.openTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
-              </span>
-              ).
-            </p>
-          </div>
-        </div>
-      )} */}
 
       {/* Payment Overview */}
       <div className="rounded-md border overflow-hidden">
@@ -649,7 +614,9 @@ export function PaymentDetailClient({
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   {item.quantity} x {formatCurrency(item.price)}
                   {item.taxPercentage ? (
-                    <span className="text-blue-500 ml-1">+{item.taxName || "Pajak"} {item.taxPercentage}%</span>
+                    <span className="text-blue-500 ml-1">
+                      +{item.taxName || "Pajak"} {item.taxPercentage}%
+                    </span>
                   ) : null}
                 </p>
               </div>
@@ -671,9 +638,7 @@ export function PaymentDetailClient({
               <span className="text-muted-foreground">
                 {paymentData.taxName || "Pajak"}
               </span>
-              <span>
-                {formatCurrency(paymentData.taxAmount!)}
-              </span>
+              <span>{formatCurrency(paymentData.taxAmount!)}</span>
             </div>
           )}
           {showTxFee && (
