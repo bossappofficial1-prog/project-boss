@@ -452,4 +452,125 @@ export class LoyaltyService {
   static async getRedemptionsByMember(outletId: string, guestCustomerId: string) {
     return LoyaltyRepository.getRedemptionsByMember(outletId, guestCustomerId);
   }
+
+  static async exportMembersToCSV(outletId: string) {
+    // Fetch all members by querying with a high limit (e.g. 1000000)
+    const result = await this.getMembers(outletId, undefined, 1, 1000000);
+    
+    let csvContent = "\uFEFF"; // BOM for Excel UTF-8 support
+    csvContent += "Nama,Nomor Telepon,Email,Tier,Poin Aktif,Lifetime Poin,Total Belanja,Transaksi Terakhir,Tanggal Bergabung\n";
+
+    for (const member of result.members) {
+      const name = member.customer?.name || "-";
+      const phone = member.customer?.phone || "-";
+      const email = member.customer?.email || "-";
+      const tier = member.tier?.name || "-";
+      const points = member.points;
+      const lifetimePoints = member.lifetimePoints;
+      const totalSpending = member.totalSpending;
+      const lastTransaction = member.lastTransactionAt ? new Date(member.lastTransactionAt).toLocaleString("id-ID") : "-";
+      const joinedAt = member.joinedAt ? new Date(member.joinedAt).toLocaleString("id-ID") : "-";
+
+      const escapedName = `"${name.replace(/"/g, '""')}"`;
+      const escapedPhone = `"${phone.replace(/"/g, '""')}"`;
+      const escapedEmail = `"${email.replace(/"/g, '""')}"`;
+      const escapedTier = `"${tier.replace(/"/g, '""')}"`;
+
+      csvContent += `${escapedName},${escapedPhone},${escapedEmail},${escapedTier},${points},${lifetimePoints},Rp ${totalSpending},${lastTransaction},${joinedAt}\n`;
+    }
+
+    return csvContent;
+  }
+
+  static async exportRedemptionsToCSV(outletId: string) {
+    const redemptions = await LoyaltyRepository.findAllRedemptions(outletId);
+    
+    let csvContent = "\uFEFF"; // BOM for Excel UTF-8 support
+    csvContent += "Tanggal Penukaran,Nama Pelanggan,Nomor Telepon,Email,Reward,Poin Digunakan,Status,Catatan,ID Pesanan\n";
+
+    for (const item of redemptions) {
+      const date = item.createdAt ? new Date(item.createdAt).toLocaleString("id-ID") : "-";
+      const customerName = item.guestCustomer?.name || "-";
+      const customerPhone = item.guestCustomer?.phone || "-";
+      const customerEmail = item.guestCustomer?.email || "-";
+      const rewardName = item.loyaltyReward?.name || "-";
+      const pointsUsed = item.pointsUsed;
+      const status = item.status;
+      const note = item.note || "-";
+      const orderId = item.orderId || "-";
+
+      const escapedName = `"${customerName.replace(/"/g, '""')}"`;
+      const escapedPhone = `"${customerPhone.replace(/"/g, '""')}"`;
+      const escapedEmail = `"${customerEmail.replace(/"/g, '""')}"`;
+      const escapedRewardName = `"${rewardName.replace(/"/g, '""')}"`;
+      const escapedNote = `"${note.replace(/"/g, '""')}"`;
+
+      csvContent += `${date},${escapedName},${escapedPhone},${escapedEmail},${escapedRewardName},-${pointsUsed},${status},${escapedNote},${orderId}\n`;
+    }
+
+    return csvContent;
+  }
+
+  static async getDashboardData(outletId: string) {
+    const totalMembers = await LoyaltyRepository.countMembers(outletId);
+    const totalActivePoints = await LoyaltyRepository.sumActivePoints(outletId);
+    const totalRedeemedPoints = await LoyaltyRepository.sumRedeemedPoints(outletId);
+    const totalMemberSpending = await LoyaltyRepository.sumMemberSpending(outletId);
+
+    const tiers = await LoyaltyRepository.getTiersByOutlet(outletId);
+
+    const tierBreakdown = await Promise.all(
+      tiers.map(async (t) => {
+        const count = await LoyaltyRepository.countMembersByTier(outletId, t.id);
+        return {
+          name: t.name,
+          color: t.color,
+          count
+        };
+      })
+    );
+
+    const noTierCount = await LoyaltyRepository.countMembersByTier(outletId, null);
+    if (noTierCount > 0) {
+      tierBreakdown.push({
+        name: "Tanpa Tier",
+        color: "#94a3b8",
+        count: noTierCount
+      });
+    }
+
+    const recentRedemptionsRaw = await LoyaltyRepository.findRecentRedemptions(outletId, 10);
+    const recentRedemptions = recentRedemptionsRaw.map((r) => ({
+      id: r.id,
+      customerName: r.guestCustomer.name,
+      customerPhone: r.guestCustomer.phone,
+      rewardName: r.loyaltyReward.name,
+      rewardType: r.loyaltyReward.type,
+      pointsUsed: r.pointsUsed,
+      status: r.status,
+      createdAt: r.createdAt
+    }));
+
+    const topMembersRaw = await LoyaltyRepository.findTopMembers(outletId, 5);
+    const topMembers = topMembersRaw.map((m) => ({
+      name: m.guestCustomer.name,
+      phone: m.guestCustomer.phone,
+      points: m.totalPoints,
+      lifetimePoints: m.lifetimePoints,
+      tierName: m.tier?.name || "Tanpa Tier",
+      tierColor: m.tier?.color || "#94a3b8"
+    }));
+
+    return {
+      stats: {
+        totalMembers,
+        totalActivePoints,
+        totalRedeemedPoints,
+        totalMemberSpending
+      },
+      tierBreakdown,
+      recentRedemptions,
+      topMembers
+    };
+  }
 }

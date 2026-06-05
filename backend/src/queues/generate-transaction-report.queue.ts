@@ -25,7 +25,7 @@ export class GenerateTransactionReportQueue extends BaseQueue<GenerateTransactio
     protected async handle(job: Job<GenerateTransactionReportPayload>): Promise<void> {
         const { businessId, startDate, endDate, email, requestedBy } = job.data;
 
-        logger.info('📄 Mulai generate laporan transaksi', {
+        logger.info('📄 Mulai generate e-statement transaksi', {
             event: 'report_generation_start',
             component: 'generate-transaction-report-queue',
             businessId,
@@ -68,7 +68,7 @@ export class GenerateTransactionReportQueue extends BaseQueue<GenerateTransactio
             // 5. Format data untuk template PDF
             const periodStart = format(new Date(startDate), 'dd MMM yyyy', { locale: localeId });
             const periodEnd = format(new Date(endDate), 'dd MMM yyyy', { locale: localeId });
-            const docNumber = `RPT/${format(new Date(), 'yyyy/MM')}/${String(job.id).padStart(3, '0')}`;
+            const docNumber = `EST/${format(new Date(), 'yyyy/MM')}/${String(job.id).padStart(3, '0')}`;
 
             const reportData: TransactionReportData = {
                 docNumber,
@@ -100,17 +100,17 @@ export class GenerateTransactionReportQueue extends BaseQueue<GenerateTransactio
             });
 
             // 7. Kirim email dengan attachment PDF
-            const fileName = `Laporan_Transaksi_${business.name.replace(/\s+/g, '_')}_${periodStart}_${periodEnd}.pdf`;
+            const fileName = `E_Statement_Transaksi_${business.name.replace(/\s+/g, '_')}_${periodStart}_${periodEnd}.pdf`;
 
             await EmailService.sendEmail({
                 to: email,
-                subject: `Laporan Transaksi ${business.name} — ${periodStart} s/d ${periodEnd}`,
-                text: `Halo ${requestedBy},\n\nBerikut terlampir laporan transaksi untuk ${business.name} periode ${periodStart} - ${periodEnd}.\n\nTotal Transaksi: ${counts.transactionCount}\nTotal Pendapatan: Rp ${totals.total_revenue.toLocaleString('id-ID')}\n\nLaporan ini digenerate otomatis oleh BOSS App.\n\nSalam,\nBOSS App`,
+                subject: `E-Statement Transaksi ${business.name} — ${periodStart} s/d ${periodEnd}`,
+                text: `Halo ${requestedBy},\n\nBerikut terlampir dokumen e-statement resmi (rekening koran) transaksi untuk ${business.name} periode ${periodStart} - ${periodEnd}.\n\nTotal Transaksi: ${counts.transactionCount}\nTotal Pendapatan: Rp ${totals.total_revenue.toLocaleString('id-ID')}\n\nE-statement ini digenerate otomatis oleh BOSS App.\n\nSalam,\nBOSS App`,
                 html: `
                     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                        <h2 style="color: #0f172a;">Laporan Transaksi</h2>
+                        <h2 style="color: #0f172a;">E-Statement Transaksi Resmi</h2>
                         <p>Halo <strong>${requestedBy}</strong>,</p>
-                        <p>Berikut terlampir laporan transaksi untuk <strong>${business.name}</strong> periode <strong>${periodStart} - ${periodEnd}</strong>.</p>
+                        <p>Berikut terlampir dokumen e-statement resmi (rekening koran) transaksi untuk <strong>${business.name}</strong> periode <strong>${periodStart} - ${periodEnd}</strong>.</p>
                         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 16px 0;">
                             <table style="width: 100%; border-collapse: collapse;">
                                 <tr>
@@ -127,7 +127,7 @@ export class GenerateTransactionReportQueue extends BaseQueue<GenerateTransactio
                                 </tr>
                             </table>
                         </div>
-                        <p style="font-size: 12px; color: #94a3b8;">Laporan ini digenerate otomatis oleh BOSS App. File PDF terlampir.</p>
+                        <p style="font-size: 12px; color: #94a3b8;">E-statement ini digenerate otomatis oleh BOSS App. File PDF terlampir.</p>
                     </div>
                 `,
                 attachments: [
@@ -140,14 +140,14 @@ export class GenerateTransactionReportQueue extends BaseQueue<GenerateTransactio
                 ],
             });
 
-            logger.info('📧 Email laporan berhasil dikirim', {
+            logger.info('📧 Email e-statement berhasil dikirim', {
                 event: 'report_email_sent',
                 component: 'generate-transaction-report-queue',
                 businessId,
                 email,
             });
         } catch (error: any) {
-            logger.error('❌ Gagal generate/kirim laporan transaksi', {
+            logger.error('❌ Gagal generate/kirim e-statement transaksi', {
                 event: 'report_generation_failed',
                 component: 'generate-transaction-report-queue',
                 businessId,

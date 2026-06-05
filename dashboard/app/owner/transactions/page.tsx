@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, TrendingUp, TrendingDown, DollarSign, FileText, FileDown, Loader2, RefreshCw, X } from "lucide-react";
+import { Search, TrendingUp, TrendingDown, DollarSign, FileText, FileDown, Loader2, RefreshCw, X, Mail } from "lucide-react";
 import { formatCurrency, cn } from "@/lib/utils";
 import { format, subMonths } from "date-fns";
 import { id as localeId } from "date-fns/locale";
@@ -31,6 +31,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -103,6 +104,14 @@ export default function TransactionsPage() {
 
   // Proof preview state
   const [proofPreview, setProofPreview] = useState<{ url: string; transaction: any } | null>(null);
+
+  // Query current user info for email destination
+  const { data: meData } = useQuery({
+    queryKey: ["auth-me"],
+    queryFn: () => authApi.me(),
+    staleTime: 5 * 60_000,
+  });
+  const userEmail = meData?.user?.email || "";
 
   // Export PDF mutation
   const exportReport = useExportTransactionReport();
@@ -211,14 +220,14 @@ export default function TransactionsPage() {
           {
             id: "welcome",
             title: "Riwayat Transaksi",
-            description: "Pantau arus kas bisnis Anda. Lihat pemasukan, pengeluaran, filter data, dan ekspor laporan.",
+            description: "Pantau arus kas bisnis Anda. Lihat pemasukan, pengeluaran, filter data, dan ekspor e-statement resmi.",
             target: "body",
             placement: "bottom",
           },
           {
             id: "export",
-            title: "Export Laporan",
-            description: "Klik Export PDF untuk mengunduh laporan transaksi dalam rentang tanggal tertentu.",
+            title: "E-Statement Resmi",
+            description: "Klik E-Statement Resmi untuk mengirim rekening koran transaksi resmi ke email terdaftar Anda.",
             target: "[data-guide='transactions-header']",
             placement: "bottom",
             offset: 12,
@@ -264,10 +273,11 @@ export default function TransactionsPage() {
         actions={
           <Button
             onClick={() => setShowExportDialog(true)}
-            className="font-bold text-xs h-10 shadow-none"
+            disabled={totalTransactions === 0 || isLoading}
+            className="font-bold text-xs h-10 shadow-none bg-rose-600 hover:bg-rose-500 text-white"
           >
-            <FileDown className="w-4 h-4 mr-2" />
-            Export PDF
+            <Mail className="w-4 h-4 mr-2" />
+            E-Statement Resmi
           </Button>
         }
       />
@@ -611,24 +621,29 @@ export default function TransactionsPage() {
         )}
       </ConfirmDialog>
 
-      {/* ══════════ Export PDF Dialog ══════════ */}
+      {/* ══════════ E-Statement Dialog ══════════ */}
       <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-bold text-lg">Export Laporan PDF</DialogTitle>
-            <DialogDescription className="text-xs">
-              Pilih rentang tanggal untuk laporan transaksi. Laporan akan diproses secara real-time.
+        <DialogContent className="sm:max-w-md gap-0 p-0 border-border/80 shadow-2xl overflow-hidden">
+          <DialogHeader className="p-6 border-b border-border/40 bg-muted/30">
+            <DialogTitle className="text-sm font-bold uppercase tracking-widest text-foreground">Permintaan E-Statement Resmi</DialogTitle>
+            <DialogDescription className="text-[10px] font-medium uppercase tracking-tighter opacity-70">
+              Kirim rekening koran (e-statement) transaksi bisnis langsung ke email terdaftar.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          
+          <div className="p-6 space-y-4">
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Dokumen e-statement resmi (rekening koran) akan dikirimkan ke alamat email terdaftar Anda: <span className="font-bold text-foreground font-mono">{userEmail || "email Anda"}</span>.
+            </p>
+
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-muted-foreground">Rentang Tanggal</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Rentang Tanggal E-Statement</label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-bold text-xs h-12 bg-muted/20 border-border/40",
+                      "w-full justify-start text-left font-bold text-xs h-12 bg-muted/20 border-border/40 hover:bg-muted/30 transition-all rounded-md pl-4",
                       !exportDateRange && "text-muted-foreground"
                     )}
                   >
@@ -662,12 +677,12 @@ export default function TransactionsPage() {
             </div>
 
             {exportDateRange?.from && exportDateRange?.to && (
-              <div className="rounded-md bg-muted/50 p-4 border border-border/40">
+              <div className="rounded-md border border-emerald-500/20 bg-emerald-500/5 p-4 shadow-sm">
                 <div className="flex items-center gap-3">
-                  <FileText className="h-5 w-5 text-primary opacity-60" />
+                  <FileText className="h-5 w-5 text-emerald-600 opacity-80" />
                   <div>
-                    <p className="text-[10px] font-bold text-muted-foreground">Periode Laporan</p>
-                    <p className="text-xs font-bold text-foreground">
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-emerald-600/70">Periode Rekening Koran</p>
+                    <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 font-mono">
                       {format(exportDateRange.from, "dd MMMM yyyy", { locale: localeId })} — {format(exportDateRange.to, "dd MMMM yyyy", { locale: localeId })}
                     </p>
                   </div>
@@ -675,32 +690,33 @@ export default function TransactionsPage() {
               </div>
             )}
           </div>
-          <div className="flex justify-end gap-3">
+
+          <DialogFooter className="p-4 border-t border-border/40 bg-muted/5 gap-2 sm:gap-0">
             <Button
-              variant="ghost"
+              variant="outline"
               onClick={() => setShowExportDialog(false)}
-              className="font-bold text-[10px]"
+              className="h-9 font-bold text-xs uppercase tracking-wider border-border/60 shadow-none"
             >
               Batal
             </Button>
             <Button
               onClick={handleExportPDF}
               disabled={!exportDateRange?.from || !exportDateRange?.to || exportReport.isPending}
-              className="font-bold text-[10px] min-w-[120px]"
+              className="h-9 font-bold text-xs uppercase tracking-wider bg-rose-600 hover:bg-rose-500 text-white shadow-none min-w-[150px]"
             >
               {exportReport.isPending ? (
                 <>
-                  <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
                   Memproses...
                 </>
               ) : (
                 <>
-                  <FileDown className="w-3 h-3 mr-2" />
-                  Export PDF
+                  <Mail className="w-3.5 h-3.5 mr-2" />
+                  Kirim E-Statement
                 </>
               )}
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

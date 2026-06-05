@@ -20,7 +20,17 @@ const KEYS = {
     ["loyalty", "point-history", outletId, guestCustomerId, page, limit] as const,
   redemptions: (outletId: string, guestCustomerId: string) =>
     ["loyalty", "redemptions", outletId, guestCustomerId] as const,
+  dashboard: (outletId: string) => ["loyalty", "dashboard", outletId] as const,
 };
+
+export function useLoyaltyDashboard(outletId: string) {
+  return useQuery({
+    queryKey: KEYS.dashboard(outletId),
+    queryFn: () => loyaltyApi.getDashboardData(outletId),
+    enabled: !!outletId,
+    staleTime: 1000 * 30,
+  });
+}
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 export function useLoyaltyConfig(outletId: string) {

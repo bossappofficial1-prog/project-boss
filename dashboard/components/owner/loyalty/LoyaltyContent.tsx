@@ -11,6 +11,7 @@ import { LoyaltySettings } from "./LoyaltySettings";
 import { LoyaltyMembersTable } from "./LoyaltyMembersTable";
 import { TierSettings } from "./tier-settings";
 import { RewardCatalog } from "./reward-catalog";
+import { LoyaltyDashboard } from "./LoyaltyDashboard";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function LoyaltyContent() {
@@ -57,8 +58,11 @@ export default function LoyaltyContent() {
                 description={`Kelola program poin, tier membership, dan basis data keanggotaan untuk ${currentOutletName}`}
             />
 
-            <Tabs defaultValue="members" className="space-y-4">
+            <Tabs defaultValue="dashboard" className="space-y-4">
                 <TabsList className="bg-muted/50 border border-border/40 p-1 rounded-md h-auto gap-1 w-full sm:w-auto flex-wrap">
+                    <TabsTrigger value="dashboard" className="gap-2 px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">
+                        Ringkasan Analitik
+                    </TabsTrigger>
                     <TabsTrigger value="members" className="gap-2 px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">
                         Daftar Member
                     </TabsTrigger>
@@ -72,6 +76,10 @@ export default function LoyaltyContent() {
                         Katalog Reward
                     </TabsTrigger>
                 </TabsList>
+
+                <TabsContent value="dashboard" className="mt-6">
+                    <LoyaltyDashboard outletId={outletId!} />
+                </TabsContent>
 
                 <TabsContent value="members" className="mt-6">
                     <LoyaltyMembersTable outletId={outletId!} />

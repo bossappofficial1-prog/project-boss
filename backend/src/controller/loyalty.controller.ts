@@ -146,4 +146,28 @@ export class LoyaltyController {
     const result = await LoyaltyService.getRedemptionsByMember(outletId, guestCustomerId);
     return ResponseUtil.success(res, result);
   }
+
+  static async exportMembers(req: Request, res: Response) {
+    const outletId = req.params.outletId as string;
+    const csvData = await LoyaltyService.exportMembersToCSV(outletId);
+    
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename=loyalty-members-export-${outletId}-${Date.now()}.csv`);
+    return res.send(csvData);
+  }
+
+  static async exportRedemptions(req: Request, res: Response) {
+    const outletId = req.params.outletId as string;
+    const csvData = await LoyaltyService.exportRedemptionsToCSV(outletId);
+    
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename=loyalty-redemptions-export-${outletId}-${Date.now()}.csv`);
+    return res.send(csvData);
+  }
+
+  static async getDashboardData(req: Request, res: Response) {
+    const outletId = req.params.outletId as string;
+    const data = await LoyaltyService.getDashboardData(outletId);
+    return ResponseUtil.success(res, data);
+  }
 }

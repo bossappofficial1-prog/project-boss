@@ -25,7 +25,12 @@ router.put("/rewards/:outletId/:rewardId", authorize(UserRole.OWNER), asyncHandl
 router.delete("/rewards/:outletId/:rewardId", authorize(UserRole.OWNER), asyncHandler(LoyaltyController.deleteReward));
 router.post("/rewards/:outletId/redeem", asyncHandler(LoyaltyController.redeemReward));
 
+// ─── Dashboard / Analytics ───────────────────────────────────────────────────
+router.get("/dashboard/:outletId", authorize(UserRole.OWNER), asyncHandler(LoyaltyController.getDashboardData));
+router.get("/redemptions/:outletId/export", authorize(UserRole.OWNER), asyncHandler(LoyaltyController.exportRedemptions));
+
 // ─── Members ─────────────────────────────────────────────────────────────────
+router.get("/members/:outletId/export", asyncHandler(LoyaltyController.exportMembers));
 router.get("/members/:outletId", asyncHandler(LoyaltyController.getMembers));
 router.post("/register", asyncHandler(LoyaltyController.registerMember));
 router.post(

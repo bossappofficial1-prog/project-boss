@@ -168,8 +168,46 @@ export interface RewardRedemption {
   loyaltyReward: Pick<LoyaltyReward, "id" | "name" | "type">;
 }
 
+export interface LoyaltyDashboardData {
+  stats: {
+    totalMembers: number;
+    totalActivePoints: number;
+    totalRedeemedPoints: number;
+    totalMemberSpending: number;
+  };
+  tierBreakdown: Array<{
+    name: string;
+    color: string;
+    count: number;
+  }>;
+  recentRedemptions: Array<{
+    id: string;
+    customerName: string;
+    customerPhone: string;
+    rewardName: string;
+    rewardType: string;
+    pointsUsed: number;
+    status: string;
+    createdAt: string;
+  }>;
+  topMembers: Array<{
+    name: string;
+    phone: string;
+    points: number;
+    lifetimePoints: number;
+    tierName: string;
+    tierColor: string;
+  }>;
+}
+
 // ─── API Functions ─────────────────────────────────────────────────────────────
 export const loyaltyApi = {
+  // Dashboard
+  async getDashboardData(outletId: string): Promise<LoyaltyDashboardData> {
+    const response = await apiClient.get<{ data: LoyaltyDashboardData }>(`/loyalty/dashboard/${outletId}`);
+    return response.data.data;
+  },
+
   // Config
   async getConfig(outletId: string): Promise<LoyaltyConfig | null> {
     const response = await apiClient.get<{ data: LoyaltyConfig | null }>(`/loyalty/config/${outletId}`);

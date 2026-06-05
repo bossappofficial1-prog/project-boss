@@ -27,7 +27,7 @@ export const generateTransactionReportPDF = async (data: TransactionReportData):
         headerFooter: {
             headerLeft: data.docNumber,
             headerRight: `${data.businessName} — ${data.period}`,
-            footerLeft: '<strong>DISCLAIMER:</strong> Dokumen ini digenerate otomatis oleh sistem Business One Stop System. Sah tanpa tanda tangan basah.',
+            footerLeft: '<strong>DISCLAIMER:</strong> E-statement ini digenerate otomatis oleh sistem Business One Stop System. Sah tanpa tanda tangan basah.',
             showPageNumber: true,
         },
     });

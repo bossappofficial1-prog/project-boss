@@ -105,7 +105,7 @@ export const exportTransactionReportController = asyncHandler(async (req: Reques
     },
   );
 
-  return ResponseUtil.success(res, null, HttpStatus.OK, 'Laporan sedang diproses. Akan dikirim ke email Anda.');
+  return ResponseUtil.success(res, null, HttpStatus.OK, 'E-statement sedang diproses. Akan dikirim ke email Anda.');
 });
 
 const exportOutletQuerySchema = z.object({

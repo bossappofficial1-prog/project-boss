@@ -349,4 +349,76 @@ export class LoyaltyRepository {
   static async countPointHistoryByMember(outletId: string, guestCustomerId: string) {
     return db.loyaltyPointHistory.count({ where: { outletId, guestCustomerId } });
   }
+
+  static async countMembers(outletId: string) {
+    return db.outletMembership.count({
+      where: { outletId, status: "ACTIVE" }
+    });
+  }
+
+  static async sumActivePoints(outletId: string) {
+    const res = await db.outletMembership.aggregate({
+      where: { outletId, status: "ACTIVE" },
+      _sum: { totalPoints: true }
+    });
+    return res._sum.totalPoints || 0;
+  }
+
+  static async sumRedeemedPoints(outletId: string) {
+    const res = await db.rewardRedemption.aggregate({
+      where: { outletId, status: "USED" },
+      _sum: { pointsUsed: true }
+    });
+    return res._sum.pointsUsed || 0;
+  }
+
+  static async sumMemberSpending(outletId: string) {
+    const res = await db.outletMembership.aggregate({
+      where: { outletId, status: "ACTIVE" },
+      _sum: { totalSpending: true }
+    });
+    return res._sum.totalSpending || 0;
+  }
+
+  static async countMembersByTier(outletId: string, tierId: string | null) {
+    return db.outletMembership.count({
+      where: { outletId, tierId, status: "ACTIVE" }
+    });
+  }
+
+  static async findRecentRedemptions(outletId: string, limit = 10) {
+    return db.rewardRedemption.findMany({
+      where: { outletId },
+      include: {
+        guestCustomer: { select: { name: true, phone: true } },
+        loyaltyReward: { select: { name: true, type: true } }
+      },
+      orderBy: { createdAt: "desc" },
+      take: limit
+    });
+  }
+
+  static async findTopMembers(outletId: string, limit = 5) {
+    return db.outletMembership.findMany({
+      where: { outletId, status: "ACTIVE" },
+      include: {
+        guestCustomer: { select: { name: true, phone: true } },
+        tier: { select: { name: true, color: true } }
+      },
+      orderBy: { totalPoints: "desc" },
+      take: limit
+    });
+  }
+
+  static async findAllRedemptions(outletId: string) {
+    return db.rewardRedemption.findMany({
+      where: { outletId },
+      include: {
+        guestCustomer: { select: { name: true, phone: true, email: true } },
+        loyaltyReward: { select: { name: true, type: true } }
+      },
+      orderBy: { createdAt: "desc" }
+    });
+  }
 }
+

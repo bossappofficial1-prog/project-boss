@@ -21,11 +21,11 @@ export const useExportTransactionReport = () => {
     return useMutation({
         mutationFn: exportTransactionReport,
         onSuccess: (data) => {
-            toast.success(data.message || "Laporan sedang diproses. Akan dikirim ke email Anda.");
+            toast.success(data.message || "E-statement sedang diproses. Akan dikirim ke email Anda.");
         },
         onError: (error: any) => {
             const message =
-                error?.response?.data?.message || "Gagal memproses permintaan laporan";
+                error?.response?.data?.message || "Gagal memproses permintaan e-statement";
             toast.error(message);
         },
     });

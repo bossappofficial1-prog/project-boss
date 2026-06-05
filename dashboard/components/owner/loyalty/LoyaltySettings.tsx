@@ -167,7 +167,7 @@ export function LoyaltySettings({ outletId }: { outletId: string }) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left/Middle Column: Comprehensive Unified Form */}
             <div className="lg:col-span-2 space-y-6">
-                <Card className="rounded-lg border border-border/80 bg-background shadow-sm overflow-hidden">
+                <Card className="rounded-lg border border-border/80 bg-background shadow-sm overflow-hidden py-0 gap-0">
                     <CardHeader className="p-6 border-b border-border/40 bg-muted/20">
                         <CardTitle className="text-sm font-bold uppercase tracking-widest text-foreground/90 flex items-center gap-2">
                             <Sparkles className="h-4 w-4 text-primary" />
@@ -207,7 +207,7 @@ export function LoyaltySettings({ outletId }: { outletId: string }) {
 
             {/* Right Column: Real-time Live Interactive Simulation Engine */}
             <div className="space-y-6">
-                <Card className="rounded-lg border border-border/80 bg-background shadow-sm overflow-hidden sticky top-6">
+                <Card className="rounded-lg border border-border/80 bg-background shadow-sm overflow-hidden sticky top-6 py-0 gap-0">
                     <CardHeader className="p-6 border-b border-border/40 bg-muted/20">
                         <CardTitle className="text-sm font-bold uppercase tracking-widest text-foreground/90 flex items-center gap-2">
                             <Calculator className="h-4 w-4 text-primary" />
@@ -233,7 +233,7 @@ export function LoyaltySettings({ outletId }: { outletId: string }) {
                             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-blue-500/10 border border-blue-500/30">
                                 <Trophy className="h-4 w-4 text-blue-600" />
                                 <span className="text-base font-bold text-blue-600 tabular-nums">
-                                    +{ (Math.floor((currentMultiplier * 2.5) / currentMultiplier) * currentPoints).toLocaleString("id-ID") } Poin
+                                    +{(Math.floor((currentMultiplier * 2.5) / currentMultiplier) * currentPoints).toLocaleString("id-ID")} Poin
                                 </span>
                             </div>
                             <p className="text-[10px] text-muted-foreground italic leading-tight">

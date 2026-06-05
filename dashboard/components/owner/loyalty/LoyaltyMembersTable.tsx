@@ -211,6 +211,18 @@ export function LoyaltyMembersTable({ outletId }: { outletId: string }) {
                     setLimit(params.limit);
                 }}
                 emptyMessage="Belum ada member terdaftar di outlet ini."
+                enableExport
+                exportConfig={[
+                    {
+                        id: "csv",
+                        label: "Download CSV",
+                        icon: "file",
+                        enabled: true,
+                        type: "server",
+                        exportUrl: () => `${process.env.NEXT_PUBLIC_BACKEND_URL}/loyalty/members/${outletId}/export`,
+                        filename: `loyalty-members-export-${outletId}`,
+                    }
+                ]}
             />
 
             <Dialog open={!!editingMember} onOpenChange={(open) => !open && setEditingMember(null)}>
