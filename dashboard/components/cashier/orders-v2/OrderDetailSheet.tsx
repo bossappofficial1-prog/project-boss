@@ -45,9 +45,9 @@ const STATUS_CONFIG: Record<
 const PRIMARY_ACTIONS: Partial<
     Record<GoodsOrderStatus, { nextStatus: GoodsOrderStatus; label: string }>
 > = {
-    AWAITING_PAYMENT: { nextStatus: "PROCESSING", label: "Konfirmasi Pembayaran" },
+    AWAITING_PAYMENT: { nextStatus: "CONFIRMED", label: "Konfirmasi Pembayaran" },
+    CONFIRMED: { nextStatus: "PROCESSING", label: "Mulai Masak" },
     PROCESSING: { nextStatus: "READY", label: "Tandai Siap Diambil" },
-    CONFIRMED: { nextStatus: "READY", label: "Tandai Siap Diambil" },
     READY: { nextStatus: "COMPLETED", label: "Selesaikan Pesanan" },
 };
 
@@ -132,7 +132,7 @@ export function OrderDetailSheet({
                                 <InfoRow icon={Phone} label="Telepon" value={entry.customerPhone} />
                             )}
                             {entry.tableNumber && (
-                                <InfoRow icon={LayoutGrid} label="Meja" value={entry.tableNumber} />
+                                <InfoRow icon={LayoutGrid} label="Meja" value={entry.tableNumber.replace(/meja/gi, "").trim()} />
                             )}
                         </div>
                     </section>

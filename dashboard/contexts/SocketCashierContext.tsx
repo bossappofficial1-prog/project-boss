@@ -64,6 +64,8 @@ export const SocketCashierProvider = ({
 
     const handleOrderEvent = (payload: any) => {
       qc.invalidateQueries({ queryKey: ["badge-count", outletId] });
+      qc.invalidateQueries({ queryKey: ["orders-v2"] });
+      qc.invalidateQueries({ queryKey: ["queue-v2"] });
 
       if (!notifAudioRef.current) {
         notifAudioRef.current = new Audio("/sounds/order-incoming.wav");

@@ -87,6 +87,18 @@ export class SocketEmitter {
     io.to(outletId).emit(SOCKET_EVENT.ORDER_EVENT, payload)
   }
 
+  emitOrderStatusChangedToOutlet(
+    outletId: string,
+    payload: {
+      orderId: string;
+      status: string;
+      message?: string;
+    },
+  ) {
+    const io = this.getIO();
+    io.to(outletId).emit(SOCKET_EVENT.ORDER_STATUS_CHANGED, payload);
+  }
+
   emitQueueUpdate(
     outletId: string,
     data: {

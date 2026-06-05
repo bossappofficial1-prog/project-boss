@@ -740,6 +740,17 @@ export async function updateOrderStatusService(
     console.error("❌ Error emitting customer order status event:", customerSocketError);
   }
 
+  // Broadcast status update ke outlet (kasir dan kitchen) melalui socket
+  try {
+    SocketEmitter.getInstance().emitOrderStatusChangedToOutlet(updatedOrder.outletId, {
+      orderId: updatedOrder.id,
+      status: updatedOrder.orderStatus,
+      message: `Status pesanan #${updatedOrder.id.slice(-8)} diperbarui`,
+    });
+  } catch (outletSocketError) {
+    console.error("❌ Error emitting outlet order status event:", outletSocketError);
+  }
+
   // Broadcast updated queue snapshot to outlet listeners
   try {
     if (hasServiceProduct(updatedOrder as any)) {

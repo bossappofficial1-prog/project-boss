@@ -82,6 +82,21 @@ const buildNotificationMessage = (payload: CustomerNotificationPayload) => {
     return `Pesanan ${payload.orderId} memiliki pembaruan${paymentMethod}`;
 };
 
+// Patch localStorage in the current window to dispatch custom event when setItem/removeItem is called
+if (typeof window !== "undefined" && !(window as any).__local_storage_patched) {
+    (window as any).__local_storage_patched = true;
+    const originalSetItem = localStorage.setItem;
+    localStorage.setItem = function (key, value) {
+        originalSetItem.apply(this, [key, value]);
+        window.dispatchEvent(new CustomEvent("local-storage-update", { detail: { key, value } }));
+    };
+    const originalRemoveItem = localStorage.removeItem;
+    localStorage.removeItem = function (key) {
+        originalRemoveItem.apply(this, [key]);
+        window.dispatchEvent(new CustomEvent("local-storage-update", { detail: { key, value: null } }));
+    };
+}
+
 export function CustomerSocketListener() {
     const { isConnected, joinCustomerRoom, onEvent, events } = useSocket();
     const { showSnackbar } = useSnackbar();
@@ -110,10 +125,12 @@ export function CustomerSocketListener() {
 
         window.addEventListener("storage", handleStorage);
         window.addEventListener("focus", handleFocus);
+        window.addEventListener("local-storage-update", handleStorage);
 
         return () => {
             window.removeEventListener("storage", handleStorage);
             window.removeEventListener("focus", handleFocus);
+            window.removeEventListener("local-storage-update", handleStorage);
         };
     }, [refreshIdentifier]);
 

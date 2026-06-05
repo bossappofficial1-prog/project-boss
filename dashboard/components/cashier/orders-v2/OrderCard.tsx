@@ -58,9 +58,9 @@ const STATUS_CONFIG: Record<
 const PRIMARY_ACTIONS: Partial<
     Record<GoodsOrderStatus, { nextStatus: GoodsOrderStatus; label: string }>
 > = {
-    AWAITING_PAYMENT: { nextStatus: "PROCESSING", label: "Konfirmasi" },
+    AWAITING_PAYMENT: { nextStatus: "CONFIRMED", label: "Konfirmasi" },
+    CONFIRMED: { nextStatus: "PROCESSING", label: "Mulai Masak" },
     PROCESSING: { nextStatus: "READY", label: "Siap Diambil" },
-    CONFIRMED: { nextStatus: "READY", label: "Siap Diambil" },
     READY: { nextStatus: "COMPLETED", label: "Selesai" },
 };
 
@@ -107,7 +107,7 @@ export function OrderCard({ entry, onPrimaryAction, onCancel, onDetail, onPrint,
                         {entry.tableNumber && (
                             <div className="flex items-center gap-1 text-[10px] font-bold text-primary uppercase">
                                 <LayoutGrid className="w-2.5 h-2.5" />
-                                Meja {entry.tableNumber}
+                                Meja {entry.tableNumber.replace(/meja/gi, "").trim()}
                             </div>
                         )}
                     </div>
@@ -185,7 +185,7 @@ export function OrderCard({ entry, onPrimaryAction, onCancel, onDetail, onPrint,
                 {/* Actions */}
                 {!isTerminal && (
                     <div className="flex items-center gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
-                        {primary && entry.isManualPayment && entry.paymentProofUrl && (
+                        {primary && (entry.orderStatus !== "AWAITING_PAYMENT" || !entry.isManualPayment || entry.paymentProofUrl) && (
                             <Button
                                 size="sm"
                                 className="flex-1 h-8 text-xs"

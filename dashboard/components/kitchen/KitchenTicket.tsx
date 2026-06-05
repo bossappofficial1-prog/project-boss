@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Clock, Hash, AlertCircle, Play, Check, CheckCheck, Loader2, UtensilsCrossed } from "lucide-react";
+import { Clock, Hash, AlertCircle, UtensilsCrossed } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { OrderV2Entry, GoodsOrderStatus } from "@/lib/apis/orders-v2";
-import { useOrdersV2UpdateStatus } from "@/hooks/api/use-orders-v2";
+import { OrderV2Entry } from "@/lib/apis/orders-v2";
 
 interface KitchenTicketProps {
     entry: OrderV2Entry;
@@ -135,7 +133,6 @@ export function KitchenTicket({ entry }: KitchenTicketProps) {
                     <span className="text-[9px] font-black">Priority Prep</span>
                 </div>
             )}
-
 
             {hasNewItems && (
                 <div className="absolute inset-0 pointer-events-none ring-1 ring-primary/20 ring-inset rounded-md" />

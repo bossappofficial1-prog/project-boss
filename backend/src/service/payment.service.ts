@@ -936,16 +936,17 @@ export class PaymentService {
 
     await this.orderRepo.updatePaymentStatus(
       orderId,
-      OrderStatus.PROCESSING,
+      OrderStatus.CONFIRMED,
       PaymentStatus.SUCCESS,
     );
 
     try {
-      socketUtils.emitToBusinessOutlet(transaction.order.outletId, {
+      SocketEmitter.getInstance().emitToBusinessOutlet(transaction.order.outletId, {
         type: "manual_payment_verified",
         orderId,
         amount: transaction.amount,
-        paymentMethod: transaction.manualMethod,
+        paymentMethod: transaction.manualMethod ?? "manual",
+        customerName: transaction.order.guestCustomer?.name ?? "-",
         timestamp: new Date(),
       });
     } catch (socketError) {
@@ -957,7 +958,7 @@ export class PaymentService {
 
     await messagePublisher.publishOrderStatusUpdate(
       orderId,
-      OrderStatus.PROCESSING,
+      OrderStatus.CONFIRMED,
     );
     await messagePublisher.publishWhatsAppPaymentSuccess(orderId);
 
@@ -1022,13 +1023,14 @@ export class PaymentService {
     );
 
     try {
-      socketUtils.emitToBusinessOutlet(transaction.order.outletId, {
+      SocketEmitter.getInstance().emitToBusinessOutlet(transaction.order.outletId, {
         type: "manual_payment_rejected",
         orderId,
         amount: transaction.amount,
-        paymentMethod: transaction.manualMethod,
-        reason,
+        paymentMethod: transaction.manualMethod ?? "manual",
+        customerName: transaction.order.guestCustomer?.name ?? "-",
         timestamp: new Date(),
+        message: reason,
       });
     } catch (socketError) {
       console.error(
@@ -1285,12 +1287,13 @@ export async function createMidtransTransactionService(
   await schedulePaymentExpiration(order.id, expiresAt);
 
   try {
-    socketUtils.emitToBusinessOutlet(order.outletId, {
+    SocketEmitter.getInstance().emitToBusinessOutlet(order.outletId, {
       type: "payment_created",
       orderId: order.id,
       amount: calculatedGrossAmount,
-      paymentMethod,
-      timestamp: new Date().toISOString(),
+      paymentMethod: paymentMethod ?? "manual",
+      customerName: order.guestCustomer?.name ?? "-",
+      timestamp: new Date(),
     });
   } catch (error) {
     console.error("Socket emit failed", error);

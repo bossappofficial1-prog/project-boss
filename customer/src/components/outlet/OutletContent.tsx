@@ -424,11 +424,10 @@ const OperatingHoursTab = ({
         {formattedHours?.map((hour) => (
           <div
             key={hour.id}
-            className={`flex justify-between items-center px-4 py-3 rounded-lg transition-colors ${
-              hour.dayOfWeek === today
-                ? "bg-primary/5 border border-primary/15 shadow-sm"
-                : "hover:bg-muted/50"
-            }`}
+            className={`flex justify-between items-center px-4 py-3 rounded-lg transition-colors ${hour.dayOfWeek === today
+              ? "bg-primary/5 border border-primary/15 shadow-sm"
+              : "hover:bg-muted/50"
+              }`}
           >
             <div className="flex items-center gap-2.5">
               <div
@@ -856,7 +855,7 @@ export function OutletContent({
                 </p>
                 <p className="text-sm font-extrabold leading-none">
                   {t("tableIndicator", {
-                    tableId: storedTableName || storedTableId,
+                    tableId: (storedTableName?.toLocaleLowerCase()?.includes("meja") ? storedTableName.toLocaleLowerCase().replace("meja", "") : storedTableName) || storedTableId,
                   })}
                 </p>
               </div>
@@ -1069,26 +1068,26 @@ export function OutletContent({
           {(selectedTabs === "products" ||
             selectedTabs === "services" ||
             selectedTabs === "tickets") && (
-            <div className="relative mt-3">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder={t("searchPlaceholder")}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-10 h-10 rounded-lg text-sm border-border/60 focus-visible:ring-primary/20"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          )}
+              <div className="relative mt-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder={t("searchPlaceholder")}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-10 h-10 rounded-lg text-sm border-border/60 focus-visible:ring-primary/20"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            )}
 
           {/* Search Results Count */}
           {trimmedSearch &&

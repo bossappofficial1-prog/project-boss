@@ -237,14 +237,19 @@ export default function OrdersPage() {
     // Status counts from full dataset
     const counts: Record<string, number> = { ALL: orders.length };
     for (const o of orders) {
-      counts[o.orderStatus] = (counts[o.orderStatus] || 0) + 1;
+      const statusKey = (o.orderStatus === "CONFIRMED" || o.orderStatus === "ON_GOING") ? "PROCESSING" : o.orderStatus;
+      counts[statusKey] = (counts[statusKey] || 0) + 1;
     }
 
     // 1. Filter by status
-    let result =
-      activeTab === "ALL"
-        ? orders
-        : orders.filter((o) => o.orderStatus === activeTab);
+    let result = orders;
+    if (activeTab !== "ALL") {
+      if (activeTab === "PROCESSING") {
+        result = orders.filter((o) => o.orderStatus === "PROCESSING" || o.orderStatus === "CONFIRMED" || o.orderStatus === "ON_GOING");
+      } else {
+        result = orders.filter((o) => o.orderStatus === activeTab);
+      }
+    }
 
     // 2. Search
     const q = deferredSearch.trim().toLowerCase();

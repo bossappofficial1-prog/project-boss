@@ -2,7 +2,7 @@ import { Router } from "express";
 import { PaymentService } from "../service/payment.service";
 import { PaymentController } from "../controller/payment.controller";
 import { authorize, protect } from "../middleware/auth.middleware";
-import { UserRole } from "@prisma/client";
+import { UserRole, StaffRole } from "@prisma/client";
 import { uploadPaymentProof, handleUploadError } from "../middleware/upload.middleware";
 import { validateSchema } from "../middleware/zod.middleware";
 import { CreatePaymentSchema } from "../schemas/payment-v2.schema";
@@ -29,21 +29,21 @@ paymentRouter.post(
 paymentRouter.post(
 	"/:orderId/manual/verify",
 	protect,
-	authorize(UserRole.OWNER, UserRole.ADMIN),
+	authorize(UserRole.OWNER, UserRole.ADMIN, StaffRole.CASHIER),
 	paymentController.verifyManualPayment
 );
 
 paymentRouter.post(
 	"/:orderId/manual/reject",
 	protect,
-	authorize(UserRole.OWNER, UserRole.ADMIN),
+	authorize(UserRole.OWNER, UserRole.ADMIN, StaffRole.CASHIER),
 	paymentController.rejectManualPayment
 );
 
 paymentRouter.get(
 	"/manual",
 	protect,
-	authorize(UserRole.OWNER, UserRole.ADMIN),
+	authorize(UserRole.OWNER, UserRole.ADMIN, StaffRole.CASHIER),
 	paymentController.listManualPayments
 );
 

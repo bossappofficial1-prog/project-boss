@@ -213,9 +213,24 @@ export default function KitchenPage() {
     if (isOutletError || !outlet) return <KdsError onBack={() => router.back()} />;
 
     const board = data?.board;
-    const pending = board?.pending ?? [];
-    const processing = board?.processing ?? [];
-    const ready = board?.ready ?? [];
+    
+    // Gather all active orders from all backend lanes to regroup them for the kitchen
+    const allActive = [
+        ...(board?.pending ?? []),
+        ...(board?.processing ?? []),
+        ...(board?.ready ?? []),
+    ];
+
+    // Filter out unpaid/unverified orders (AWAITING_PAYMENT)
+    const paidActive = allActive.filter((o) => o.orderStatus !== "AWAITING_PAYMENT");
+
+    // Regroup into kitchen lanes:
+    // - Antrian (pending): status is CONFIRMED
+    // - Dimasak (processing): status is PROCESSING or ON_GOING
+    // - Siap (ready): status is READY
+    const pending = paidActive.filter((o) => o.orderStatus === "CONFIRMED");
+    const processing = paidActive.filter((o) => o.orderStatus === "PROCESSING" || o.orderStatus === "ON_GOING");
+    const ready = paidActive.filter((o) => o.orderStatus === "READY");
     const totalActive = pending.length + processing.length + ready.length;
 
     const laneData = { pending, processing, ready };

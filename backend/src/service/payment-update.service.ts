@@ -52,7 +52,7 @@ export async function handlePaymentSuccess(orderId: string) {
         orderStatus = OrderStatus.PROCESSING;
         await messagePublisher.publishServiceOrderProcessing(order.id);
     } else if (hasNonRetailGoods) {
-        orderStatus = OrderStatus.PROCESSING;
+        orderStatus = OrderStatus.CONFIRMED;
     } else if (hasTicket) {
         orderStatus = OrderStatus.COMPLETED;
     } else {
@@ -171,7 +171,12 @@ export async function handlePaymentSuccess(orderId: string) {
                 customerName: order.guestCustomer?.name || 'Customer',
                 timestamp: new Date()
             });
-            console.log(`📡 Emitted payment_success and orderEvent to cashier at outlet ${outletId}`);
+            SocketEmitter.getInstance().emitOrderStatusChangedToOutlet(outletId, {
+                orderId: order.id,
+                status: orderStatus,
+                message: `Pembayaran pesanan #${order.id.slice(-8)} sukses`,
+            });
+            console.log(`📡 Emitted payment_success, orderEvent, and statusChanged to cashier/kitchen at outlet ${outletId}`);
 
             // Trigger web push notification to staff of this outlet
             try {

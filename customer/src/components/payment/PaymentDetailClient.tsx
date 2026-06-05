@@ -194,7 +194,7 @@ function normalizeStatus(status?: string): StatusKey {
   if (["AWAITING_PAYMENT", "PENDING"].includes(upper)) return "PENDING";
   if (upper === "AWAITING_VERIFICATION") return "AWAITING_VERIFICATION";
   if (upper === "PROCESSING") return "PROCESSING";
-  if (["SETTLEMENT", "SUCCESS", "PAID", "COMPLETED"].includes(upper))
+  if (["SETTLEMENT", "SUCCESS", "PAID", "COMPLETED", "CONFIRMED"].includes(upper))
     return "SUCCESS";
   if (["FAILURE", "FAILED", "DENY"].includes(upper)) return "FAILED";
   if (["EXPIRE", "EXPIRED"].includes(upper)) return "EXPIRED";

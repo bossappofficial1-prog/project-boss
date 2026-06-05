@@ -138,7 +138,7 @@ export function CashierNavbar({
         label: "Pesanan",
         icon: ShoppingBag,
         badge: badgeData?.orderBadgeCount,
-        requiredTypes: [OutletType.RETAIL, OutletType.FNB, OutletType.CUSTOM],
+        requiredTypes: [OutletType.RETAIL, OutletType.EVENT, OutletType.FNB, OutletType.CUSTOM],
       },
       {
         href: "/cashier/tables",
@@ -379,8 +379,8 @@ export function CashierNavbar({
                       } catch (e: any) {
                         toast.error(
                           e.response.data.message ||
-                            e?.message ||
-                            "Gagal absen pulang",
+                          e?.message ||
+                          "Gagal absen pulang",
                         );
                       } finally {
                         setAttendanceLoading(false);
@@ -408,14 +408,14 @@ export function CashierNavbar({
                       let lng: number | undefined;
                       if (navigator.geolocation) {
                         const pos = await new Promise<GeolocationPosition>(
-                           (resolve, reject) =>
-                             navigator.geolocation.getCurrentPosition(
-                               resolve,
-                               reject,
-                               {
-                                 timeout: 5000,
-                               },
-                             ),
+                          (resolve, reject) =>
+                            navigator.geolocation.getCurrentPosition(
+                              resolve,
+                              reject,
+                              {
+                                timeout: 5000,
+                              },
+                            ),
                         ).catch(() => undefined);
                         lat = pos?.coords?.latitude;
                         lng = pos?.coords?.longitude;
@@ -429,8 +429,8 @@ export function CashierNavbar({
                     } catch (e: any) {
                       toast.error(
                         e.response.data.message ||
-                          e?.message ||
-                          "Gagal absen pulang",
+                        e?.message ||
+                        "Gagal absen pulang",
                       );
                     } finally {
                       setAttendanceLoading(false);
