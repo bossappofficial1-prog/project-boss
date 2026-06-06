@@ -354,7 +354,7 @@ export const getOrderNotificationDataController = asyncHandler(
       return ResponseUtil.notFound(res, "Order not found");
     }
 
-    return ResponseUtil.success(res, {});
+    return ResponseUtil.success(res, order);
   },
 );
 

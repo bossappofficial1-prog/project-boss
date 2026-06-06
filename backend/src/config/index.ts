@@ -70,6 +70,9 @@ export const config = {
     redirectUrl:
       process.env.GOOGLE_REDIRECT_URL ||
       "http://localhost:1234/api/v1/auth/google/callback",
+    calendarRedirectUrl:
+      process.env.GOOGLE_CALENDAR_REDIRECT_URL ||
+      "http://localhost:1234/api/v1/integrations/google/callback",
   },
   vapid: {
     publicVapidKey: process.env.PUBLIC_VAPID_KEY || "",

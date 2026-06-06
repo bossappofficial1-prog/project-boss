@@ -10,6 +10,8 @@ import { Bell, Lock, UserCog, Building2, Mail, ShieldCheck, KeyRound } from "luc
 import { ProfileForm } from "./ProfileForm";
 import { PasswordForm } from "./PasswordForm";
 import { SectionHeader } from "@/components/ui/section-header";
+import { IntegrationsCard } from "./integrations-card";
+
 
 export function SettingsContent() {
   const { user, business, isLoading } = useAuth();
@@ -173,6 +175,9 @@ export function SettingsContent() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Integrasi Pihak Ketiga */}
+          <IntegrationsCard subscriptionPlan={business?.subscriptionPlan || "BASIC"} />
 
         </div>
       </div>

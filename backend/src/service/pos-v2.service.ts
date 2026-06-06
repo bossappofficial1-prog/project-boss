@@ -10,6 +10,7 @@ import { LoyaltyService } from "./loyalty.service";
 import { getOutletByIdService } from "./outlet.service";
 import { CashierShiftService } from "./cashier-shift.service";
 import { deductStockForCompletedOrder } from "./order.service";
+import { OrderStatus } from "@prisma/client";
 import { db } from "../config/prisma";
 import { PlanLimitService } from "./plan-limit.service";
 
@@ -306,6 +307,37 @@ export class PosV2Service {
             `Kuota tiket "${product.name}" tidak cukup. Tersedia: ${availableQuota}`,
             HttpStatus.BAD_REQUEST,
           );
+        }
+        if (product.ticket.maxPerOrder && item.quantity > product.ticket.maxPerOrder) {
+          throw new AppError(
+            `Maksimal ${product.ticket.maxPerOrder} tiket per order untuk "${product.name}"`,
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+        if (product.ticket.maxPerOrder && customer?.phone) {
+          const existingPurchase = await db.orderItem.aggregate({
+            where: {
+              productId: item.productId,
+              order: {
+                guestCustomer: {
+                  phone: customer.phone,
+                },
+                orderStatus: {
+                  not: OrderStatus.CANCELLED,
+                },
+              },
+            },
+            _sum: {
+              quantity: true,
+            },
+          });
+          const alreadyPurchased = existingPurchase?._sum?.quantity || 0;
+          if (alreadyPurchased + item.quantity > product.ticket.maxPerOrder) {
+            throw new AppError(
+              `Pembelian tiket "${product.name}" melebihi batas. Pelanggan sudah membeli ${alreadyPurchased} tiket, batas maksimal ${product.ticket.maxPerOrder} tiket per pelanggan.`,
+              HttpStatus.BAD_REQUEST,
+            );
+          }
         }
         const price = product.ticket.sellingPrice;
         subtotal += price * item.quantity;

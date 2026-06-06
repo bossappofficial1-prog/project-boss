@@ -195,6 +195,32 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
               HttpStatus.BAD_REQUEST,
             );
           }
+          if (product.ticket.maxPerOrder && data.guestCustomer?.phone) {
+            const cleanPhone = data.guestCustomer.phone.replace(/[^\d+]/g, "");
+            const existingPurchase = await tx.orderItem.aggregate({
+              where: {
+                productId: item.productId,
+                order: {
+                  guestCustomer: {
+                    phone: cleanPhone,
+                  },
+                  orderStatus: {
+                    not: OrderStatus.CANCELLED,
+                  },
+                },
+              },
+              _sum: {
+                quantity: true,
+              },
+            });
+            const alreadyPurchased = existingPurchase?._sum?.quantity || 0;
+            if (alreadyPurchased + item.quantity > product.ticket.maxPerOrder) {
+              throw new AppError(
+                `Pembelian tiket untuk ${product.name} melebihi batas. Anda sudah membeli ${alreadyPurchased} tiket, batas maksimal adalah ${product.ticket.maxPerOrder} tiket per pelanggan.`,
+                HttpStatus.BAD_REQUEST,
+              );
+            }
+          }
           if (new Date(product.ticket.eventDate) < new Date()) {
             throw new AppError(
               `Event untuk ${product.name} sudah berakhir`,

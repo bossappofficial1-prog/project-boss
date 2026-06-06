@@ -1,4 +1,6 @@
 import { PdfBaseService } from './pdf-base.service';
+import QRCode from 'qrcode';
+import bwipjs from 'bwip-js';
 
 export interface TransactionReportData {
     docNumber: string;
@@ -50,9 +52,33 @@ export interface TicketPrintData {
 }
 
 export const generateTicketsPDF = async (tickets: TicketPrintData[]): Promise<Buffer> => {
+    const processedTickets = await Promise.all(tickets.map(async (t) => {
+        let codeImageUrl = t.codeImageUrl;
+        try {
+            if (t.codeFormat === "BARCODE_128" || t.isBarcode) {
+                const pngBuffer = await bwipjs.toBuffer({
+                    bcid: 'code128',
+                    text: t.code,
+                    scale: 3,
+                    height: 10,
+                    includetext: false,
+                });
+                codeImageUrl = `data:image/png;base64,${pngBuffer.toString('base64')}`;
+            } else {
+                codeImageUrl = await QRCode.toDataURL(t.code);
+            }
+        } catch (err) {
+            console.error("Gagal generate QR/Barcode lokal di generateTicketsPDF:", err);
+        }
+        return {
+            ...t,
+            codeImageUrl,
+        };
+    }));
+
     return PdfBaseService.generate({
         templateName: 'ticket.hbs',
-        data: { tickets },
+        data: { tickets: processedTickets },
         landscape: false,
         format: 'A4',
     });

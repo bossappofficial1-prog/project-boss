@@ -34,4 +34,5 @@ export const config = {
     MIDTRANS_SERVER_KEY: process.env.MIDTRANS_SERVER_KEY!,
     MIDTRANS_IS_PRODUCTION: process.env.MIDTRANS_IS_PRODUCTION === 'true',
     MIDTRANS_CLIENT_KEY: process.env.MIDTRANS_CLIENT_KEY!,
+    INTERNAL_API_KEY: process.env.INTERNAL_API_KEY || "rahasia-internal-key-abc-123",
 };

@@ -17,6 +17,9 @@ interface OrderInQueue {
     guestCustomer: {
         phone: string | null;
     };
+    outlet?: {
+        businessId: string;
+    };
 }
 
 const QUEUE_NAMES = {
@@ -163,6 +166,7 @@ class ServiceOrderWorker {
             await apiClient.post('/internal/send-queue-notification', {
                 phone: order.guestCustomer.phone,
                 position: queuePosition,
+                businessId: order.outlet?.businessId,
             });
         }
     }
@@ -189,6 +193,7 @@ class ServiceOrderWorker {
                 await apiClient.post('/internal/send-queue-notification', {
                     phone: order.guestCustomer.phone,
                     position: i + 1,
+                    businessId: order.outlet?.businessId || completedOrder.outlet?.businessId,
                 });
             }
         }

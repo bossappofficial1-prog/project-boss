@@ -124,10 +124,15 @@ export class PdfBaseService {
 
             const page = await browser.newPage();
 
-            // 3. Set content (perlu nunggu network karena ada external QR code)
-            await page.setContent(htmlContent, {
-                waitUntil: 'networkidle0',
-            });
+            // 3. Set content (menggunakan networkidle2 agar lebih toleran terhadap koneksi lambat)
+            try {
+                await page.setContent(htmlContent, {
+                    waitUntil: 'networkidle2',
+                    timeout: 3000, // 3 detik timeout maksimum
+                });
+            } catch (setContentError: any) {
+                console.warn('Puppeteer setContent timed out or encountered warning, proceeding to PDF generation anyway:', setContentError.message);
+            }
 
             // 4. Build margin
             const m = { ...this.DEFAULT_MARGIN, ...marginOverride };

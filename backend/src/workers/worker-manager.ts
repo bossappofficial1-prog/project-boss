@@ -2,6 +2,7 @@ import { getRabbitMQChannel } from '../config/rabbitmq.js';
 import { emailWorker } from './email.worker.js';
 import { paymentWorker } from './payment.worker.js';
 import { serviceOrderWorker } from './service-order.worker.js';
+import { notificationWorker } from './notification.worker.js';
 import logger from '../utils/pino.logger.js';
 
 class WorkerManager {
@@ -9,6 +10,7 @@ class WorkerManager {
         email: emailWorker,
         payment: paymentWorker,
         serviceOrder: serviceOrderWorker,
+        notification: notificationWorker,
     };
 
     async startAll() {
@@ -24,6 +26,7 @@ class WorkerManager {
                 this.workers.email.start(channel),
                 this.workers.payment.start(channel),
                 this.workers.serviceOrder.start(channel),
+                this.workers.notification.start(channel),
             ]);
 
             logger.info({

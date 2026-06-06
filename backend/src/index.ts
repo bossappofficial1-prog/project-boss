@@ -9,6 +9,9 @@ import { socketConfigOption } from "./config/socket";
 import { initSocket } from "./socket";
 import { setUpJobs } from "./jobs";
 import { bootstrapQueues } from "./bootstrap/queue.bootstrap";
+import { IntegrationService } from "./service/integration.service";
+import { workerManager } from "./workers/worker-manager";
+
 
 function getNetworkAdresses(): string[] {
     const nets = networkInterfaces();
@@ -38,6 +41,12 @@ async function startServer(port: number) {
         setUpJobs();
 
         await connectRabbitMQ();
+
+        // Start all backend workers automatically in the same process
+        await workerManager.startAll();
+
+        // Hubungkan ulang sesi WhatsApp aktif
+        await IntegrationService.initializeAllSessions();
 
         server.requestTimeout = 30 * 60 * 1000; // 30 menit
         server.headersTimeout = 30 * 60 * 1000;

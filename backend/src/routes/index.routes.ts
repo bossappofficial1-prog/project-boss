@@ -1,6 +1,8 @@
 import { Router } from "express";
 import userRouter from "./user.route";
 import authRouter from "./auth.route";
+import integrationRouter from "./integration.route";
+
 
 import productRouter from "./product.route";
 import orderRouter from "./order.route";
@@ -95,7 +97,9 @@ apiRouter.use("/users", userRouter);
 apiRouter.use("/reservations", reservationRouter);
 apiRouter.use("/transaction-deletes", transactionDeleteRouter);
 apiRouter.use("/accounting", accountingRouter);
+apiRouter.use("/integrations", integrationRouter);
 apiRouter.use("/product-categories", productCategoryRouter);
+
 apiRouter.use("/attendance", attendanceRouter);
 apiRouter.use("/ingredients", ingredientRouter);
 apiRouter.use("/recipes", recipeRouter);

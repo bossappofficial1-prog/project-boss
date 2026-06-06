@@ -25,6 +25,7 @@ interface QueuePositionEvent extends BaseNotificationEvent {
     data: {
         phone: string;
         position: number;
+        businessId?: string;
     };
 }
 
@@ -211,6 +212,7 @@ class NotificationWorker {
                 order.guestCustomer.phone,
                 order,
                 status,
+                order.outlet?.businessId,
             );
 
             logger.info(`Successfully sent status update for order ${orderId} to status ${status}`, {
@@ -231,10 +233,10 @@ class NotificationWorker {
     }
 
     private async handleQueuePosition(event: QueuePositionEvent) {
-        const { phone, position } = event.data;
+        const { phone, position, businessId } = event.data;
 
         try {
-            await NotificationService.sendQueueNotification(phone, position);
+            await NotificationService.sendQueueNotification(phone, position, businessId);
 
             logger.info('Successfully sent queue position notification', {
                 component: 'NotificationWorker',
@@ -310,7 +312,11 @@ class NotificationWorker {
             }
 
             // 3. Kirim pesan WhatsApp menggunakan NotificationService yang sudah ada
-            await NotificationService.sendCustomWhatsAppMessage(orderData.guestCustomer.phone, message);
+            await NotificationService.sendCustomWhatsAppMessage(
+                orderData.guestCustomer.phone,
+                message,
+                orderData.outlet?.businessId,
+            );
 
             logger.info(`Successfully sent WhatsApp ${type} notification for order ${orderId}`, {
                 component: 'NotificationWorker',

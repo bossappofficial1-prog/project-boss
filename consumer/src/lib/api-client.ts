@@ -7,6 +7,7 @@ const apiClient = axios.create({
     timeout: 10000, // 10 detik timeout
     headers: {
         'Content-Type': 'application/json',
+        'X-Internal-Key': config.INTERNAL_API_KEY,
     }
 });
 

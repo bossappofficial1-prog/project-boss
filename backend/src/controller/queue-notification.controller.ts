@@ -12,7 +12,7 @@ const NOTIFICATION_EXCHANGE = 'notification_exchange';
 
 export const sendQueueNotification = asyncHandler(
     async (req: Request, res: Response) => {
-        const { phone, position } = req.body;
+        const { phone, position, businessId } = req.body;
 
         // Validasi input
         if (!phone || position === undefined) {
@@ -39,6 +39,7 @@ export const sendQueueNotification = asyncHandler(
                 data: {
                     phone,
                     position,
+                    businessId,
                 }
             };
 
@@ -53,7 +54,8 @@ export const sendQueueNotification = asyncHandler(
                 logger.error('Failed to publish message to RabbitMQ', {
                     component: 'QueueNotificationController',
                     phone,
-                    position
+                    position,
+                    businessId
                 });
                 return ResponseUtil.error(res, 'Failed to send queue notification');
             }
@@ -61,12 +63,13 @@ export const sendQueueNotification = asyncHandler(
             logger.info('Queue notification sent successfully', {
                 component: 'QueueNotificationController',
                 phone,
-                position
+                position,
+                businessId
             });
 
             return ResponseUtil.success(
                 res,
-                { phone, position },
+                { phone, position, businessId },
                 HttpStatus.OK,
                 'Queue notification sent successfully'
             );

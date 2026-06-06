@@ -16,6 +16,8 @@ import { validateSchema } from '../middleware/zod.middleware';
 import { createPosOrderSchema } from '../schemas/pos-order.schema';
 import { authorize, protect } from '../middleware/auth.middleware';
 import { protectInternal } from '../middleware/internal-auth.middleware';
+import { IntegrationService } from '../service/integration.service';
+
 
 const router = Router();
 
@@ -69,5 +71,19 @@ router.post('/test/whatsapp', protectInternal, asyncHandler(async (req: Request,
 
 // Endpoint untuk mengirim notifikasi posisi antrian
 router.post('/send-queue-notification', protectInternal, sendQueueNotification);
+
+// Endpoint internal untuk mengirim pesan WhatsApp menggunakan koneksi Baileys yang aktif
+router.post('/whatsapp/send', protectInternal, asyncHandler(async (req: Request, res: Response) => {
+    const { businessId, phoneNumber, message } = req.body;
+    if (!businessId || !phoneNumber || !message) {
+        return ResponseUtil.error(res, "businessId, phoneNumber, and message are required", undefined, 400);
+    }
+    const success = await IntegrationService.sendWhatsAppMessage(businessId, phoneNumber, message);
+    if (success) {
+        return ResponseUtil.success(res, { message: "Message sent successfully" });
+    } else {
+        return ResponseUtil.error(res, "Failed to send message via Baileys socket", undefined, 500);
+    }
+}));
 
 export default router;

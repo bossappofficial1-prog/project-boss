@@ -708,8 +708,8 @@ export async function updateOrderStatusService(
     await deductStockForCompletedOrder(orderId);
   }
 
-  // // Kirim notifikasi status update melalui message publisher
-  // await messagePublisher.publishOrderNotification(updatedOrder.id, updatedOrder.orderStatus);
+  // Kirim notifikasi status update melalui message publisher
+  await messagePublisher.publishOrderStatusUpdate(updatedOrder.id, updatedOrder.orderStatus);
 
   // Broadcast status update ke customer melalui socket
   try {

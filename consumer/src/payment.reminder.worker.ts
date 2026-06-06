@@ -13,7 +13,7 @@ interface TransactionWithOrderDetails {
     paymentUrl?: string | null;
     order: {
         id: string;
-        outlet: { name: string };
+        outlet: { name: string; businessId?: string };
         items: { product: { name: string }; quantity: number }[];
         totalAmount: number;
         guestCustomer: { name: string; phone: string | null };
@@ -59,7 +59,7 @@ async function checkExpiringPayments() {
                 });
 
                 // 2. Panggil NotificationService LOKAL untuk mengirim pengingat
-                await NotificationService.sendPaymentReminder(transaction.order, transaction);
+                await NotificationService.sendPaymentReminder(transaction.order, transaction, transaction.order.outlet?.businessId);
 
                 // 3. Panggil API backend untuk menandai pengingat telah dikirim
                 await apiClient.post(`/internal/order/${transaction.orderId}/mark-reminder-sent`);

@@ -75,6 +75,7 @@ model Business {
   stockTransfers        StockTransfer[]
   accounts              Account[]
   journalEntries        JournalEntry[]
+  integrations          Integration[]
 
   @@index([ownerId])
   @@index([subscriptionStatus])
@@ -522,6 +523,7 @@ model BookingSlot {
   updatedAt        DateTime          @updatedAt
   order            OrderItem?        @relation(fields: [orderItemId], references: [id])
   productService   ProductService    @relation(fields: [productServiceId], references: [id], onDelete: Cascade)
+  googleCalendarEventId String?
 
   @@index([productServiceId])
   @@index([date])
@@ -1382,3 +1384,33 @@ model JournalItem {
   @@index([journalEntryId])
   @@index([accountId])
 }
+
+model Integration {
+  id           String              @id @default(uuid())
+  businessId   String
+  provider     IntegrationProvider
+  accessToken  String              @db.Text
+  refreshToken String?             @db.Text
+  tokenExpiry  DateTime?
+  settings     Json?
+  status       IntegrationStatus   @default(CONNECTED)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  
+  business     Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, provider])
+  @@index([businessId])
+}
+
+enum IntegrationProvider {
+  GOOGLE_CALENDAR
+  WHATSAPP
+}
+
+enum IntegrationStatus {
+  CONNECTED
+  DISCONNECTED
+  ERROR
+}
+

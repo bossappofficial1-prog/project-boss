@@ -1,4 +1,4 @@
-import { Outlet, PaymentStatus, StaffStatus, Prisma } from "@prisma/client";
+import { OrderStatus, Outlet, PaymentStatus, StaffStatus, Prisma } from "@prisma/client";
 import { db } from "../config/prisma";
 import { CreatePaymentInput } from "../schemas/payment.schema";
 import { AppError } from "../errors/app-error";
@@ -470,6 +470,37 @@ export class PaymentRepository {
               `Kuota tiket tidak cukup untuk ${product.name}. Tersisa: ${availableQuota}`,
               HttpStatus.BAD_REQUEST,
             );
+          }
+          if (product.ticket.maxPerOrder && item.quantity > product.ticket.maxPerOrder) {
+            throw new AppError(
+              `Maksimal ${product.ticket.maxPerOrder} tiket per order untuk ${product.name}`,
+              HttpStatus.BAD_REQUEST,
+            );
+          }
+          if (product.ticket.maxPerOrder && customer?.phone) {
+            const existingPurchase = await tr.orderItem.aggregate({
+              where: {
+                productId: item.productId,
+                order: {
+                  guestCustomer: {
+                    phone: customer.phone,
+                  },
+                  orderStatus: {
+                    not: OrderStatus.CANCELLED,
+                  },
+                },
+              },
+              _sum: {
+                quantity: true,
+              },
+            });
+            const alreadyPurchased = existingPurchase?._sum?.quantity || 0;
+            if (alreadyPurchased + item.quantity > product.ticket.maxPerOrder) {
+              throw new AppError(
+                `Pembelian tiket untuk ${product.name} melebihi batas. Anda sudah membeli ${alreadyPurchased} tiket, batas maksimal adalah ${product.ticket.maxPerOrder} tiket per pelanggan.`,
+                HttpStatus.BAD_REQUEST,
+              );
+            }
           }
         }
 
