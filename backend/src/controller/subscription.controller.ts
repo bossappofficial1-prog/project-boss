@@ -7,6 +7,7 @@ import path from "path";
 import fs from "fs";
 import { config } from "../config";
 import { SubscriptionService } from "../service/subscription.service";
+import { optimizeUploadedImage } from "../utils/image-optimizer";
 import { redis } from "../config/redis";
 import { JwtUtil } from "../utils";
 import { ensureString } from "../utils/request";
@@ -25,7 +26,7 @@ const IMAGE_MAGIC_NUMBERS = {
   "image/jpeg": ["FFD8FF"],
   "image/png": ["89504E47"],
   "image/gif": ["474946"],
-  "image/webp": ["52494946"], // RIFF for WebP
+  "image/webp": ["52494646"], // RIFF for WebP
 };
 
 const MAX_PROOF_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -113,7 +114,18 @@ export const uploadPaymentProofController = asyncHandler(
 
     validateProofFile(file);
 
-    const relativePath = path.relative(process.cwd(), file.path);
+    let optimizedFile: Express.Multer.File;
+    try {
+      optimizedFile = await optimizeUploadedImage(file);
+    } catch (error) {
+      if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+      throw new AppError(
+        "Gagal mengoptimalkan gambar bukti transfer.",
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const relativePath = path.relative(process.cwd(), optimizedFile.path);
     const proofUrl = `${config.BASE_URL}/${relativePath.replace(/\\/g, "/")}`;
 
     let result;
@@ -124,7 +136,7 @@ export const uploadPaymentProofController = asyncHandler(
         proofUrl,
       );
     } catch (error) {
-      fs.unlinkSync(file.path);
+      if (fs.existsSync(optimizedFile.path)) fs.unlinkSync(optimizedFile.path);
       throw error;
     }
 

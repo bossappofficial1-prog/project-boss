@@ -200,4 +200,80 @@ export class ModerationService extends BaseService {
 
     console.log(`[Moderation] Moderation passed successfully for: ${file.filename}`);
   }
+
+  /**
+   * Asynchronous background moderation processing.
+   * Scans the file, and if toxic/vulgar content is found, deletes the file and clears database references.
+   */
+  static async processBackgroundModeration(filePath: string, filename: string): Promise<void> {
+    if (!fs.existsSync(filePath)) {
+      console.warn(`[Moderation Background] File not found at path: ${filePath}, skipping moderation.`);
+      return;
+    }
+
+    const lowerFilename = filename.toLowerCase();
+
+    // 1. Scan filename
+    const nameCheck = this.scanText(lowerFilename);
+    if (nameCheck.isToxic) {
+      console.warn(`[Moderation Background] File ${filename} rejected. Filename contains blacklisted words: ${nameCheck.foundWords.join(", ")}`);
+      await this.handleFailedModeration(filePath, filename);
+      return;
+    }
+
+    // 2. OCR scan
+    console.log(`[Moderation Background] Running OCR scan on: ${filename}`);
+    const extractedText = await this.performOCR(filePath);
+    if (extractedText.trim()) {
+      const textCheck = this.scanText(extractedText);
+      if (textCheck.isToxic) {
+        console.warn(`[Moderation Background] File ${filename} rejected. Image text contains blacklisted words: ${textCheck.foundWords.join(", ")}`);
+        await this.handleFailedModeration(filePath, filename);
+        return;
+      }
+    }
+
+    // 3. Vulgarity/Nudity check
+    const visionApiKey = process.env.GOOGLE_VISION_API_KEY;
+    let vulgarCheck: { isVulgar: boolean; reason?: string } = { isVulgar: false, reason: "" };
+
+    if (visionApiKey) {
+      console.log(`[Moderation Background] Running Google Cloud Vision check on: ${filename}`);
+      vulgarCheck = await this.checkGoogleVisionSafeSearch(filePath, visionApiKey);
+    } else {
+      console.log(`[Moderation Background] Running local skin-tone heuristic check on: ${filename}`);
+      const skinRatio = await this.analyzeSkinToneRatio(filePath);
+      console.log(`[Moderation Background] Image skin-tone ratio: ${(skinRatio * 100).toFixed(2)}%`);
+      
+      if (skinRatio > 0.85) {
+        vulgarCheck = {
+          isVulgar: true,
+          reason: `Heuristik Lokal: Terlalu banyak menampilkan area kulit terbuka (${(skinRatio * 100).toFixed(0)}%).`
+        };
+      }
+    }
+
+    if (vulgarCheck.isVulgar) {
+      console.warn(`[Moderation Background] File ${filename} rejected. Vulgar content detected: ${vulgarCheck.reason}`);
+      await this.handleFailedModeration(filePath, filename);
+      return;
+    }
+
+    console.log(`[Moderation Background] Moderation passed successfully for: ${filename}`);
+  }
+
+  private static async handleFailedModeration(filePath: string, filename: string): Promise<void> {
+    try {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        console.log(`[Moderation Background] Successfully deleted toxic file from disk: ${filePath}`);
+      }
+      
+      // Dynamic import to avoid circular dependencies
+      const { cleanDbReferences } = await import("../utils/db-cleanup.js");
+      await cleanDbReferences(filename);
+    } catch (err: any) {
+      console.error(`[Moderation Background] Error handling failed moderation for ${filename}:`, err?.message || err);
+    }
+  }
 }

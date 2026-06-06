@@ -10,6 +10,7 @@ import { ImageService } from "../service/image.service";
 import { optimizeUploadedImage } from "../utils/image-optimizer";
 import { ModerationService } from "../service/moderation.service";
 import sharp from "sharp";
+import { moderationQueue } from "../queues/moderation.queue";
 
 // Magic numbers for image file validation
 const IMAGE_MAGIC_NUMBERS = {
@@ -87,9 +88,6 @@ export const uploadImageController = asyncHandler(async (req: Request, res: Resp
     // Enhanced security validation
     await validateImageFile(file);
 
-    // Run Content Moderation (OCR & Vulgarity Checks)
-    await ModerationService.validateUploadedImage(file);
-
     let optimizedFile: Express.Multer.File;
 
     try {
@@ -100,6 +98,12 @@ export const uploadImageController = asyncHandler(async (req: Request, res: Resp
             HttpStatus.BAD_REQUEST
         );
     }
+
+    // Run Content Moderation (OCR & Vulgarity Checks) in background
+    await moderationQueue.add({
+        filePath: optimizedFile.path,
+        filename: optimizedFile.filename
+    });
 
     // Generate URL for the uploaded file
     const baseUrl = config.BASE_URL;
@@ -130,9 +134,14 @@ export const uploadMultipleImagesController = asyncHandler(async (req: Request, 
     for (const file of files) {
         try {
             await validateImageFile(file);
-            await ModerationService.validateUploadedImage(file);
 
             const optimizedFile = await optimizeUploadedImage(file);
+
+            // Run Content Moderation (OCR & Vulgarity Checks) in background
+            await moderationQueue.add({
+                filePath: optimizedFile.path,
+                filename: optimizedFile.filename
+            });
 
             const relativePath = path.relative(process.cwd(), optimizedFile.path);
             const imageUrl = `${baseUrl}/${relativePath.replace(/\\/g, '/')}`;
@@ -264,12 +273,6 @@ export const uploadMediaController = asyncHandler(async (req: Request, res: Resp
     await validateMediaFile(file);
 
     const isVideo = isVideoMime(file.mimetype);
-    
-    // Only moderate images, skip videos
-    if (!isVideo) {
-        await ModerationService.validateUploadedImage(file);
-    }
-
     let finalFile = file;
 
     // Only optimize images, not videos
@@ -279,6 +282,14 @@ export const uploadMediaController = asyncHandler(async (req: Request, res: Resp
         } catch {
             throw new AppError('Gagal mengoptimalkan gambar.', HttpStatus.BAD_REQUEST);
         }
+    }
+
+    // Only moderate images in background, skip videos
+    if (!isVideo) {
+        await moderationQueue.add({
+            filePath: finalFile.path,
+            filename: finalFile.filename
+        });
     }
 
     const baseUrl = config.BASE_URL;
@@ -315,14 +326,18 @@ export const uploadMultipleMediaController = asyncHandler(async (req: Request, r
             await validateMediaFile(file);
 
             const isVideo = isVideoMime(file.mimetype);
-            if (!isVideo) {
-                await ModerationService.validateUploadedImage(file);
-            }
-
             let finalFile = file;
 
             if (!isVideo) {
                 finalFile = await optimizeUploadedImage(file);
+            }
+
+            // Only moderate images in background, skip videos
+            if (!isVideo) {
+                await moderationQueue.add({
+                    filePath: finalFile.path,
+                    filename: finalFile.filename
+                });
             }
 
             const relativePath = path.relative(process.cwd(), finalFile.path);

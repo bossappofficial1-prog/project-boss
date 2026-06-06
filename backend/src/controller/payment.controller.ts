@@ -10,6 +10,8 @@ import { Messages } from "../constants/message";
 import { PaymentStatus } from "@prisma/client";
 import { processMidtransPaymentNotification } from "../service/payment-update.service";
 import { ensureString } from "../utils/request";
+import { optimizeUploadedImage } from "../utils/image-optimizer";
+import fs from "fs";
 
 export class PaymentController {
   constructor(private readonly service: PaymentService) { }
@@ -82,7 +84,21 @@ export class PaymentController {
         throw new AppError(Messages.REQUIRED_FIELD_MISSING, HttpStatus.BAD_REQUEST);
       }
 
-      const result = await this.service.uploadManualPaymentProof(orderId, req.file.path);
+      let filePath = req.file.path;
+      if (req.file.mimetype.startsWith("image/")) {
+        try {
+          const optimizedFile = await optimizeUploadedImage(req.file);
+          filePath = optimizedFile.path;
+        } catch (error) {
+          if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+          throw new AppError(
+            "Gagal mengoptimalkan gambar bukti pembayaran.",
+            HttpStatus.BAD_REQUEST
+          );
+        }
+      }
+
+      const result = await this.service.uploadManualPaymentProof(orderId, filePath);
       return ResponseUtil.success(res, result, HttpStatus.OK);
     }
   );

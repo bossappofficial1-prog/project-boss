@@ -49,6 +49,7 @@ services:
       - "1234:1234"
     volumes:
       - ./uploads:/app/uploads
+      - ./sessions:/app/sessions
     healthcheck:
       test: ["CMD-SHELL", "nc -z localhost 1234 || exit 1"]
       interval: 10s

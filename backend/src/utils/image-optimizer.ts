@@ -21,12 +21,16 @@ export const optimizeUploadedImage = async (file: Express.Multer.File): Promise<
     const mutableFile = file as MutableMulterFile;
     const originalPath = mutableFile.path;
 
-    if (mutableFile.size <= COMPRESSION_THRESHOLD) {
+    const parsedPath = path.parse(originalPath);
+    const isAlreadyWebp = parsedPath.ext.toLowerCase() === '.webp' &&
+                          (mutableFile.mimetype === 'image/webp' || mutableFile.mimetype === 'image/octet-stream');
+
+    // If already WebP and small enough, skip processing to save CPU
+    if (isAlreadyWebp && mutableFile.size <= COMPRESSION_THRESHOLD) {
         return mutableFile;
     }
 
-    const parsedPath = path.parse(originalPath);
-    const outputFilename = `${parsedPath.name}.webp`;
+    const outputFilename = isAlreadyWebp ? parsedPath.base : `${parsedPath.name}.webp`;
     const outputPath = path.join(parsedPath.dir, outputFilename);
 
     const metadata = await sharp(originalPath).metadata();
@@ -70,11 +74,15 @@ export const optimizeUploadedImage = async (file: Express.Multer.File): Promise<
 
     if (stats.size > MAX_OUTPUT_SIZE) {
         fs.unlinkSync(outputPath);
-        fs.unlinkSync(originalPath);
+        if (outputPath !== originalPath && fs.existsSync(originalPath)) {
+            fs.unlinkSync(originalPath);
+        }
         throw new Error('OPTIMIZED_IMAGE_TOO_LARGE');
     }
 
-    fs.unlinkSync(originalPath);
+    if (outputPath !== originalPath && fs.existsSync(originalPath)) {
+        fs.unlinkSync(originalPath);
+    }
 
     mutableFile.path = outputPath;
     mutableFile.filename = outputFilename;
