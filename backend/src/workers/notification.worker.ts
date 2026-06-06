@@ -2,6 +2,7 @@ import amqplib from 'amqplib';
 import { config } from '../config/index.js';
 import logger from '../utils/pino.logger.js';
 import { OrderRepository } from '../repositories/order.repository.js';
+import { IntegrationRepository } from '../repositories/integration.repository.js';
 import { IntegrationService } from '../service/integration.service.js';
 import { generateTicketsPDF } from '../service/pdf.service.js';
 import { TicketService } from '../service/ticket.service.js';
@@ -335,6 +336,13 @@ async function sendWhatsAppMessage(phone: string, message: string, businessId?: 
         return;
     }
 
+    // Skip if business hasn't connected WhatsApp
+    const waIntegration = await IntegrationRepository.findByBusinessAndProvider(businessId, "WHATSAPP");
+    if (!waIntegration || waIntegration.status !== "CONNECTED") {
+        logger.warn({ component: 'NotificationWorker', businessId }, `Skipping WhatsApp: business ${businessId} has no active WhatsApp connection`);
+        return;
+    }
+
     const formattedPhone = phone.startsWith("+")
         ? phone
         : `+62${phone.substring(1)}`;
@@ -515,7 +523,16 @@ class NotificationWorker {
             return;
         }
 
+        // Only notify on CONFIRMED (payment confirmed), READY (ready for pickup),
+        // or COMPLETED for TICKET orders (delivers ticket codes)
+        const allowedStatuses = ['CONFIRMED', 'READY'];
         const isTicket = order.items.some((item: any) => item.product.type === 'TICKET');
+        if (!allowedStatuses.includes(status) && !(isTicket && status === 'COMPLETED')) {
+            logger.info({ component: 'NotificationWorker', orderId, status },
+                'Skipping WhatsApp notification for this status transition');
+            return;
+        }
+
         const isReadyOrCompleted = status === 'READY' || status === 'CONFIRMED' || status === 'COMPLETED';
 
         let message = '';

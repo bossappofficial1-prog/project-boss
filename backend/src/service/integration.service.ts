@@ -28,42 +28,71 @@ export class IntegrationService extends BaseService {
 
     static async getGoogleAuthUrl(businessId: string): Promise<string> {
         const oauth2Client = this.getOAuth2Client();
-        return oauth2Client.generateAuthUrl({
+        const url = oauth2Client.generateAuthUrl({
             access_type: "offline",
             prompt: "consent",
             scope: [
                 "https://www.googleapis.com/auth/calendar.events",
-                "https://www.googleapis.com/auth/calendar.readonly"
+                "https://www.googleapis.com/auth/calendar.readonly",
+                "email",
             ],
             state: businessId
         });
+        return url;
     }
 
     static async handleGoogleCallback(code: string, businessId: string): Promise<Integration> {
         try {
             const oauth2Client = this.getOAuth2Client();
-            const { tokens } = await oauth2Client.getToken(code);
+            const redirectUri = config.google.calendarRedirectUrl;
 
-            if (!tokens.access_token) {
+            const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({
+                    code,
+                    client_id: config.google.clientId,
+                    client_secret: config.google.clientSecret,
+                    redirect_uri: redirectUri,
+                    grant_type: "authorization_code",
+                }),
+            });
+
+            const tokenData = await tokenResponse.json() as {
+                access_token?: string;
+                refresh_token?: string;
+                expires_in?: number;
+                error?: string;
+                error_description?: string;
+            };
+
+            if (!tokenResponse.ok) {
+                this.badRequest(`Gagal mendapatkan token: ${tokenData.error} - ${tokenData.error_description}`);
+            }
+
+            if (!tokenData.access_token) {
                 this.badRequest("Gagal mendapatkan access token dari Google");
             }
 
-            const expiryDate = tokens.expiry_date ? new Date(tokens.expiry_date) : null;
+            const expiryDate = tokenData.expires_in
+                ? new Date(Date.now() + tokenData.expires_in * 1000)
+                : null;
 
-            // Fetch owner profile to store in settings (e.g. Google email)
-            oauth2Client.setCredentials(tokens);
+            oauth2Client.setCredentials({
+                access_token: tokenData.access_token,
+                refresh_token: tokenData.refresh_token,
+                expiry_date: expiryDate?.getTime(),
+            });
+
             const oauth2 = google.oauth2({ version: "v2", auth: oauth2Client });
             const userInfo = await oauth2.userinfo.get().catch(() => null);
             const email = userInfo?.data?.email || "Unknown Google Account";
 
             return await IntegrationRepository.upsert(businessId, "GOOGLE_CALENDAR", {
-                accessToken: tokens.access_token,
-                refreshToken: tokens.refresh_token, // Only sent on first consent
+                accessToken: tokenData.access_token,
+                refreshToken: tokenData.refresh_token,
                 tokenExpiry: expiryDate,
-                settings: {
-                    email,
-                    calendarId: "primary"
-                }
+                settings: { email, calendarId: "primary" },
             });
         } catch (error: any) {
             this.badRequest(`Gagal menyambungkan ke Google Calendar: ${error.message}`);
@@ -358,6 +387,117 @@ export class IntegrationService extends BaseService {
             return true;
         } catch (error) {
             console.error(`[WhatsApp] Gagal mengirim dokumen ke ${to} untuk bisnis ${businessId}:`, error);
+            return false;
+        }
+    }
+
+    // ── Google Calendar ──────────────────────────────────────────────
+
+    static async createCalendarEvent(businessId: string, params: {
+        summary: string;
+        description: string;
+        startTime: Date;
+        endTime: Date;
+    }): Promise<string | null> {
+        try {
+            const integration = await IntegrationRepository.findByBusinessAndProvider(businessId, "GOOGLE_CALENDAR");
+            if (!integration || integration.status !== "CONNECTED") {
+                console.log(`[GoogleCalendar] Skipping: business ${businessId} has no active Google Calendar connection`);
+                return null;
+            }
+
+            const oauth2Client = this.getOAuth2Client();
+            oauth2Client.setCredentials({
+                access_token: integration.accessToken,
+                refresh_token: integration.refreshToken,
+                expiry_date: integration.tokenExpiry?.getTime(),
+            });
+
+            const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+            const response = await calendar.events.insert({
+                calendarId: (integration.settings as any)?.calendarId || "primary",
+                requestBody: {
+                    summary: params.summary,
+                    description: params.description,
+                    start: { dateTime: params.startTime.toISOString(), timeZone: "Asia/Jakarta" },
+                    end: { dateTime: params.endTime.toISOString(), timeZone: "Asia/Jakarta" },
+                },
+            });
+
+            const eventId = response.data.id;
+            console.log(`[GoogleCalendar] Event created: ${eventId} for business ${businessId}`);
+            return eventId || null;
+        } catch (error: any) {
+            console.error(`[GoogleCalendar] Failed to create event for business ${businessId}:`, error.message);
+            return null;
+        }
+    }
+
+    static async updateCalendarEvent(businessId: string, eventId: string, params: {
+        summary: string;
+        description: string;
+        startTime: Date;
+        endTime: Date;
+    }): Promise<boolean> {
+        try {
+            const integration = await IntegrationRepository.findByBusinessAndProvider(businessId, "GOOGLE_CALENDAR");
+            if (!integration || integration.status !== "CONNECTED") {
+                console.log(`[GoogleCalendar] Skipping update: business ${businessId} has no active Google Calendar connection`);
+                return false;
+            }
+
+            const oauth2Client = this.getOAuth2Client();
+            oauth2Client.setCredentials({
+                access_token: integration.accessToken,
+                refresh_token: integration.refreshToken,
+                expiry_date: integration.tokenExpiry?.getTime(),
+            });
+
+            const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+            await calendar.events.update({
+                calendarId: (integration.settings as any)?.calendarId || "primary",
+                eventId,
+                requestBody: {
+                    summary: params.summary,
+                    description: params.description,
+                    start: { dateTime: params.startTime.toISOString(), timeZone: "Asia/Jakarta" },
+                    end: { dateTime: params.endTime.toISOString(), timeZone: "Asia/Jakarta" },
+                },
+            });
+
+            console.log(`[GoogleCalendar] Event updated: ${eventId} for business ${businessId}`);
+            return true;
+        } catch (error: any) {
+            console.error(`[GoogleCalendar] Failed to update event ${eventId} for business ${businessId}:`, error.message);
+            return false;
+        }
+    }
+
+    static async deleteCalendarEvent(businessId: string, eventId: string): Promise<boolean> {
+        try {
+            const integration = await IntegrationRepository.findByBusinessAndProvider(businessId, "GOOGLE_CALENDAR");
+            if (!integration || integration.status !== "CONNECTED") {
+                console.log(`[GoogleCalendar] Skipping delete: business ${businessId} has no active Google Calendar connection`);
+                return false;
+            }
+
+            const oauth2Client = this.getOAuth2Client();
+            oauth2Client.setCredentials({
+                access_token: integration.accessToken,
+                refresh_token: integration.refreshToken,
+                expiry_date: integration.tokenExpiry?.getTime(),
+            });
+
+            const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+            await calendar.events.delete({
+                calendarId: (integration.settings as any)?.calendarId || "primary",
+                eventId,
+            });
+
+            console.log(`[GoogleCalendar] Event deleted: ${eventId} for business ${businessId}`);
+            return true;
+        } catch (error: any) {
+            console.error(`[GoogleCalendar] Failed to delete event ${eventId} for business ${businessId}:`, error.message);
             return false;
         }
     }

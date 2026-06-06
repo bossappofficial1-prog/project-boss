@@ -11,6 +11,7 @@ import { RedisUtils } from '../utils/redis.utils';
 import { ProductGoodsRepository } from '../repositories/product-goods.repository';
 import { PushNotificationRepository } from '../repositories/push-notification.repository';
 import { PushNotificationService } from '../service/push-notification.service';
+import { IntegrationService } from './integration.service';
 
 export async function handlePaymentSuccess(orderId: string) {
     let order = await db.order.findUnique({
@@ -121,6 +122,25 @@ export async function handlePaymentSuccess(orderId: string) {
         });
 
         await RedisUtils.deleteByPattern(`pos:products:${order.outlet.id}:*`);
+
+        // Sync booking to Google Calendar if connected
+        if (bookingSlot && order.outlet.businessId) {
+            const serviceItem = order.items.find(item => item.product.type === 'SERVICE');
+            const customerName = order.guestCustomer?.name || 'Customer';
+            const productName = serviceItem?.product?.name || 'Layanan';
+            const eventId = await IntegrationService.createCalendarEvent(order.outlet.businessId, {
+                summary: `${productName} - ${customerName}`,
+                description: `Pesanan: ${order.id}\nPelanggan: ${customerName}\nProduk: ${productName}\nOutlet: ${order.outlet.name}`,
+                startTime: bookingSlot.startTime,
+                endTime: bookingSlot.endTime,
+            });
+            if (eventId) {
+                await db.bookingSlot.update({
+                    where: { id: bookingSlot.id },
+                    data: { googleCalendarEventId: eventId },
+                });
+            }
+        }
     } else {
         console.log('🧪 Skipping database operations for test order');
     }

@@ -35,7 +35,8 @@ class IntegrationController extends BaseController {
         await IntegrationService.handleGoogleCallback(code as string, businessId as string);
 
         // Redirect back to dashboard integrations page
-        const clientUrl = process.env.CLIENT_URL || "http://localhost:3010";
+        const clientUrls = (process.env.CLIENT_URL || "http://localhost:3010").split(",").map(s => s.trim());
+        const clientUrl = clientUrls[0];
         return res.redirect(`${clientUrl}/owner/settings?integration=google_success`);
     });
 

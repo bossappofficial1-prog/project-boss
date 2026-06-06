@@ -5,6 +5,8 @@ import { HttpStatus } from "../constants/http-status";
 import { getOutletByIdService } from "./outlet.service";
 import { getBusinessByIdService } from "./business.service";
 import { updateServiceQueueStatusService } from "./order.service";
+import { IntegrationService } from "./integration.service";
+import { db } from "../config/prisma";
 
 interface QueueEntryItem {
   id: string;
@@ -287,6 +289,9 @@ export class QueueV2Service {
       throw new AppError("Tanggal schedulling tidak boleh di masa lalu.", HttpStatus.BAD_REQUEST);
     }
 
+    const oldSlot = (order as any).items?.find((item: any) => item.bookingSlot)?.bookingSlot;
+    const oldEventId: string | null = oldSlot?.googleCalendarEventId ?? null;
+
     const updated = await QueueV2Repository.rescheduleBooking(
       orderId,
       newSlotId,
@@ -296,6 +301,39 @@ export class QueueV2Service {
     );
     if (!updated) {
       throw new AppError("Gagal memperbarui jadwal.", HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    // Sync Google Calendar event
+    const businessId = (updated as any).outlet?.businessId;
+    if (businessId) {
+      const serviceItem = (updated as any).items?.find((item: any) => item.product?.type === "SERVICE");
+      const productName = serviceItem?.product?.name || "Layanan";
+      const customerName = (updated as any).guestCustomer?.name || "Customer";
+      const newSlot = (updated as any).items?.find((item: any) => item.bookingSlot)?.bookingSlot;
+
+      if (newSlot) {
+        if (oldEventId) {
+          await IntegrationService.updateCalendarEvent(businessId, oldEventId, {
+            summary: `${productName} - ${customerName}`,
+            description: `Pesanan: ${orderId}\nPelanggan: ${customerName}\nProduk: ${productName}\nOutlet: ${(updated as any).outlet?.name}`,
+            startTime: new Date(newStartTime),
+            endTime: new Date(newEndTime),
+          });
+        } else {
+          const eventId = await IntegrationService.createCalendarEvent(businessId, {
+            summary: `${productName} - ${customerName}`,
+            description: `Pesanan: ${orderId}\nPelanggan: ${customerName}\nProduk: ${productName}\nOutlet: ${(updated as any).outlet?.name}`,
+            startTime: new Date(newStartTime),
+            endTime: new Date(newEndTime),
+          });
+          if (eventId && newSlot.id) {
+            await db.bookingSlot.update({
+              where: { id: newSlot.id },
+              data: { googleCalendarEventId: eventId },
+            });
+          }
+        }
+      }
     }
 
     return mapOrderToEntry(updated, 0);

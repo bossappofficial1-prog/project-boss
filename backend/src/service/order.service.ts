@@ -21,6 +21,7 @@ import { RedisUtils } from "../utils/redis.utils";
 import { IngredientRepository } from "../repositories/ingredient.repository";
 import { ProductGoodsRepository } from "../repositories/product-goods.repository";
 import { PurchaseOrderService } from "./purchase-order.service";
+import { IntegrationService } from "./integration.service";
 
 type OrderWithRelations = NonNullable<Awaited<ReturnType<typeof OrderRepository.findById>>> &
   Record<string, any>;
@@ -595,6 +596,16 @@ export async function updateOrderStatusService(
         }
       }
     });
+
+    // Delete Google Calendar event if exists
+    const cancelledSlot = order.items?.find((item: any) => item.bookingSlot)?.bookingSlot;
+    if (cancelledSlot?.googleCalendarEventId && order.outlet?.businessId) {
+      await IntegrationService.deleteCalendarEvent(order.outlet.businessId, cancelledSlot.googleCalendarEventId);
+      await db.bookingSlot.update({
+        where: { id: cancelledSlot.id },
+        data: { googleCalendarEventId: null },
+      });
+    }
   }
 
   if (status === OrderStatus.PROCESSING || status === OrderStatus.CONFIRMED) {
@@ -620,6 +631,29 @@ export async function updateOrderStatusService(
         },
         data: { status: BookingSlotStatus.BOOKED },
       });
+    }
+
+    // Create Google Calendar event when payment is first confirmed
+    if (status === OrderStatus.CONFIRMED && order.orderStatus === OrderStatus.AWAITING_PAYMENT) {
+      const slot = order.items
+        .find((item: any) => item.bookingSlot)?.bookingSlot;
+      if (slot && order.outlet?.businessId) {
+        const serviceItem = order.items.find((item: any) => item.product?.type === 'SERVICE');
+        const customerName = order.guestCustomer?.name || 'Customer';
+        const productName = serviceItem?.product?.name || 'Layanan';
+        const eventId = await IntegrationService.createCalendarEvent(order.outlet.businessId, {
+          summary: `${productName} - ${customerName}`,
+          description: `Pesanan: ${order.id}\nPelanggan: ${customerName}\nProduk: ${productName}\nOutlet: ${order.outlet.name}`,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+        });
+        if (eventId) {
+          await db.bookingSlot.update({
+            where: { id: slot.id },
+            data: { googleCalendarEventId: eventId },
+          });
+        }
+      }
     }
   }
 
