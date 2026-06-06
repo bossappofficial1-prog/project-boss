@@ -35,7 +35,7 @@
         },
         {
           "title": "Tentukan Penanggung Biaya Transaksi",
-          "desc": "Pilih siapa yang menanggung biaya layanan pembayaran (seperti biaya QRIS atau transfer): 'OWNER' berarti biaya dipotong dari laba bisnis, 'CUSTOMER' berarti biaya dibebankan sebagai tagihan tambahan kepada pelanggan."
+          "desc": "Platform menerapkan biaya transaksi (Smart Fee Structure) yang terdiri atas biaya Payment Gateway (seperti QRIS Midtrans 0,7%) dan Biaya Administrasi Aplikasi BOSS sebesar 2%. Pada menu pengaturan, tentukan penanggung biaya tersebut: 'OWNER' berarti biaya dipotong langsung dari total omset Anda, atau 'CUSTOMER' berarti biaya dibebankan sebagai biaya administrasi tambahan pada invoice pelanggan."
         },
         {
           "title": "Daftarkan Rekening Bank Usaha",
@@ -59,11 +59,11 @@
         },
         {
           "title": "Pilih Paket yang Sesuai",
-          "desc": "Pilih paket langganan sesuai kebutuhan bisnis Anda: BASIC (fitur dasar), PRO (akses penuh ke kalkulator bisnis, reservasi meja, dan program loyalitas pelanggan), atau ENTERPRISE (untuk bisnis berskala besar)."
+          "desc": "Pilih paket langganan BOSS yang sesuai dengan skala usaha Anda: TRIAL (uji coba gratis 14 hari dengan kuota 2 outlet, 100 produk, 5 staff), BASIC (paket gratis 30 hari dengan kuota 1 outlet, 50 produk, 2 staff), PRO (Rp 149.000/30 hari dengan kuota 3 outlet, 500 produk, 10 staff, lengkap dengan fitur analitik dan loyalitas), atau ENTERPRISE (Rp 349.000/30 hari untuk kuota tidak terbatas, dedicated support, serta kustomisasi integrasi)."
         },
         {
           "title": "Lakukan Pembayaran",
-          "desc": "Pilih metode pembayaran yang tersedia (Transfer Bank, QRIS, atau Kartu Kredit), lalu selesaikan pembayaran sesuai instruksi yang muncul di layar."
+          "desc": "Pembayaran langganan dilakukan via Transfer Bank manual ke rekening resmi PT BOSS APP INDONESIA (BCA: 1234567890, Mandiri: 0987654321, BNI: 1122334455). Setelah melakukan transfer, unggah bukti bayar di halaman konfirmasi agar tim kami dapat melakukan verifikasi cepat."
         },
         {
           "title": "Periksa Status Aktif Langganan",
@@ -1026,6 +1026,89 @@
       ],
       "tip": "Gunakan fitur pencarian cepat nomor WhatsApp pelanggan untuk meminimalkan kesalahan identitas member saat transaksi.",
       "warning": "Mode penukaran langsung hanya dapat digunakan jika nilai subtotal pesanan lebih besar daripada nilai minimal konversi poin yang berlaku di outlet."
+    },
+    {
+      "id": "pos-barcode-scanner",
+      "role": "cashier",
+      "category": "pos",
+      "title": "Membaca & Memindai Barcode Produk di POS",
+      "description": "Langkah menggunakan pemindai barcode (USB/Bluetooth) atau kamera perangkat untuk memproses transaksi kasir dengan cepat.",
+      "icon": "ScanBarcode",
+      "steps": [
+        {
+          "title": "Daftarkan Kode Barcode ke Produk",
+          "desc": "Sebagai langkah persiapan, pastikan produk retail Anda sudah memiliki kode barcode (seperti kode EAN-13) yang terdaftar melalui menu edit produk di Dashboard Owner."
+        },
+        {
+          "title": "Metode A: Gunakan Scanner USB/Bluetooth",
+          "desc": "Hubungkan alat scanner barcode fisik ke komputer/tablet kasir Anda. Di halaman Terminal POS, cukup arahkan laser scanner to produk. Sistem akan mendeteksi input keyboard berkecepatan tinggi secara otomatis dan memasukkan produk ke keranjang belanja tanpa perlu memfokuskan kursor ke input pencarian."
+        },
+        {
+          "title": "Metode B: Gunakan Kamera Perangkat",
+          "desc": "Jika menggunakan tablet atau smartphone, klik ikon kamera pemindai di sisi input pencarian produk POS. Berikan izin akses kamera pada browser, lalu arahkan kamera ke barcode produk. Kamera akan memindai secara instan dan memasukkan produk ke keranjang."
+        }
+      ],
+      "tip": "Gunakan mode USB/Bluetooth Scanner untuk operasional toko retail dengan lalu lintas transaksi tinggi karena proses inputnya jauh lebih cepat dan tidak memakan resource kamera."
+    },
+    {
+      "id": "product-tax",
+      "role": "owner",
+      "category": "products",
+      "title": "Mengatur Pajak PPN Per-Produk",
+      "description": "Cara menetapkan persentase pajak PPN pada produk tertentu dan bagaimana sistem menghitung pajak tersebut secara otomatis di kasir dan checkout.",
+      "icon": "Percent",
+      "steps": [
+        {
+          "title": "Buka Edit Produk",
+          "desc": "Masuk ke menu 'Produk & Layanan' di dashboard Owner, lalu klik tombol 'Edit' pada produk yang ingin dikenakan pajak."
+        },
+        {
+          "title": "Tentukan Persentase Pajak",
+          "desc": "Pada kolom 'Pajak (%)', masukkan angka persentase pajak yang berlaku (misalnya '11' untuk PPN 11%). Jika produk tidak kena pajak, kosongkan kolom ini (bernilai null)."
+        },
+        {
+          "title": "Perhitungan Otomatis saat Pemesanan",
+          "desc": "Setiap kali produk tersebut dimasukkan ke keranjang di POS Kasir atau dibeli oleh pelanggan di Customer App, sistem akan menghitung pajak secara otomatis: Harga x Jumlah x Persentase Pajak."
+        },
+        {
+          "title": "Breakdown Pajak di Invoice",
+          "desc": "Nilai akumulasi pajak (taxAmount) akan ditampilkan terpisah sebagai baris PPN pada ringkasan keranjang belanja, POS Cart, struk cetak, maupun invoice PDF sebelum Grand Total."
+        }
+      ],
+      "tip": "Gunakan PPN per-produk jika bisnis Anda menjual campuran barang kena pajak dan tidak kena pajak (non-BKP) dalam satu outlet.",
+      "warning": "Produk lama yang pajaknya dikosongkan tidak akan mengalami perubahan harga atau perhitungan pajak apa pun."
+    },
+    {
+      "id": "self-order-qr",
+      "role": "owner",
+      "category": "outlets",
+      "title": "Mengaktifkan Fitur Self-Order QR (Khusus FnB)",
+      "description": "Panduan mencetak QR Code Meja agar pelanggan dapat memesan menu dan membayar langsung dari meja makan mereka.",
+      "icon": "QrCode",
+      "steps": [
+        {
+          "title": "Unduh dan Cetak QR Code Meja",
+          "desc": "Di menu 'Manajemen Meja' pada Dashboard Owner, pilih meja yang diinginkan lalu klik opsi 'Unduh QR Code'. Cetak dan tempelkan QR Code tersebut secara fisik di meja outlet FnB Anda."
+        },
+        {
+          "title": "Pelanggan Memindai QR Code",
+          "desc": "Pelanggan yang datang cukup memindai QR Code tersebut menggunakan smartphone mereka tanpa perlu mengunduh aplikasi (PWA langsung terbuka)."
+        },
+        {
+          "title": "Memilih Menu & Membuat Pesanan",
+          "desc": "Pelanggan dapat menjelajahi katalog menu, menambahkan catatan masakan, dan melakukan checkout mandiri langsung dari browser smartphone mereka."
+        },
+        {
+          "title": "Pembayaran Digital Mandiri",
+          "desc": "Pelanggan dapat langsung membayar pesanan dari meja makan menggunakan QRIS (Gopay, OVO, dll) atau Virtual Account yang terhubung otomatis melalui Midtrans."
+        },
+        {
+          "title": "Masuk ke Dapur (KDS) & POS",
+          "desc": "Setelah pembayaran lunas, pesanan otomatis dikirim secara real-time ke layar Kitchen Display System (KDS) di dapur untuk dimasak dan tercatat otomatis di Terminal Kasir sebagai order aktif meja tersebut."
+        }
+      ],
+      "tip": "Fitur Self-Order QR sangat efektif menghemat tenaga pelayan dan meminimalkan kesalahan pencatatan menu saat jam sibuk.",
+      "requirePro": true
     }
   ]
 }

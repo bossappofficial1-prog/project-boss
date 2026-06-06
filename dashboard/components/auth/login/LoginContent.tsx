@@ -234,7 +234,6 @@ export default function LoginContent() {
             Masuk dengan Google
           </Button>
         </form>
-
         <p className="text-center text-sm text-muted-foreground">
           Belum punya akun?{" "}
           <Link
@@ -244,6 +243,16 @@ export default function LoginContent() {
             Daftar Sekarang
           </Link>
         </p>
+
+        <div className="text-center text-xs text-muted-foreground mt-4 space-x-2">
+          <Link href="/terms" className="hover:text-primary hover:underline">
+            Syarat & Ketentuan
+          </Link>
+          <span>•</span>
+          <Link href="/privacy" className="hover:text-primary hover:underline">
+            Kebijakan Privasi
+          </Link>
+        </div>
       </div>
 
       <div className="absolute top-4 right-4 lg:top-6 lg:right-6">

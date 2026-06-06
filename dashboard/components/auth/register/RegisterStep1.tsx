@@ -41,8 +41,16 @@ export function RegisterStep1({
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {isLoading ? 'Memproses...' : 'Lanjut Verifikasi Email'}
                     </Button>
-                    <p className="text-xs text-center text-muted-foreground mt-3">
-                        Kami akan mengirimkan kode OTP ke email Anda.
+                    <p className="text-xs text-center text-muted-foreground mt-3 leading-normal">
+                        Dengan mendaftar, Anda menyetujui{" "}
+                        <Link href="/terms" className="text-primary hover:underline font-medium">
+                            Syarat & Ketentuan
+                        </Link>{" "}
+                        dan{" "}
+                        <Link href="/privacy" className="text-primary hover:underline font-medium">
+                            Kebijakan Privasi
+                        </Link>{" "}
+                        kami.
                     </p>
                 </div>
 
