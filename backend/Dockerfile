@@ -11,6 +11,8 @@ FROM oven/bun:1-alpine AS builder
 WORKDIR /app
 
 ARG DATABASE_URL
+
+ENV GOOGLE_CALENDAR_REDIRECT_URL=https://api.bossapp.id/api/v1/integrations/google/callback
 ENV DATABASE_URL=$DATABASE_URL
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 
