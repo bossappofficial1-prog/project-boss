@@ -79,7 +79,7 @@ export function ManualTransactionModal({
   );
 
   const defaultValues: ManualTransactionFormValues = {
-    transactionDate: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+    transactionDate: new Date(),
     customerName: "",
     customerPhone: "",
     amount: 0,
