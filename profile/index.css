@@ -10,6 +10,7 @@
   --theme-text3: #6b7280;
 }
 
+
 :root[data-theme="light"] {
   --theme-bg: #f8fafc;
   --theme-bg2: #f1f5f9;
