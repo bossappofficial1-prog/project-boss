@@ -3,12 +3,11 @@ import { IntegrationRepository } from "../repositories/integration.repository";
 import { Integration, IntegrationProvider, IntegrationStatus } from "@prisma/client";
 import { google } from "googleapis";
 import { config } from "../config";
-import makeWASocket, { DisconnectReason } from "@whiskeysockets/baileys";
+import makeWASocket, { useMultiFileAuthState, DisconnectReason } from "@whiskeysockets/baileys";
 import { Boom } from "@hapi/boom";
 import pino from "pino";
 import path from "path";
 import fs from "fs";
-import { RedisAuthState } from "../utils/redis-auth-state";
 
 export class IntegrationService extends BaseService {
     private static activeSockets = new Map<string, any>();
@@ -111,17 +110,15 @@ export class IntegrationService extends BaseService {
             createdAt: new Date()
         });
 
-        const redisUrl = config.REDIS_URL || "redis://localhost:6379";
-        const redisAuthState = new RedisAuthState(redisUrl, businessId);
+        const sessionsDir = path.join(process.cwd(), "sessions");
+        const sessionPath = path.join(sessionsDir, businessId);
+
+        if (!fs.existsSync(sessionsDir)) {
+            fs.mkdirSync(sessionsDir, { recursive: true });
+        }
 
         try {
-            const state = {
-                creds: await redisAuthState.get().then(r => r.creds),
-                keys: await redisAuthState.get().then(r => r.keys),
-                saveCreds: async (creds: any, keys: any) => {
-                    await redisAuthState.set({ creds, keys });
-                },
-            };
+            const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
 
             const socket = makeWASocket({
                 auth: state,
@@ -131,9 +128,7 @@ export class IntegrationService extends BaseService {
 
             this.activeSockets.set(businessId, socket);
 
-            socket.ev.on("creds.update", async (creds) => {
-                await redisAuthState.set({ creds });
-            });
+            socket.ev.on("creds.update", saveCreds);
 
             socket.ev.on("connection.update", async (update) => {
                 const { connection, lastDisconnect, qr } = update;
@@ -179,7 +174,7 @@ export class IntegrationService extends BaseService {
 
                     if (shouldReconnect) {
                         // Coba sambungkan ulang secara rekursif
-                        this.initiateWhatsApp(businessId).catch(() => {});
+                        this.initiateWhatsApp(businessId).catch(() => { });
                     } else {
                         // Jika sengaja logout dari HP: hapus file sesi dan database
                         this.waSessions.set(businessId, {
@@ -196,7 +191,7 @@ export class IntegrationService extends BaseService {
                             console.error("Gagal menghapus folder sesi:", e);
                         }
 
-                        await IntegrationRepository.delete(businessId, "WHATSAPP").catch(() => {});
+                        await IntegrationRepository.delete(businessId, "WHATSAPP").catch(() => { });
                     }
                 }
             });
@@ -260,17 +255,17 @@ export class IntegrationService extends BaseService {
         return {
             googleCalendar: googleCal
                 ? {
-                      status: googleCal.status,
-                      email: (googleCal.settings as any)?.email || null,
-                      connectedAt: googleCal.createdAt
-                  }
+                    status: googleCal.status,
+                    email: (googleCal.settings as any)?.email || null,
+                    connectedAt: googleCal.createdAt
+                }
                 : null,
             whatsapp: whatsapp
                 ? {
-                      status: whatsapp.status,
-                      phoneNumber: (whatsapp.settings as any)?.phone || null,
-                      connectedAt: whatsapp.createdAt
-                  }
+                    status: whatsapp.status,
+                    phoneNumber: (whatsapp.settings as any)?.phone || null,
+                    connectedAt: whatsapp.createdAt
+                }
                 : null
         };
     }
@@ -300,7 +295,7 @@ export class IntegrationService extends BaseService {
         if (socket) {
             try {
                 socket.end(undefined);
-            } catch (e) {}
+            } catch (e) { }
             this.activeSockets.delete(businessId);
         }
     }
@@ -310,7 +305,7 @@ export class IntegrationService extends BaseService {
         try {
             const connectedIntegrations = await IntegrationRepository.findAllConnectedByProvider("WHATSAPP");
             console.log(`[WhatsApp] Menghubungkan ulang ${connectedIntegrations.length} sesi WhatsApp...`);
-            
+
             for (const integration of connectedIntegrations) {
                 this.initiateWhatsApp(integration.businessId).catch((err) => {
                     console.error(`Gagal menghubungkan ulang WhatsApp untuk bisnis ${integration.businessId}:`, err);

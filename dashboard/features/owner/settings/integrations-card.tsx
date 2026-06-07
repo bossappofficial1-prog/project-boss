@@ -26,7 +26,7 @@ export function IntegrationsCard({ subscriptionPlan }: IntegrationsCardProps) {
     const [isWhatsAppOpen, setIsWhatsAppOpen] = useState(false);
     const [isConfirmGoogleOpen, setIsConfirmGoogleOpen] = useState(false);
     const [isConfirmWhatsAppOpen, setIsConfirmWhatsAppOpen] = useState(false);
-    
+
     // Test send state
     const [testPhone, setTestPhone] = useState("");
     const { mutate: sendTest, isPending: isSendingTest } = useSendTestWhatsApp();
@@ -315,8 +315,8 @@ export function IntegrationsCard({ subscriptionPlan }: IntegrationsCardProps) {
                             <p className="font-semibold text-foreground text-center mb-1">Panduan Memindai:</p>
                             <ol className="list-decimal pl-4 space-y-1.5">
                                 <li>Buka aplikasi WhatsApp di HP Anda.</li>
-                                <li>Ketuk ikon **Menu** (tiga titik di kanan atas) atau **Pengaturan** (di iOS).</li>
-                                <li>Pilih **Perangkat Tertaut** (Linked Devices) dan ketuk **Tautkan Perangkat**.</li>
+                                <li>Ketuk ikon Menu (tiga titik di kanan atas) atau Pengaturan (di iOS).</li>
+                                <li>Pilih Perangkat Tertaut (Linked Devices) dan ketuk Tautkan Perangkat.</li>
                                 <li>Arahkan kamera HP Anda ke layar QR Code di atas.</li>
                             </ol>
                         </div>
