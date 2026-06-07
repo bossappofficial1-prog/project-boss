@@ -1,9 +1,7 @@
 import { z } from "zod";
 
 export const manualTransactionSchema = z.object({
-  transactionDate: z.coerce.date({
-    errorMap: () => ({ message: "Tanggal transaksi wajib diisi" }),
-  }),
+  transactionDate: z.coerce.date("Tanggal transaksi wajib diisi"),
   customerName: z.string().max(100).optional(),
   customerPhone: z
     .string()
