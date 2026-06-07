@@ -1,4 +1,4 @@
-import SubscriptionPlansContent from "@/components/admin/subcriptions/plans/subscription-plans-content";
+import SubscriptionPlansContent from "@/features/admin/subcriptions/plans/subscription-plans-content";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {

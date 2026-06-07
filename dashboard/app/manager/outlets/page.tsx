@@ -2,8 +2,8 @@
 
 import { useMemo } from "react";
 import { useManagerContext } from "../layout";
-import { useOutletAnalytics } from "@/hooks/useOutletAnalytics";
-import KpiCards from "@/components/outlet/KpiCards";
+import { useOutletAnalytics } from "@/hooks/use-outlet-analytics";
+import KpiCards from "@/features/outlet/components/kpi-cards";
 import {
   Card,
   CardContent,

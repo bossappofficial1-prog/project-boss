@@ -1,4 +1,4 @@
-import { ProductItem } from "@/hooks/useProductsData";
+import { ProductItem } from "@/hooks/use-products-data";
 import { type ProductFormValues } from "@/hooks/api/use-products";
 import { ProductType } from "@/types";
 

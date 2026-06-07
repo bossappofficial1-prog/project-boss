@@ -1,7 +1,7 @@
 "use client";
 
-import TicketScanContent from "@/components/cashier/ticket-scan/TicketScanContent";
-import { useCashierContext } from "@/components/cashier/layout/CashierLayoutClient";
+import { TicketScanContent } from "@/features/ticket-scan";
+import { useCashierContext } from "@/components/layouts";
 
 export default function TicketScanPageClient() {
   const { outletData } = useCashierContext();

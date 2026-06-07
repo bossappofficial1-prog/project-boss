@@ -2,7 +2,7 @@
 
 import { DateRange } from "react-day-picker";
 import { subMonths, startOfDay, endOfDay } from "date-fns";
-import { DatePickerWithRange } from "@/components/ui/DatePickerWithRange";
+import { DatePickerWithRange } from "@/components/ui/date-picker-with-range";
 import { useStoreState } from "@/stores/use-state";
 
 type Preset = "1m" | "3m" | "9m" | "custom";

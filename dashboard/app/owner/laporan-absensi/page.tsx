@@ -8,17 +8,17 @@ import { Loader2, RefreshCcw, MapPin, ExternalLink, Download, FileSpreadsheet } 
 import type { DateRange } from "react-day-picker";
 import { toast } from "sonner";
 
-import { useOutletContext } from "@/components/providers/OutletProvider";
+import { useOutletStore } from "@/stores/outlet.store";
 import { DataTable } from "@/components/ui/data-table";
 import { SectionHeader } from "@/components/ui/section-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DatePickerWithRange } from "@/components/ui/DatePickerWithRange";
-import { AttendanceMapViewer } from "@/components/owner/attendance/AttendanceMapViewer";
+import { DatePickerWithRange } from "@/components/ui/date-picker-with-range";
+import { AttendanceMapViewer } from "@/features/owner/attendance/attendance-map-viewer";
 import { attendanceApi } from "@/lib/apis/attendance";
 
 export default function LaporanAbsensiPage() {
-  const { selectedOutletId: outletId } = useOutletContext();
+  const { selectedOutletId: outletId } = useOutletStore();
 
   const [dateRange, setDateRange] = React.useState<DateRange>({
     from: subDays(new Date(), 30),

@@ -36,9 +36,9 @@ import {
     TrendingUp,
     Users,
 } from 'lucide-react';
-import { useUserAnalytics, USER_ANALYTICS_SAMPLE } from '@/hooks/useUserAnalytics';
-import type { SignupTrendPoint } from '@/hooks/useUserAnalytics';
-import { RegistrationAnalytics } from '@/components/admin/analystics/RegistrationAnalystic';
+import { useUserAnalytics, USER_ANALYTICS_SAMPLE } from '@/hooks/use-user-analytics';
+import type { SignupTrendPoint } from '@/hooks/use-user-analytics';
+import { RegistrationAnalytics } from '@/features/admin/analystics/registration-analystic';
 
 type PeriodOption = {
     label: string;

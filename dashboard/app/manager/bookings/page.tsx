@@ -1,7 +1,7 @@
 "use client";
 
-import PrivilegeGuard from "@/components/manager/shared/PrivilegeGuard";
-import BookingsContent from "@/components/owner/bookings/BookingsContent";
+import PrivilegeGuard from "@/components/shared/privilege-guard";
+import BookingsContent from "@/features/owner/bookings/bookings-content";
 
 export default function ManagerBookingsPage() {
   return (

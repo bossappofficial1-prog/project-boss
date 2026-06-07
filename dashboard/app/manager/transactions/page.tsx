@@ -6,7 +6,7 @@ import OwnerTransactionsPage from "@/app/owner/transactions/page";
 import TransactionDeletesPage from "@/app/owner/transaction-deletes/page";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { History, Trash2 } from "lucide-react";
-import PrivilegeGuard from "@/components/manager/shared/PrivilegeGuard";
+import PrivilegeGuard from "@/components/shared/privilege-guard";
 
 export default function ManagerTransactionsPage() {
   const { managerData } = useManagerContext();

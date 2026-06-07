@@ -1,4 +1,4 @@
-import TransferManagementContent from '@/components/outlet/TransferManagementContent'
+import TransferManagementContent from '@/features/outlet/components/transfer-management-content'
 
 export const metadata = {
   title: 'Transfer Outlet | BOSS Dashboard',

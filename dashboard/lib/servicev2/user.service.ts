@@ -1,7 +1,7 @@
 import { createUserPayload, updateUserPayload, User } from "@/types/userv2";
 import { apiClient } from "../apis/base";
 import { PaginationResponse } from "@/types/api.type";
-import { UserDetail } from "@/hooks/useUsers";
+import { UserDetail } from "@/hooks/use-users";
 
 export class UserService {
     private static readonly baseUrl = "/users";

@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { TablesPageClient } from "@/components/cashier/tables/TablesPageClient";
+import { TablesPageClient } from "@/features/tables";
 
 export const metadata: Metadata = {
   title: "Meja & Bill",

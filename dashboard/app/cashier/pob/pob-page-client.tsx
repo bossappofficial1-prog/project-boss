@@ -1,6 +1,6 @@
 "use client";
 
-import { PobV2Content } from "@/components/cashier/pob-v2/PobV2Content";
+import { PobV2Content } from "@/features/cashier-pob";
 
 export default function PobPageClient() {
   return <PobV2Content />;

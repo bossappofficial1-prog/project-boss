@@ -1,7 +1,7 @@
 "use client";
 
-import PrivilegeGuard from "@/components/manager/shared/PrivilegeGuard";
-import { IngredientContent } from "@/components/owner/ingredients/IngredientContent";
+import PrivilegeGuard from "@/components/shared/privilege-guard";
+import { IngredientContent } from "@/features/owner/ingredients/ingredient-content";
 
 export default function ManagerIngredientsPage() {
   return (

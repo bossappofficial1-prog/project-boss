@@ -1,7 +1,7 @@
 import { PaginatedResponse } from '@/types';
 import { apiClient, API_BASE_URL } from './base';
-import { Product } from '@/hooks/useProducts';
-import { ProductItem } from '@/hooks/useProductsData';
+import { Product } from '@/hooks/use-products';
+import { ProductItem } from '@/hooks/use-products-data';
 import type { PosV2Product } from './pos-v2';
 
 export type CreateProductPayload = {

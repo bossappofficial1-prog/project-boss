@@ -1,3 +1,4 @@
+import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -20,6 +21,11 @@ export function MarkdownRenderer({ markdown }: { markdown: string }) {
           <h3 className="text-base font-semibold text-primary mt-4 mb-2 flex items-center gap-2">
             {children}
           </h3>
+        ),
+        a: ({ children, href }) => (
+          <Link className="underline text-primary" href={href!}>
+            {children}
+          </Link>
         ),
         p: ({ children }) => (
           <p className="text-sm text-foreground/85 leading-relaxed my-2">

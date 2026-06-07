@@ -15,9 +15,9 @@ import {
 } from "@/components/ui/command";
 import { useRouter } from "next/navigation";
 import { CogIcon, Rocket, User } from "lucide-react";
-import { MENU_GROUPS, MenuGroup, getDynamicMenuName } from "../owner/layout/sidebar/sidebar";
+import { MENU_GROUPS, MenuGroup, getDynamicMenuName } from "@/features/owner/layout/sidebar/sidebar";
 import { OutletType } from "@/types";
-import { useOutletContext } from "../providers/OutletProvider";
+import { useOutletStore } from "@/stores/outlet.store";
 
 export function CommandSearch({
   open,
@@ -28,7 +28,7 @@ export function CommandSearch({
 }) {
   const sections = MENU_GROUPS;
   const router = useRouter();
-  const { selectedOutlet: outlet } = useOutletContext();
+  const { selectedOutlet: outlet } = useOutletStore();
 
   return (
     <div className="flex flex-col gap-4">

@@ -51,7 +51,7 @@ import {
   useDeleteJournalEntry,
 } from "@/hooks/api/use-accounting";
 import { AccountType } from "@/lib/apis/accounting";
-import { SelectOption } from "@/components/shared/SelectOption";
+import { SelectOption } from "@/components/shared/select-option";
 
 // Zod schemas for ReusableForm
 const createAccountSchema = z.object({

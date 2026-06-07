@@ -47,11 +47,11 @@ import { PasswordInput } from "./password-input";
 import InputCurrency from "./input-currency";
 import { DatePicker } from "./date-picker";
 import { DateTimePicker } from "./datetime-picker";
-import { FileUploader, FileUploaderVariant } from "./ImageUploader";
+import { FileUploader, FileUploaderVariant } from "./image-uploader";
 import { InputPercentage } from "./input-presentage";
 import { SegmentedControl } from "./segmented-control";
 import { DualOptionSwitch } from "./dual-option-switch";
-import { SelectOption } from "../shared/SelectOption";
+import { SelectOption } from "../shared/select-option";
 import { ZodTypeDef } from "zod/v3";
 
 const COL_SPAN_CLASS = {

@@ -1,13 +1,13 @@
 "use client";
 
-import KpiCards from "@/components/outlet/KpiCards";
-import PaymentStatusChart from "@/components/outlet/charts/PaymentStatusChart";
-import OrderStatusChart from "@/components/outlet/charts/OrderStatusChart";
-import TopProductsChart from "@/components/outlet/charts/TopProductsChart";
-import PaymentMethodChart from "@/components/outlet/charts/PaymentMethodChart";
-import ProductTypeChart from "@/components/outlet/charts/ProductTypeChart";
-import ExpenseVsRevenueChart from "@/components/outlet/charts/ExpenseVsRevenueChart";
-import RevenueChart from "@/components/outlet/charts/RevenueChartV2";
+import KpiCards from "@/features/outlet/components/kpi-cards";
+import PaymentStatusChart from "@/features/outlet/components/charts/payment-status-chart";
+import OrderStatusChart from "@/features/outlet/components/charts/order-status-chart";
+import TopProductsChart from "@/features/outlet/components/charts/top-products-chart";
+import PaymentMethodChart from "@/features/outlet/components/charts/payment-method-chart";
+import ProductTypeChart from "@/features/outlet/components/charts/product-type-chart";
+import ExpenseVsRevenueChart from "@/features/outlet/components/charts/expense-vs-revenue-chart";
+import RevenueChart from "@/features/outlet/components/charts/revenue-chart-v2";
 import {
   ArrowDownRight,
   CheckCircle2,
@@ -15,8 +15,8 @@ import {
   MapPin,
   Phone,
 } from "lucide-react";
-import { useOutletContext } from "@/components/providers/OutletProvider";
-import { useOutletAnalytics } from "@/hooks/useOutletAnalytics";
+import { useOutletStore } from "@/stores/outlet.store";
+import { useOutletAnalytics } from "@/hooks/use-outlet-analytics";
 import { useRouter } from "next/navigation";
 import { EmptyOutletState } from "@/components/ui/empty-outlet";
 import { formatCurrency } from "@/lib/utils";
@@ -30,7 +30,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 export default function OutletsDashboard() {
-  const { selectedOutlet } = useOutletContext();
+  const { selectedOutlet } = useOutletStore();
   const {
     data: dashboardData,
     kpiCards,

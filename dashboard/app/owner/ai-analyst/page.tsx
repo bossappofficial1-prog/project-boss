@@ -14,16 +14,9 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Sparkles,
-  Brain,
-  AlertCircle,
-  RefreshCw,
-  Lightbulb,
-} from "lucide-react";
+import { Sparkles, Brain, AlertCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 
 export default function AiAnalystPage() {
   const isProd =
@@ -77,7 +70,7 @@ export default function AiAnalystPage() {
           </p>
         </div>
 
-        <Card className="border py-0 border-border bg-gradient-to-br from-card to-card/95 shadow-xl relative overflow-hidden rounded-lg">
+        <Card className="border py-0 border-border bg-linear-to-br from-card to-card/95 shadow-xl relative overflow-hidden rounded-lg">
           <div className="absolute top-0 right-0 p-8 opacity-5">
             <Sparkles className="h-48 w-48 text-primary" />
           </div>
@@ -236,85 +229,10 @@ export default function AiAnalystPage() {
             bisnis Anda.
           </CardDescription>
         </CardHeader>
-        <CardContent className="p-6 md:p-8">
+        <CardContent className="md:p-8">
           <div className="text-sm leading-relaxed text-foreground/80 space-y-4">
             {data?.analysis ? (
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  h1: ({ children }) => (
-                    <h1 className="text-xl font-bold text-foreground mt-6 mb-3 border-b pb-2">
-                      {children}
-                    </h1>
-                  ),
-                  h2: ({ children }) => (
-                    <h2 className="text-lg font-bold text-foreground mt-5 mb-2.5 border-b pb-1.5">
-                      {children}
-                    </h2>
-                  ),
-                  h3: ({ children }) => (
-                    <h3 className="text-base font-semibold text-primary mt-4 mb-2 flex items-center gap-2">
-                      <Lightbulb className="h-4 w-4 shrink-0 text-primary" />
-                      {children}
-                    </h3>
-                  ),
-                  p: ({ children }) => (
-                    <p className="text-sm text-foreground/85 leading-relaxed my-2">
-                      {children}
-                    </p>
-                  ),
-                  ul: ({ children }) => (
-                    <ul className="list-disc pl-5 my-2 space-y-1.5">
-                      {children}
-                    </ul>
-                  ),
-                  ol: ({ children }) => (
-                    <ol className="list-decimal pl-5 my-2 space-y-1.5">
-                      {children}
-                    </ol>
-                  ),
-                  li: ({ children }) => (
-                    <li className="text-sm text-foreground/85 leading-relaxed">
-                      {children}
-                    </li>
-                  ),
-                  strong: ({ children }) => (
-                    <strong className="font-semibold text-foreground">
-                      {children}
-                    </strong>
-                  ),
-                  table: ({ children }) => (
-                    <div className="overflow-x-auto my-4 rounded-md border border-border">
-                      <table className="min-w-full divide-y divide-border text-sm">
-                        {children}
-                      </table>
-                    </div>
-                  ),
-                  thead: ({ children }) => (
-                    <thead className="bg-muted/40">{children}</thead>
-                  ),
-                  tbody: ({ children }) => (
-                    <tbody className="divide-y divide-border">{children}</tbody>
-                  ),
-                  tr: ({ children }) => (
-                    <tr className="hover:bg-muted/10 transition-colors">
-                      {children}
-                    </tr>
-                  ),
-                  th: ({ children }) => (
-                    <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground text-xs uppercase tracking-wider">
-                      {children}
-                    </th>
-                  ),
-                  td: ({ children }) => (
-                    <td className="px-4 py-2.5 text-foreground/80 leading-normal">
-                      {children}
-                    </td>
-                  ),
-                }}
-              >
-                {data.analysis}
-              </ReactMarkdown>
+              <MarkdownRenderer markdown={data.analysis} />
             ) : (
               <p className="text-sm text-muted-foreground text-center py-6">
                 Tidak ada analisis tersedia. Klik perbarui untuk menghasilkan

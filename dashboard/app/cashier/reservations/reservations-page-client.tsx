@@ -1,19 +1,19 @@
 "use client";
 
-import { useOutletContext } from "@/components/providers/CashierOutletProvider";
+import { useOutletStore } from "@/stores/outlet.store";
 import { useState } from "react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { Plus, CalendarCheck } from "lucide-react";
-import { ReservationForm } from "@/components/cashier/reservations/reservation-form";
+import { ReservationForm } from "@/features/reservations";
 import { useReservations } from "@/hooks/api/use-reservations";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ReservationCard } from "@/components/owner/reservations/reservation-card";
+import { ReservationCard } from "@/features/reservations/components/owner/reservation-card";
 
 export default function ReservationsPageClient() {
-  const { selectedOutletId: outletId } = useOutletContext();
+  const { selectedOutletId: outletId } = useOutletStore();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [date] = useState(format(new Date(), "yyyy-MM-dd"));
   const {

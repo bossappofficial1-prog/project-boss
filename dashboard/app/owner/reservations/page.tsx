@@ -1,4 +1,4 @@
-import OwnerReservationsContent from "@/components/owner/reservations/owner-reservations-content";
+import OwnerReservationsContent from "@/features/reservations/components/owner/owner-reservations-content";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {

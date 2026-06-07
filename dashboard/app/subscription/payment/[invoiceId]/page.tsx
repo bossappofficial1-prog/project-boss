@@ -1,4 +1,4 @@
-import SubscriptionPaymentContent from "@/components/features/owner/subscription/payment/PaymentContent"
+import SubscriptionPaymentContent from "@/features/owner/subscription/payment/payment-content"
 
 type PaymentPageProps = {
     params: Promise<{

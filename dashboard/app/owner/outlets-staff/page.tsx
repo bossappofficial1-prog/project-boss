@@ -4,21 +4,21 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Users, UserPlus, Upload } from "lucide-react";
 import { toast } from "sonner";
 
-import { useOutletContext } from "@/components/providers/OutletProvider";
+import { useOutletStore } from "@/stores/outlet.store";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { staffApi } from "@/lib/api";
 import type { StaffMember } from "@/types/staff";
-import StaffImportModal from "@/components/modals/StaffImportModal";
-import { StaffDialog } from "@/components/features/owner/staff/StaffModal";
-import { StaffTable } from "@/components/features/owner/staff/StaffTable";
+import StaffImportModal from "@/components/modals/staff-import-modal";
+import { StaffDialog } from "@/features/owner/staff/staff-modal";
+import { StaffTable } from "@/features/owner/staff/staff-table";
 import { EmptyOutletState } from "@/components/ui/empty-outlet";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { SectionHeader } from "@/components/ui/section-header";
 
 export default function StaffManagementPage() {
-  const { selectedOutlet } = useOutletContext();
+  const { selectedOutlet } = useOutletStore();
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const router = useRouter();
   const [, setIsLoading] = useState(false);

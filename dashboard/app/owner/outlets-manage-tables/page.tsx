@@ -1,7 +1,7 @@
 "use client";
 
-import { useOutletContext } from "@/components/providers/OutletProvider";
-import { TableManagement } from "@/components/outlet/TableManagement";
+import { useOutletStore } from "@/stores/outlet.store";
+import { TableManagement } from "@/features/outlet/components/table-management";
 import { LayoutGrid, Users, FileText } from "lucide-react";
 import { EmptyOutletState } from "@/components/ui/empty-outlet";
 import { useRouter } from "next/navigation";
@@ -38,7 +38,7 @@ const formFields: FormFieldConfig<TableFormValues>[] = [
 
 
 export default function OutletTablesPage() {
-    const { selectedOutlet, isLoading } = useOutletContext();
+    const { selectedOutlet, isLoading } = useOutletStore();
     const { createMutation, updateMutation, deleteMutation } = useTable()
     const [isAddModalOpen, setIsAddModalOpen] = useState(false)
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)

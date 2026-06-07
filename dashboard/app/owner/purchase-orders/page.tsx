@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { ShoppingCart, ClipboardList, Eye, Filter } from "lucide-react";
 
-import { useOutletContext } from "@/components/providers/OutletProvider";
+import { useOutletStore } from "@/stores/outlet.store";
 import { DataTable } from "@/components/ui/data-table";
 import { SectionHeader } from "@/components/ui/section-header";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { usePurchaseOrders } from "@/hooks/api/use-purchase-orders";
-import { PurchaseOrderDetailDialog } from "@/components/owner/purchase-orders/PurchaseOrderDetailDialog";
+import { PurchaseOrderDetailDialog } from "@/features/owner/purchase-orders/purchase-order-detail-dialog";
 import type { PurchaseOrder, PurchaseOrderStatus } from "@/lib/apis/purchase-order";
 
 function formatIdr(value: number) {
@@ -81,7 +81,7 @@ function getStatusBadge(status: PurchaseOrderStatus) {
 }
 
 export default function PurchaseOrdersPage() {
-  const { selectedOutletId: outletId } = useOutletContext();
+  const { selectedOutletId: outletId } = useOutletStore();
 
   const [selectedPoId, setSelectedPoId] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);

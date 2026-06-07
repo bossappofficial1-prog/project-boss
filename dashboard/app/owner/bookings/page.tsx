@@ -1,4 +1,4 @@
-import BookingsContent from "@/components/owner/bookings/BookingsContent";
+import BookingsContent from "@/features/owner/bookings/bookings-content";
 
 export default function OwnerBookingsPage() {
   return <BookingsContent />;

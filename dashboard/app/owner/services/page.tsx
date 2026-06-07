@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from 'react';
-import EditProductServiceModal from '@/components/modals/EditProductServiceModal';
-import { useServicesData } from '@/hooks/useServicesData';
-import ServicesHeader from '@/components/owner/services/Header';
-import ServicesControls from '@/components/owner/services/Controls';
-import ServicesMobileCards from '@/components/owner/services/MobileCards';
-import ServicesDesktopTable from '@/components/owner/services/DesktopTable';
-import ServicesSkeleton from '@/components/owner/services/Skeleton';
-import ServicesEmptyState from '@/components/owner/services/EmptyState';
+import EditProductServiceModal from '@/components/modals/edit-product-service-modal';
+import { useServicesData } from '@/hooks/use-services-data';
+import ServicesHeader from '@/features/owner/services/header';
+import ServicesControls from '@/features/owner/services/controls';
+import ServicesMobileCards from '@/features/owner/services/mobile-cards';
+import ServicesDesktopTable from '@/features/owner/services/desktop-table';
+import ServicesSkeleton from '@/features/owner/services/skeleton';
+import ServicesEmptyState from '@/features/owner/services/empty-state';
 
 export default function ServicesPage() {
   const [showEditModal, setShowEditModal] = useState(false);

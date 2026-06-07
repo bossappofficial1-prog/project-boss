@@ -1,7 +1,7 @@
 "use client";
 
-import PrivilegeGuard from "@/components/manager/shared/PrivilegeGuard";
-import CustomerContent from "@/components/owner/customers/CustomerContent";
+import PrivilegeGuard from "@/components/shared/privilege-guard";
+import CustomerContent from "@/features/owner/customers/customer-content";
 
 export default function ManagerCustomersPage() {
   return (

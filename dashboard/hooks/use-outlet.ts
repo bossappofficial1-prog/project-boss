@@ -1,23 +1,40 @@
-import { outletManagementApi } from "@/lib/api";
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+"use client";
 
-export const useAutlet = () => {
-    const qc = useQueryClient();
+import { useEffect, useMemo, useState } from "react";
+import { authApi } from "@/features/auth/services/auth";
 
-    const updateStatusOutlet = useMutation({
-        mutationFn: async (data: { outletId: string, status: boolean }) => {
-            const status = data.status;
-            const outletId = data.outletId;
+export function useSelectedOutletId() {
+  const [outletId, setOutletId] = useState<string | undefined>(undefined);
+  const [loading, setLoading] = useState<boolean>(true);
 
-            await outletManagementApi.update(outletId, { isOpen: status })
-        },
-        onSuccess: () => {
-            qc.invalidateQueries({ queryKey: ['outlets'] })
+  useEffect(() => {
+    let cancelled = false;
+    async function init() {
+      setLoading(true);
+      try {
+        if (typeof window === 'undefined') return;
+        const url = new URL(window.location.href);
+        const fromQuery = url.searchParams.get('outletId') || undefined;
+        const fromStorage = localStorage.getItem('selectedOutlet') || undefined;
+        const candidate = fromQuery || fromStorage;
+        if (candidate) {
+          if (!cancelled) setOutletId(candidate);
+          return;
         }
-    })
-
-    return {
-        updateStatusOutletMutate: updateStatusOutlet.mutateAsync,
-        updateStatusOutletLoading: updateStatusOutlet.isPending
+        // Fallback: fetch auth/me to get first outlet
+        const me = await authApi.me();
+        const firstOutlet = me?.outlets?.[0]?.id;
+        if (firstOutlet) {
+          localStorage.setItem('selectedOutlet', firstOutlet);
+          if (!cancelled) setOutletId(firstOutlet);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
+    init();
+    return () => { cancelled = true; };
+  }, []);
+
+  return { outletId, loading };
 }

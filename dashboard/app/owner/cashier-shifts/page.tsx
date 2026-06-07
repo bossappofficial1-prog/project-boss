@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { Loader2, RefreshCcw } from "lucide-react";
 
-import { useOutletContext } from "@/components/providers/OutletProvider";
+import { useOutletStore } from "@/stores/outlet.store";
 import { DataTable } from "@/components/ui/data-table";
 import { SectionHeader } from "@/components/ui/section-header";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ function formatIdr(value: number) {
 }
 
 export default function OwnerCashierShiftsPage() {
-  const { selectedOutletId: outletId } = useOutletContext();
+  const { selectedOutletId: outletId } = useOutletStore();
 
   const from = React.useMemo(() => {
     const d = new Date();

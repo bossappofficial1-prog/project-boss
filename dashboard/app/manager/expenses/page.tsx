@@ -1,6 +1,6 @@
 "use client";
 
-import PrivilegeGuard from "@/components/manager/shared/PrivilegeGuard";
+import PrivilegeGuard from "@/components/shared/privilege-guard";
 import OwnerPage from "@/app/owner/expenses/page";
 
 export default function ManagerExpensesPage() {

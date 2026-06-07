@@ -1,4 +1,4 @@
-import LinkAccountContent from "@/components/auth/link-account/LinkAccountContent";
+import { LinkAccountContent } from "@/features/auth";
 
 export default function LinkAccountPage() {
   return <LinkAccountContent />;

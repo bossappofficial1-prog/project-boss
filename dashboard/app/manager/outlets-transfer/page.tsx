@@ -1,7 +1,7 @@
 "use client";
 
-import PrivilegeGuard from "@/components/manager/shared/PrivilegeGuard";
-import TransferManagementContent from "@/components/outlet/TransferManagementContent";
+import PrivilegeGuard from "@/components/shared/privilege-guard";
+import TransferManagementContent from "@/features/outlet/components/transfer-management-content";
 
 export default function ManagerOutletsTransferPage() {
   return (

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SettingsContent } from "@/components/owner/settings/SettingsContent";
+import { SettingsContent } from "@/features/owner/settings/settings-content";
 
 export const metadata: Metadata = {
   title: "Pengaturan | BOSS Dashboard",

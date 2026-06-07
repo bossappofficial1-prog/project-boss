@@ -3,14 +3,14 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useOrdersV2Board } from "@/hooks/api/use-orders-v2";
-import { KitchenTicket } from "@/components/kitchen/KitchenTicket";
+import { KitchenTicket } from "@/features/kitchen/components/kitchen-ticket";
 import { getSocket } from "@/lib/socket-v2";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, UtensilsCrossed, Monitor, AlertCircle, ArrowLeft, ChefHat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { outletManagementApi } from "@/lib/apis/outletManagement";
 import { useQuery } from "@tanstack/react-query";
-import { Clocks } from "@/components/shared/Clock";
+import { Clocks } from "@/components/shared/clock";
 import { cn } from "@/lib/utils";
 
 const LANES = [

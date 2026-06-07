@@ -1,4 +1,4 @@
-import RegistrationContent from "@/components/auth/register/RegisterContent";
+import { RegisterContent as RegistrationContent } from "@/features/auth";
 import { Metadata } from "next";
 import { Suspense } from "react";
 

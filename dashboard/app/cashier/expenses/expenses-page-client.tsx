@@ -1,7 +1,7 @@
 "use client";
 
-import { useCashierContext } from "@/components/cashier/layout/CashierLayoutClient";
-import { ExpensesContent } from "@/components/cashier/expenses/ExpensesContent";
+import { useCashierContext } from "@/components/layouts";
+import { ExpensesContent } from "@/features/expenses";
 
 export default function ExpensesPageClient() {
   const { outletData, cashierData } = useCashierContext();

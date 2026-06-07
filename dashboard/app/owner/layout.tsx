@@ -1,7 +1,8 @@
-import DashboardLayout from "@/components/owner/layout/DashboardLayout";
+import DashboardLayout from "@/features/owner/layout/dashboard-layout";
 import { Metadata } from "next";
-import OutletTypeChecker from "@/components/owner/layout/OutletTypeChecker";
-import { FeatureGuideProvider } from "@/components/guides/FeatureGuideProvider";
+import OutletTypeChecker from "@/features/owner/layout/outlet-type-checker";
+import { FeatureGuideProvider } from "@/features/guides/components/feature-guide-provider";
+import { OutletSync } from "@/components/providers/outlet-sync";
 
 export const metadata: Metadata = {
   manifest: "/owner/manifest.webmanifest",
@@ -22,7 +23,9 @@ export default function OwnerLayout({
   return (
     <FeatureGuideProvider>
       <DashboardLayout requiredRole="OWNER">
-        <OutletTypeChecker>{children}</OutletTypeChecker>
+        <OutletSync>
+          <OutletTypeChecker>{children}</OutletTypeChecker>
+        </OutletSync>
       </DashboardLayout>
     </FeatureGuideProvider>
   );

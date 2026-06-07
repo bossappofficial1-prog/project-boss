@@ -1,7 +1,7 @@
 "use client";
 
-import ProductsContent from "@/components/owner/products/ProductsContent";
-import { PageGuide } from "@/components/guides/PageGuide";
+import ProductsContent from "@/features/owner/products/products-content";
+import { PageGuide } from "@/features/guides/components/page-guide";
 
 export default function ProductsPage() {
   return (

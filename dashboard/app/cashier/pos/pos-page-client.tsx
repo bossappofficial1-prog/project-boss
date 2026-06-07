@@ -1,7 +1,7 @@
 "use client";
 
-import { PosV2Content } from "@/components/cashier/pos-v2/PosV2Content";
-import { PageGuide } from "@/components/guides/PageGuide";
+import { PosV2Content } from "@/features/pos";
+import { PageGuide } from "@/features/guides/components/page-guide";
 
 export default function PosPageClient() {
   return (

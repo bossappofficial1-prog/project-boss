@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { useTransactions } from "@/hooks/useTransactions";
-import { useOutletContext } from "@/components/providers/OutletProvider";
+import { useTransactions } from "@/hooks/use-transactions";
+import { useOutletStore } from "@/stores/outlet.store";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,11 +20,11 @@ import { format, subMonths } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { DateRange } from "react-day-picker";
 import { DataTable } from "@/components/ui/data-table";
-import { useDebounce } from "@/hooks/useDebounce";
+import { useDebounce } from "@/hooks/use-debounce";
 import { useExportTransactionReport } from "@/hooks/use-export-transaction-report";
 import { SectionHeader } from "@/components/ui/section-header";
-import { PageGuide } from "@/components/guides/PageGuide";
-import { ExpensesControls } from "@/components/owner/expenses/Controls";
+import { PageGuide } from "@/features/guides/components/page-guide";
+import { ExpensesControls } from "@/features/expenses/components/owner/controls";
 import {
   Dialog,
   DialogContent,
@@ -52,7 +52,7 @@ export default function TransactionsPage() {
   const pathname = usePathname();
   const isManagerView = pathname?.startsWith("/manager") ?? false;
 
-  const { outlets, selectedOutletId } = useOutletContext();
+  const { outlets, selectedOutletId } = useOutletStore();
   const { useTransactionList } = useTransactions();
 
   // Query cashier auth to check privileges

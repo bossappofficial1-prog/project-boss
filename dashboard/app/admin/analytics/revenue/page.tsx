@@ -37,8 +37,8 @@ import {
     TrendingUp,
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
-import { useRevenueAnalytics } from '@/hooks/useRevenueAnalytics';
-import type { RevenuePeriod, RevenueTrendPoint } from '@/hooks/useRevenueAnalytics';
+import { useRevenueAnalytics } from '@/hooks/use-revenue-analytics';
+import type { RevenuePeriod, RevenueTrendPoint } from '@/hooks/use-revenue-analytics';
 
 const PERIOD_OPTIONS: { label: string; value: RevenuePeriod; hint: string }[] = [
     { label: '30 Hari', value: 'daily', hint: 'Detail harian' },

@@ -1,11 +1,11 @@
-import { usePrinterContext } from "@/contexts/PrinterContext";
+import { usePrinterStore } from "@/stores/printer.store";
 import { posV2Api } from "@/lib/apis/pos-v2";
 import React from "react";
 import { toast } from "sonner";
 
 export const usePrint = () => {
     const [isPrinting, setIsPrinting] = React.useState(false);
-    const printer = usePrinterContext();
+    const printer = usePrinterStore();
 
     const handlePrintReceipt = async (orderId: string) => {
         setIsPrinting(true);

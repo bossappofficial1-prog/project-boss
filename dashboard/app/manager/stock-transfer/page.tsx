@@ -1,7 +1,7 @@
 "use client";
 
-import PrivilegeGuard from "@/components/manager/shared/PrivilegeGuard";
-import StockTransferContent from "@/components/features/owner/stock-transfer/StockTransferContent";
+import PrivilegeGuard from "@/components/shared/privilege-guard";
+import StockTransferContent from "@/features/owner/stock-transfer/stock-transfer-content";
 
 export default function ManagerStockTransferPage() {
   return (

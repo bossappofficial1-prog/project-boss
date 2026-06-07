@@ -1,4 +1,4 @@
-import ReportFinancialContent from "@/components/features/owner/report/outlet/ReportFinancialContent";
+import ReportFinancialContent from "@/features/owner/report/outlet/report-financial-content";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {

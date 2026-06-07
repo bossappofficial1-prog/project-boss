@@ -4,18 +4,18 @@ import { useState } from "react";
 import { Clock, TrendingUp, ShoppingCart, DollarSign } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { SectionHeader } from "@/components/ui/section-header";
-import { SummaryCard } from "@/components/features/owner/report/SummaryCard";
+import { SummaryCard } from "@/features/owner/report/summary-card";
 import { useStoreState } from "@/stores/use-state";
 import { formatNumberCompactID } from "@/lib/utils";
-import { useOutletContext } from "@/components/providers/OutletProvider";
+import { useOutletStore } from "@/stores/outlet.store";
 import { useTools } from "@/hooks/use-tools";
 import { DateRangeFilter } from "@/components/ui/date-range-filter";
-import { formatHour } from "@/components/pages/peak-hours/utils";
-import { PerDayBreakdownCard } from "@/components/pages/peak-hours/per-day-brakdown-card";
-import { HeatmapCard } from "@/components/pages/peak-hours/heatmap-card";
+import { formatHour } from "@/features/peak-hours/utils";
+import { PerDayBreakdownCard } from "@/features/peak-hours/per-day-brakdown-card";
+import { HeatmapCard } from "@/features/peak-hours/heatmap-card";
 
 export default function JamRamai() {
-  const { selectedOutletId } = useOutletContext();
+  const { selectedOutletId } = useOutletStore();
   const {
     heatmapFilter,
     setHeatmapFilter,

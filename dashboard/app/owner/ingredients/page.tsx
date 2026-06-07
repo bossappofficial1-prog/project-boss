@@ -1,6 +1,6 @@
 "use client";
 
-import { IngredientContent } from "@/components/owner/ingredients/IngredientContent";
+import { IngredientContent } from "@/features/owner/ingredients/ingredient-content";
 
 export default function IngredientsPage() {
   return <IngredientContent />;

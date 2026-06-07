@@ -1,5 +1,5 @@
 // Barrel exports: keep existing import style `from '@/lib/api'`
-export { authApi } from './apis/auth';
+export { authApi } from '@/features/auth/services/auth';
 export { businessApi } from './apis/business';
 export { outletApi } from './apis/outlet';
 export { productApi } from './apis/product';

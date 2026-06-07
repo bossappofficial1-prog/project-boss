@@ -10,9 +10,9 @@ import {
   type FormFieldConfig,
 } from "@/components/ui/reuseable-form";
 import { Button } from "@/components/ui/button";
-import ServiceMediaUploader, { type MediaItem } from "./ServiceMediaUploader";
+import ServiceMediaUploader, { type MediaItem } from "./service-media-uploader";
 import { productApi } from "@/lib/api";
-import { type ProductItem } from "@/hooks/useProductsData";
+import { type ProductItem } from "@/hooks/use-products-data";
 
 type Props = {
   open: boolean;

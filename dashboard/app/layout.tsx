@@ -4,8 +4,8 @@ import { Suspense } from "react";
 import "./globals.css";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import { LoadingProvider } from "@/contexts/LoadingContext";
-import { NavigationProvider } from "@/components/providers/NavigationProvider";
+
+import { NavigationProvider } from "@/components/providers/navigation-provider";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -195,13 +195,11 @@ export default function RootLayout({
         className={`${poppins.variable} font-poppins antialiased min-h-screen text-foreground`}
       >
         <ThemeProvider defaultTheme="system">
-          <LoadingProvider>
-            <Suspense fallback={null}>
-              <NavigationProvider>
-                <QueryProvider>{children}</QueryProvider>
-              </NavigationProvider>
-            </Suspense>
-          </LoadingProvider>
+          <Suspense fallback={null}>
+            <NavigationProvider>
+              <QueryProvider>{children}</QueryProvider>
+            </NavigationProvider>
+          </Suspense>
         </ThemeProvider>
       </body>
     </html>

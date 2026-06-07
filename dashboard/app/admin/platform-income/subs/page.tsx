@@ -42,8 +42,8 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
-import { useSubscriptionIncome } from '@/hooks/useSubscriptionIncome';
-import type { SubscriptionIncomeTrendPoint, SubscriptionUpcomingRenewal, SubscriptionRecentInvoice } from '@/hooks/useSubscriptionIncome';
+import { useSubscriptionIncome } from '@/hooks/use-subscription-income';
+import type { SubscriptionIncomeTrendPoint, SubscriptionUpcomingRenewal, SubscriptionRecentInvoice } from '@/hooks/use-subscription-income';
 
 const PERIOD_OPTIONS = [
     { label: '6 Bulan', value: 6 },

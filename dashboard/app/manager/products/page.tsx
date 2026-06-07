@@ -1,7 +1,7 @@
 "use client";
 
-import PrivilegeGuard from "@/components/manager/shared/PrivilegeGuard";
-import ProductsContent from "@/components/owner/products/ProductsContent";
+import PrivilegeGuard from "@/components/shared/privilege-guard";
+import ProductsContent from "@/features/owner/products/products-content";
 
 export default function ManagerProductsPage() {
   return (

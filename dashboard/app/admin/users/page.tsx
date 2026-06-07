@@ -1,6 +1,6 @@
 'use client'
 
-import UserContent from "@/components/features/admin/user/UserContent";
+import UserContent from "@/features/admin/user/user-content";
 
 export default function UserPage() {
   return (<UserContent />)

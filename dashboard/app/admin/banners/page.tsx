@@ -1,4 +1,4 @@
-import GlobalBannerContent from "@/components/admin/banners/BannerContent"
+import GlobalBannerContent from "@/features/admin/banners/banner-content"
 import { Metadata } from "next"
 
 export const metadata: Metadata = {

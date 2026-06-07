@@ -32,7 +32,7 @@ import {
 import type { TransactionDeleteRequest } from "@/lib/apis/transaction-delete";
 import { toast } from "sonner";
 import { usePathname } from "next/navigation";
-import { useOutletContext } from "@/components/providers/OutletProvider";
+import { useOutletStore } from "@/stores/outlet.store";
 
 const STATUS_META: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
   PENDING: {
@@ -64,7 +64,7 @@ const dateFmt = new Intl.DateTimeFormat("id-ID", {
 export default function TransactionDeletesPage() {
   const pathname = usePathname();
   const isManagerView = pathname?.startsWith("/manager") ?? false;
-  const { selectedOutletId } = useOutletContext();
+  const { selectedOutletId } = useOutletStore();
 
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");

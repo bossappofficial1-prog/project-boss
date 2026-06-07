@@ -1,6 +1,6 @@
 'use client'
 
-import BusinessDashboardContent from "@/components/pages/business/BusinessDashboardContent";
+import BusinessDashboardContent from "@/features/business-dashboard/business-dashboard-content";
 
 export default function BusinessDashboardPage() {
     return <BusinessDashboardContent />;

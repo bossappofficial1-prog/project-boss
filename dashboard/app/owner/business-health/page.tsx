@@ -13,22 +13,22 @@ import { Separator } from "@/components/ui/separator";
 import { DateRange } from "react-day-picker";
 import { addDays } from "date-fns";
 import { formatCurrency, formatNumberCompactID } from "@/lib/utils";
-import { useOutletContext } from "@/components/providers/OutletProvider";
+import { useOutletStore } from "@/stores/outlet.store";
 import { useTools } from "@/hooks/use-tools";
 import { useStoreState } from "@/stores/use-state";
 import { DateRangeFilter } from "@/components/ui/date-range-filter";
-import { InsightCard } from "@/components/pages/business-health/insight-card";
-import { BusinessHealthSkeleton } from "@/components/pages/business-health/skeleton";
-import { BusinessHealthEmpty } from "@/components/pages/business-health/empty";
-import { GRADE_CONFIG } from "@/components/pages/business-health/utils";
-import { StatusBadge } from "@/components/pages/business-health/status-badge";
-import { ScoreBar } from "@/components/pages/business-health/score-bar";
-import { MetricCard } from "@/components/pages/business-health/metric-card";
-import { MetricRow } from "@/components/pages/business-health/metric-row";
-import { GrowthChip } from "@/components/pages/business-health/growth-chip";
+import { InsightCard } from "@/features/business-health/insight-card";
+import { BusinessHealthSkeleton } from "@/features/business-health/skeleton";
+import { BusinessHealthEmpty } from "@/features/business-health/empty";
+import { GRADE_CONFIG } from "@/features/business-health/utils";
+import { StatusBadge } from "@/features/business-health/status-badge";
+import { ScoreBar } from "@/features/business-health/score-bar";
+import { MetricCard } from "@/features/business-health/metric-card";
+import { MetricRow } from "@/features/business-health/metric-row";
+import { GrowthChip } from "@/features/business-health/growth-chip";
 
 export default function BusinessHealth() {
-  const { selectedOutletId } = useOutletContext();
+  const { selectedOutletId } = useOutletStore();
   const { dateRange: dateRangeValue } = useStoreState();
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>(

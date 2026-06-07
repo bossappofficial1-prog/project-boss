@@ -1,4 +1,4 @@
-import { ProfitPerProductData } from "@/components/pages/profit-per-product/types";
+import { ProfitPerProductData } from "@/features/profit-per-product/types";
 import { apiClient } from "@/lib/apis/base";
 import { useQuery } from "@tanstack/react-query";
 

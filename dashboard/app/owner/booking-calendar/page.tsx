@@ -11,13 +11,13 @@ import { id } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { SectionHeader } from "@/components/ui/section-header";
-import { useOutletContext } from "@/components/providers/OutletProvider";
+import { useOutletStore } from "@/stores/outlet.store";
 import { useBookingCalendar } from "@/hooks/use-booking";
-import { DayColumn } from "@/components/owner/booking-calendar/day-colom";
-import { DAY_LABELS, HOUR_HEIGHT } from "@/components/owner/booking-calendar/utils";
+import { DayColumn } from "@/features/owner/booking-calendar/day-colom";
+import { DAY_LABELS, HOUR_HEIGHT } from "@/features/owner/booking-calendar/utils";
 
 export default function BookingCalendar() {
-    const { selectedOutletId } = useOutletContext();
+    const { selectedOutletId } = useOutletStore();
 
     const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() =>
         startOfWeek(new Date(), { weekStartsOn: 1 })

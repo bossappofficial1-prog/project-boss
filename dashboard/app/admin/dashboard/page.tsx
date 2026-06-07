@@ -2,13 +2,13 @@
 
 import { RefreshCcw } from "lucide-react";
 
-import { DashboardFilters } from "@/components/admin/dashboard/DashboardFilters";
-import { KpiCards } from "@/components/admin/dashboard/KpiCards";
-import { RevenueTrend } from "@/components/admin/dashboard/RevenueTrend";
-import { SubscriptionFunnelCard } from "@/components/admin/dashboard/SubscriptionFunnelCard";
-import { ProofHealthDonut } from "@/components/admin/dashboard/ProofHealthDonut";
-import { RiskyMerchantsTable } from "@/components/admin/dashboard/RiskyMerchantsTable";
-import { ActivityTimeline } from "@/components/admin/dashboard/ActivityTimeline";
+import { DashboardFilters } from "@/features/admin/dashboard/dashboard-filters";
+import { KpiCards } from "@/features/admin/dashboard/kpi-cards";
+import { RevenueTrend } from "@/features/admin/dashboard/revenue-trend";
+import { SubscriptionFunnelCard } from "@/features/admin/dashboard/subscription-funnel-card";
+import { ProofHealthDonut } from "@/features/admin/dashboard/proof-health-donut";
+import { RiskyMerchantsTable } from "@/features/admin/dashboard/risky-merchants-table";
+import { ActivityTimeline } from "@/features/admin/dashboard/activity-timeline";
 import { Button } from "@/components/ui/button";
 import {
     useAdminDashboardActivities,

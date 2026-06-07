@@ -1,0 +1,264 @@
+"use client";
+
+import { Clock, ChevronRight, X, Printer, ShoppingBag, CreditCard, ImageIcon, LayoutGrid } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import type { OrderV2Entry, GoodsOrderStatus } from "@/lib/apis/orders-v2";
+import { formatCurrency } from "@/features/orders/components/owner/utils";
+
+interface OrderCardProps {
+    entry: OrderV2Entry;
+    onPrimaryAction?: (entry: OrderV2Entry, nextStatus: GoodsOrderStatus) => void;
+    onCancel?: (entry: OrderV2Entry) => void;
+    onDetail?: (entry: OrderV2Entry) => void;
+    onPrint?: (entry: OrderV2Entry) => void;
+    onPrintTickets?: (entry: OrderV2Entry) => void;
+    onViewProof?: (entry: OrderV2Entry) => void;
+    isPending?: boolean;
+    isPrinting?: boolean;
+    printingType?: "receipt" | "ticket" | null;
+}
+
+const STATUS_CONFIG: Record<
+    string,
+    { label: string; color: string; borderColor: string }
+> = {
+    AWAITING_PAYMENT: {
+        label: "Menunggu Bayar",
+        color: "bg-amber-500/10 text-amber-500",
+        borderColor: "border-l-amber-500",
+    },
+    PROCESSING: {
+        label: "Diproses",
+        color: "bg-primary/10 text-primary",
+        borderColor: "border-l-primary",
+    },
+    CONFIRMED: {
+        label: "Dikonfirmasi",
+        color: "bg-primary/10 text-primary",
+        borderColor: "border-l-primary",
+    },
+    READY: {
+        label: "Siap Diambil",
+        color: "bg-emerald-500/10 text-emerald-500",
+        borderColor: "border-l-emerald-500",
+    },
+    COMPLETED: {
+        label: "Selesai",
+        color: "bg-emerald-500/10 text-emerald-500",
+        borderColor: "border-l-emerald-500",
+    },
+    CANCELLED: {
+        label: "Dibatalkan",
+        color: "bg-destructive/10 text-destructive",
+        borderColor: "border-l-destructive",
+    },
+};
+
+const PRIMARY_ACTIONS: Partial<
+    Record<GoodsOrderStatus, { nextStatus: GoodsOrderStatus; label: string }>
+> = {
+    AWAITING_PAYMENT: { nextStatus: "CONFIRMED", label: "Konfirmasi" },
+    CONFIRMED: { nextStatus: "PROCESSING", label: "Mulai Masak" },
+    PROCESSING: { nextStatus: "READY", label: "Siap Diambil" },
+    READY: { nextStatus: "COMPLETED", label: "Selesai" },
+};
+
+const PAYMENT_LABELS: Record<string, string> = {
+    manual_transfer: "Transfer",
+    manual: "Manual",
+    cash: "Cash",
+    qris: "QRIS",
+    qris_dynamic: "QRIS",
+    online: "Online",
+    midtrans: "Midtrans",
+};
+
+function formatTime(dateStr: string): string {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "-";
+    return d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+}
+
+function getPaymentLabel(method: string | null): string {
+    if (!method) return "Online";
+    const normalized = method.toLowerCase();
+    return PAYMENT_LABELS[normalized] ?? method.replace(/[_-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+export function OrderCard({ entry, onPrimaryAction, onCancel, onDetail, onPrint, onPrintTickets, onViewProof, isPending, isPrinting, printingType }: OrderCardProps) {
+    const config = STATUS_CONFIG[entry.orderStatus] ?? STATUS_CONFIG.PROCESSING;
+    const primary = PRIMARY_ACTIONS[entry.orderStatus];
+    const isTerminal = entry.orderStatus === "COMPLETED" || entry.orderStatus === "CANCELLED";
+    const itemCount = entry.items.reduce((sum, i) => sum + i.quantity, 0);
+
+    return (
+        <div
+            className={`group relative rounded-md border-l-4 ${config.borderColor} bg-card border border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer`}
+            onClick={() => onDetail?.(entry)}
+        >
+            <div className="p-3 space-y-2">
+                {/* Header */}
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-semibold text-foreground truncate">
+                            {entry.customerName}
+                        </span>
+                        {entry.tableNumber && (
+                            <div className="flex items-center gap-1 text-[10px] font-bold text-primary uppercase">
+                                <LayoutGrid className="w-2.5 h-2.5" />
+                                Meja {entry.tableNumber.replace(/meja/gi, "").trim()}
+                            </div>
+                        )}
+                    </div>
+                    <Badge variant="outline" className={`text-[10px] shrink-0 ${config.color} border-0`}>
+                        {config.label}
+                    </Badge>
+                </div>
+
+                {/* Items summary */}
+                <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                    <ShoppingBag className="w-3 h-3 mt-0.5 shrink-0" />
+                    <div className="min-w-0">
+                        {entry.items.slice(0, 2).map((item, i) => (
+                            <p key={i} className="truncate">
+                                {item.quantity}x {item.productName}
+                            </p>
+                        ))}
+                        {entry.items.length > 2 && (
+                            <p className="text-muted-foreground/60">+{entry.items.length - 2} item lainnya</p>
+                        )}
+                    </div>
+                </div>
+
+                {/* Info row */}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {formatTime(entry.createdAt)}
+                    </span>
+                    <span className="flex items-center gap-1">
+                        <CreditCard className="w-3 h-3" />
+                        {getPaymentLabel(entry.paymentMethod)}
+                    </span>
+                    {entry.isManualPayment && entry.paymentProofUrl && (
+                        <button
+                            className="flex items-center gap-1 text-primary hover:underline"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onViewProof?.(entry);
+                            }}
+                        >
+                            <ImageIcon className="w-3 h-3" />
+                            Bukti
+                        </button>
+                    )}
+                </div>
+
+                {/* Amount + item count */}
+                 <div className="flex items-center justify-between">
+                    <div className="flex flex-col">
+                        {entry.discountAmount > 0 && (
+                            <span className="text-[11px] text-muted-foreground line-through">
+                                {formatCurrency(entry.totalAmount + entry.discountAmount)}
+                            </span>
+                        )}
+                        <span className="text-sm font-semibold text-foreground">
+                            {formatCurrency(entry.totalAmount)}
+                        </span>
+                        {(entry.taxAmount ?? 0) > 0 && (
+                            <span className="text-[10px] text-blue-500">
+                                Termasuk {entry.taxName || "Pajak"} {formatCurrency(entry.taxAmount)}
+                            </span>
+                        )}
+                        {entry.discountAmount > 0 && (
+                            <span className="text-[10px] text-emerald-500">
+                                Diskon Poin
+                            </span>
+                        )}
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">
+                        {itemCount} item
+                    </span>
+                </div>
+
+                {/* Actions */}
+                {!isTerminal && (
+                    <div className="flex items-center gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
+                        {primary && (entry.orderStatus !== "AWAITING_PAYMENT" || !entry.isManualPayment || entry.paymentProofUrl) && (
+                            <Button
+                                size="sm"
+                                className="flex-1 h-8 text-xs"
+                                disabled={isPending}
+                                onClick={() => onPrimaryAction?.(entry, entry.items.some((itm) => itm.productType === 'TICKET') ? 'COMPLETED' : primary.nextStatus)}
+                            >
+                                {primary.label}
+                                <ChevronRight className="w-3 h-3 ml-1" />
+                            </Button>
+                        )}
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                            disabled={isPending || isPrinting}
+                            onClick={() => onPrint?.(entry)}
+                            title="Cetak struk"
+                        >
+                            <Printer className={`w-3.5 h-3.5 ${isPrinting && printingType === "receipt" ? "animate-pulse" : ""}`} />
+                        </Button>
+                        {entry.items.some(item => item.productType === "TICKET") && (
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 p-0 text-amber-500 hover:text-amber-600 hover:bg-amber-500/10"
+                                disabled={isPending || isPrinting}
+                                onClick={() => onPrintTickets?.(entry)}
+                                title="Cetak tiket"
+                            >
+                                <Printer className={`w-3.5 h-3.5 ${isPrinting && printingType === "ticket" ? "animate-pulse" : ""}`} />
+                            </Button>
+                        )}
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            disabled={isPending}
+                            onClick={() => onCancel?.(entry)}
+                            title="Batalkan"
+                        >
+                            <X className="w-3.5 h-3.5" />
+                        </Button>
+                    </div>
+                )}
+
+                {/* Completed: print only */}
+                {entry.orderStatus === "COMPLETED" && (
+                    <div className="flex items-center gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-xs"
+                            disabled={isPrinting}
+                            onClick={() => onPrint?.(entry)}
+                        >
+                            <Printer className={`w-3 h-3 mr-1 ${isPrinting && printingType === "receipt" ? "animate-pulse" : ""}`} />
+                            {isPrinting && printingType === "receipt" ? "Sedang Memproses..." : "Cetak Struk"}
+                        </Button>
+                        {entry.items.some(item => item.productType === "TICKET") && (
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 text-xs border-amber-500/20 text-amber-500 hover:bg-amber-500/10"
+                                disabled={isPrinting}
+                                onClick={() => onPrintTickets?.(entry)}
+                            >
+                                <Printer className={`w-3 h-3 mr-1 ${isPrinting && printingType === "ticket" ? "animate-pulse" : ""}`} />
+                                {isPrinting && printingType === "ticket" ? "Sedang Memproses..." : "Cetak Tiket"}
+                            </Button>
+                        )}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}

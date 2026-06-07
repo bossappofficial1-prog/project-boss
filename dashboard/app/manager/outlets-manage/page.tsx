@@ -1,7 +1,7 @@
 "use client";
 
-import PrivilegeGuard from "@/components/manager/shared/PrivilegeGuard";
-import ManageOutletContent from "@/components/outlet/ManageOutletContent";
+import PrivilegeGuard from "@/components/shared/privilege-guard";
+import ManageOutletContent from "@/features/outlet/components/manage-outlet-content";
 
 export default function ManagerOutletsManagePage() {
   return (

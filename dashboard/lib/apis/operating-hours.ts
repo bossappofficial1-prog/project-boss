@@ -1,4 +1,4 @@
-import { OperatingHoursInput } from '@/hooks/useOperatingHours'
+import { OperatingHoursInput } from '@/hooks/use-operating-hours'
 import { apiClient } from './base'
 
 export interface OperatingHoursData {

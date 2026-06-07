@@ -2,7 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { useInstantNavigation } from '@/hooks/useInstantNavigation'
+import { useInstantNavigation } from '@/hooks/use-instant-navigation'
 
 interface InstantLinkProps
     extends React.AnchorHTMLAttributes<HTMLAnchorElement> {

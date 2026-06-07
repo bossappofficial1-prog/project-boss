@@ -1,7 +1,7 @@
 "use client";
 
-import { OrdersV2Content } from "@/components/cashier/orders-v2/OrdersV2Content";
-import { useCashierContext } from "@/components/cashier/layout/CashierLayoutClient";
+import { OrdersV2Content } from "@/features/orders";
+import { useCashierContext } from "@/components/layouts";
 
 export default function OrdersPageClient() {
   const { outletData } = useCashierContext();

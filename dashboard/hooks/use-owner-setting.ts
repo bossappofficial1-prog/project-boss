@@ -1,4 +1,4 @@
-import { PasswordFormValues } from "@/components/owner/settings/PasswordForm";
+import { PasswordFormValues } from "@/features/owner/settings/password-form";
 import { uploadApi } from "@/lib/api";
 import { apiClient } from "@/lib/apis/base";
 import { useMutation, useQueryClient } from "@tanstack/react-query"

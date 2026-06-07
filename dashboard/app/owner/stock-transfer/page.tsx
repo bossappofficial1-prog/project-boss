@@ -1,4 +1,4 @@
-import StockTransferContent from "@/components/features/owner/stock-transfer/StockTransferContent";
+import StockTransferContent from "@/features/owner/stock-transfer/stock-transfer-content";
 
 export const metadata = {
   title: "Transfer Outlet | BOSS Dashboard",

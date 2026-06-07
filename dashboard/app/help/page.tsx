@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import HelpContent from "./HelpContent";
-import helpData from "@/data/help-guides.json";
+import helpData from "@/lib/help-guides.json";
 
 export const metadata: Metadata = {
   title: "Pusat Bantuan & Panduan BOSS | Business One Stop System",

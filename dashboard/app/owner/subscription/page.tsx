@@ -10,16 +10,16 @@ import {
   useCancelSubscriptionInvoice,
   useSwitchBillingCycle,
 } from '@/hooks/api/use-owner-subscription';
-import { InvoiceHistorySection } from '@/components/features/owner/subscription/InvoiceHistorySection';
-import { SubscriptionSkeleton } from '../../../components/features/owner/subscription/SubscriptionSkeleton';
-import { SubscriptionDetailSection } from '@/components/features/owner/subscription/SubscriptionDetailSection';
-import { OwnerSubscriptionHeader } from '@/components/features/owner/subscription/OwnerSubscriptionHeader';
-import { UsageGrid } from '@/components/features/owner/subscription/UsageGrid';
-import { PendingInvoiceCard } from '@/components/features/owner/subscription/PendingInvoiceCard';
-import { NoPendingInvoiceCard } from '@/components/features/owner/subscription/NoPendingInvoiceCard';
-import { EmptySubscriptionState } from '@/components/features/owner/subscription/EmptySubscriptionState';
-import { PlanSelectorDialog } from '@/components/features/owner/subscription/PlanSelectorDialog';
-import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlan';
+import { InvoiceHistorySection } from '@/features/owner/subscription/invoice-history-section';
+import { SubscriptionSkeleton } from '@/features/owner/subscription/subscription-skeleton';
+import { SubscriptionDetailSection } from '@/features/owner/subscription/subscription-detail-section';
+import { OwnerSubscriptionHeader } from '@/features/owner/subscription/owner-subscription-header';
+import { UsageGrid } from '@/features/owner/subscription/usage-grid';
+import { PendingInvoiceCard } from '@/features/owner/subscription/pending-invoice-card';
+import { NoPendingInvoiceCard } from '@/features/owner/subscription/no-pending-invoice-card';
+import { EmptySubscriptionState } from '@/features/owner/subscription/empty-subscription-state';
+import { PlanSelectorDialog } from '@/features/owner/subscription/plan-selector-dialog';
+import { useSubscriptionPlans } from '@/hooks/use-subscription-plan';
 import ConfirmationModal from '@/components/ui/confirmation-modal';
 
 const PAGE_SIZE = 6;

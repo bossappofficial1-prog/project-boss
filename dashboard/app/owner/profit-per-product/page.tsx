@@ -3,16 +3,16 @@
 import { useState, useMemo } from "react";
 import { DateRange } from "react-day-picker";
 import { addDays } from "date-fns";
-import { SummaryCard } from "@/components/features/owner/report/SummaryCard";
+import { SummaryCard } from "@/features/owner/report/summary-card";
 import { formatCurrency } from "@/lib/utils";
-import { ProductProfitTable } from "@/components/pages/profit-per-product/product-profit-table";
-import { HighlightCard } from "@/components/pages/profit-per-product/highlight-card";
+import { ProductProfitTable } from "@/features/profit-per-product/product-profit-table";
+import { HighlightCard } from "@/features/profit-per-product/highlight-card";
 import { DateRangeFilter } from "@/components/ui/date-range-filter";
-import { useOutletContext } from "@/components/providers/OutletProvider";
+import { useOutletStore } from "@/stores/outlet.store";
 import { useTools } from "@/hooks/use-tools";
 
 export default function ProfitPerProduct() {
-  const { selectedOutletId } = useOutletContext();
+  const { selectedOutletId } = useOutletStore();
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: addDays(new Date(), -30),
     to: new Date(),

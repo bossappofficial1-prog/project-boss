@@ -1,19 +1,19 @@
 "use client";
 
 import { useCallback, useState } from 'react';
-import { useOutletContext } from '@/components/providers/OutletProvider';
-import { useExpenses } from '@/hooks/useExpenses';
-import { ExpensesHeader } from '@/components/owner/expenses/Header';
-import { ExpensesControls } from '@/components/owner/expenses/Controls';
-import { ExpensesDesktopTable } from '@/components/owner/expenses/DesktopTable';
-import { ExpensesEmptyState } from '@/components/owner/expenses/EmptyState';
-import { ExpensesSkeleton } from '@/components/owner/expenses/Skeleton';
-import { ExpenseFormDialog } from '@/components/cashier/expenses/ExpenseFormDialog';
+import { useOutletStore } from '@/stores/outlet.store';
+import { useExpenses } from '@/hooks/use-expenses';
+import { ExpensesHeader } from '@/features/expenses/components/owner/header';
+import { ExpensesControls } from '@/features/expenses/components/owner/controls';
+import { ExpensesDesktopTable } from '@/features/expenses/components/owner/desktop-table';
+import { ExpensesEmptyState } from '@/features/expenses/components/owner/empty-state';
+import { ExpensesSkeleton } from '@/features/expenses/components/owner/skeleton';
+import { ExpenseFormDialog } from '@/features/expenses';
 import { type Expense } from '@/hooks/api/use-expenses';
 import { toast } from 'sonner';
 import { uploadApi } from '@/lib/api';
 import { apiClient } from '@/lib/apis/base';
-import { ReceiptPreviewModal } from '@/components/modals/ReceiptPreviewModal';
+import { ReceiptPreviewModal } from '@/components/modals/receipt-preview-modal';
 import { SectionHeader } from '@/components/ui/section-header';
 import { Receipt, Wallet, Plus, Loader2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,7 @@ import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 export default function ExpensesPage() {
-	const { selectedOutletId: outletId } = useOutletContext();
+	const { selectedOutletId: outletId } = useOutletStore();
 	const { expenses, summary, loading, error, startISO, endISO, setRange, refetch, create, update, remove } = useExpenses(outletId);
 	const [modalOpen, setModalOpen] = useState(false);
 	const [editing, setEditing] = useState<Expense | null>(null);

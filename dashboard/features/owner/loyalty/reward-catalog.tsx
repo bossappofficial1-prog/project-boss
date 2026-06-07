@@ -1,0 +1,461 @@
+"use client";
+
+import { useState } from "react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Gift,
+  Tag,
+  Percent,
+  Package,
+  Banknote,
+  Ticket,
+} from "lucide-react";
+import { toast } from "sonner";
+import { DataTable } from "@/components/ui/data-table";
+import { ReusableForm, FormFieldConfig } from "@/components/ui/reuseable-form";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { ColumnDef } from "@tanstack/react-table";
+import { z } from "zod";
+import {
+  useLoyaltyRewards,
+  useCreateLoyaltyReward,
+  useUpdateLoyaltyReward,
+  useDeleteLoyaltyReward,
+} from "@/hooks/api/use-loyalty";
+import { useProducts } from "@/hooks/use-products";
+import type { LoyaltyReward, LoyaltyRewardType } from "@/lib/apis/loyalty";
+
+// ─── Label Maps ───────────────────────────────────────────────────────────────
+const rewardTypeLabels: Record<
+  LoyaltyRewardType,
+  { label: string; icon: React.ElementType; color: string }
+> = {
+  DISCOUNT_FLAT: { label: "Diskon Flat", icon: Tag, color: "text-emerald-500" },
+  DISCOUNT_PERCENT: {
+    label: "Diskon Persen",
+    icon: Percent,
+    color: "text-blue-500",
+  },
+  FREE_ITEM: {
+    label: "Produk Gratis",
+    icon: Package,
+    color: "text-purple-500",
+  },
+  VOUCHER: { label: "Voucher", icon: Ticket, color: "text-orange-500" },
+  CASHBACK: { label: "Cashback", icon: Banknote, color: "text-cyan-500" },
+};
+
+// ─── Schema ───────────────────────────────────────────────────────────────────
+const rewardSchema = z.object({
+  name: z.string().min(1, "Nama reward wajib diisi").max(100),
+  description: z.string().max(500).optional(),
+  type: z.enum([
+    "DISCOUNT_FLAT",
+    "DISCOUNT_PERCENT",
+    "FREE_ITEM",
+    "VOUCHER",
+    "CASHBACK",
+  ]),
+  pointsCost: z.coerce.number().int().min(1, "Minimum 1 poin"),
+  discountAmount: z.coerce.number().min(0).optional(),
+  discountPercent: z.coerce.number().min(0).max(100).optional(),
+  maxDiscount: z.coerce.number().min(0).optional(),
+  voucherValue: z.coerce.number().min(0).optional(),
+  cashbackAmount: z.coerce.number().min(0).optional(),
+  productId: z.string().optional(),
+  stock: z.coerce.number().int().min(-1).default(-1),
+  isActive: z.boolean().default(true),
+  validFrom: z.string().optional(),
+  validUntil: z.string().optional(),
+});
+
+type RewardFormValues = z.infer<typeof rewardSchema>;
+
+interface RewardCatalogProps {
+  outletId: string;
+}
+
+export function RewardCatalog({ outletId }: RewardCatalogProps) {
+  const [includeInactive, setIncludeInactive] = useState(false);
+  const { data: rewards = [], isLoading } = useLoyaltyRewards(
+    outletId,
+    includeInactive,
+  );
+  const { data: productsData } = useProducts(outletId, { limit: 1000 });
+  const products = Array.isArray(productsData)
+    ? productsData
+    : productsData?.products ?? [];
+  const productOptions = products
+    .filter((p: any) => p.status === "ACTIVE")
+    .map((p: any) => ({ label: p.name, value: p.id }));
+  const { mutate: createReward, isPending: isCreating } =
+    useCreateLoyaltyReward();
+  const { mutate: updateReward, isPending: isUpdating } =
+    useUpdateLoyaltyReward();
+  const { mutate: deleteReward } = useDeleteLoyaltyReward();
+
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingReward, setEditingReward] = useState<LoyaltyReward | null>(
+    null,
+  );
+  const [deletingRewardId, setDeletingRewardId] = useState<string | null>(null);
+
+  const rewardFields: FormFieldConfig<RewardFormValues>[] = [
+    {
+      name: "name",
+      label: "Nama Reward",
+      type: "text",
+      placeholder: "Diskon 10rb, Free Coffee...",
+      colSpan: 2,
+    },
+    {
+      name: "type",
+      label: "Tipe Reward",
+      placeholder: "Pilih tipe reward",
+      type: "select",
+      options: Object.entries(rewardTypeLabels).map(([value, { label }]) => ({
+        label,
+        value,
+      })),
+      colSpan: 1,
+    },
+    {
+      name: "pointsCost",
+      label: "Biaya Poin",
+      type: "number",
+      placeholder: "100",
+      colSpan: 1,
+    },
+    {
+      name: "discountAmount",
+      label: "Jumlah Diskon (Rp)",
+      type: "currency",
+      placeholder: "10000",
+      colSpan: 1,
+      condition: (values) => values.type === "DISCOUNT_FLAT",
+    },
+    {
+      name: "discountPercent",
+      label: "Persentase Diskon (%)",
+      type: "number",
+      placeholder: "10",
+      colSpan: 1,
+      condition: (values) => values.type === "DISCOUNT_PERCENT",
+    },
+    {
+      name: "maxDiscount",
+      label: "Maks. Diskon (Rp)",
+      type: "currency",
+      placeholder: "50000",
+      description: "Batas maksimum diskon (opsional)",
+      colSpan: 1,
+      condition: (values) => values.type === "DISCOUNT_PERCENT",
+    },
+    {
+      name: "voucherValue",
+      label: "Nilai Voucher (Rp)",
+      type: "currency",
+      placeholder: "50000",
+      colSpan: 1,
+      condition: (values) => values.type === "VOUCHER",
+    },
+    {
+      name: "cashbackAmount",
+      label: "Jumlah Cashback (Rp)",
+      type: "currency",
+      placeholder: "20000",
+      colSpan: 1,
+      condition: (values) => values.type === "CASHBACK",
+    },
+    {
+      name: "productId",
+      label: "Produk",
+      type: "select",
+      placeholder: "Pilih produk",
+      options: productOptions,
+      colSpan: 1,
+      condition: (values) => values.type === "FREE_ITEM",
+    },
+    {
+      name: "stock",
+      label: "Stok",
+      type: "number",
+      placeholder: "-1",
+      description: "-1 berarti tidak terbatas",
+      colSpan: 1,
+    },
+    {
+      name: "isActive",
+      label: "Status Aktif",
+      type: "dual-option-switch",
+      switchOptions: {
+        left: { label: "Nonaktif", value: false },
+        right: { label: "Aktif", value: true },
+      },
+      colSpan: 1,
+    },
+    { name: "validFrom", label: "Berlaku Dari", type: "date", colSpan: 1 },
+    { name: "validUntil", label: "Berlaku Sampai", type: "date", colSpan: 1 },
+    {
+      name: "description",
+      label: "Deskripsi",
+      type: "textarea",
+      placeholder: "Deskripsi reward ini...",
+      colSpan: 2,
+    },
+  ];
+
+  const handleCreate = (values: RewardFormValues) => {
+    createReward(
+      { outletId, data: values as any },
+      {
+        onSuccess: () => {
+          toast.success("Reward berhasil dibuat.");
+          setIsCreateOpen(false);
+        },
+        onError: (err: any) => {
+          toast.error(err.response?.data?.message ?? "Gagal membuat reward.");
+        },
+      },
+    );
+  };
+
+  const handleUpdate = (values: RewardFormValues) => {
+    if (!editingReward) return;
+    updateReward(
+      { outletId, rewardId: editingReward.id, data: values as any },
+      {
+        onSuccess: () => {
+          toast.success("Reward berhasil diperbarui.");
+          setEditingReward(null);
+        },
+        onError: (err: any) => {
+          toast.error(
+            err.response?.data?.message ?? "Gagal memperbarui reward.",
+          );
+        },
+      },
+    );
+  };
+
+  const handleDelete = () => {
+    if (!deletingRewardId) return;
+    deleteReward(
+      { outletId, rewardId: deletingRewardId },
+      {
+        onSuccess: () => {
+          toast.success("Reward berhasil dihapus.");
+          setDeletingRewardId(null);
+        },
+        onError: (err: any) => {
+          toast.error(err.response?.data?.message ?? "Gagal menghapus reward.");
+        },
+      },
+    );
+  };
+
+  const columns: ColumnDef<LoyaltyReward>[] = [
+    {
+      accessorKey: "name",
+      header: "Reward",
+      cell: ({ row }) => {
+        const {
+          icon: Icon,
+          color,
+          label,
+        } = rewardTypeLabels[row.original.type];
+        return (
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg bg-muted ${color}`}>
+              <Icon className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="font-medium">{row.original.name}</p>
+              <p className="text-xs text-muted-foreground">{label}</p>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "pointsCost",
+      header: "Biaya Poin",
+      cell: ({ row }) => (
+        <Badge variant="outline" className="font-mono">
+          <Gift className="h-3 w-3 mr-1" />
+          {row.original.pointsCost.toLocaleString("id-ID")} poin
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "type",
+      header: "Nilai Reward",
+      cell: ({ row }) => {
+        const r = row.original;
+        let value = "";
+        if (r.type === "DISCOUNT_FLAT")
+          value = `Rp ${r.discountAmount?.toLocaleString("id-ID")}`;
+        else if (r.type === "DISCOUNT_PERCENT")
+          value = `${r.discountPercent}%${r.maxDiscount ? ` (maks Rp ${r.maxDiscount?.toLocaleString("id-ID")})` : ""}`;
+        else if (r.type === "VOUCHER")
+          value = `Rp ${r.voucherValue?.toLocaleString("id-ID")}`;
+        else if (r.type === "CASHBACK")
+          value = `Rp ${r.cashbackAmount?.toLocaleString("id-ID")}`;
+        else value = "Produk gratis";
+        return <span className="text-sm font-medium">{value}</span>;
+      },
+    },
+    {
+      accessorKey: "stock",
+      header: "Stok",
+      cell: ({ row }) => (
+        <span className="text-sm text-muted-foreground">
+          {row.original.stock === -1
+            ? "∞ Tidak terbatas"
+            : `${row.original.stock} tersisa`}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "isActive",
+      header: "Status",
+      cell: ({ row }) => (
+        <Badge variant={row.original.isActive ? "default" : "secondary"}>
+          {row.original.isActive ? "Aktif" : "Nonaktif"}
+        </Badge>
+      ),
+    },
+  ];
+
+  const defaultFormValues: RewardFormValues = {
+    name: "",
+    type: "DISCOUNT_FLAT",
+    pointsCost: 100,
+    discountAmount: undefined,
+    discountPercent: undefined,
+    maxDiscount: undefined,
+    voucherValue: undefined,
+    cashbackAmount: undefined,
+    productId: undefined,
+    stock: -1,
+    isActive: true,
+    description: "",
+    validFrom: undefined,
+    validUntil: undefined,
+  };
+
+  return (
+    <div className="space-y-6">
+      <DataTable
+        columns={columns}
+        data={rewards}
+        title="Katalog Reward"
+        emptyMessage="Belum ada reward. Buat reward pertama untuk program loyalti Anda."
+        tableId="loyalty-rewards"
+        isLoading={isLoading}
+        titleActions={
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="include-inactive"
+                checked={includeInactive}
+                onCheckedChange={setIncludeInactive}
+              />
+              <Label
+                htmlFor="include-inactive"
+                className="text-sm text-muted-foreground cursor-pointer"
+              >
+                Tampilkan nonaktif
+              </Label>
+            </div>
+            <Button size="sm" onClick={() => setIsCreateOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" /> Tambah Reward
+            </Button>
+          </div>
+        }
+        rowActions={(row) => [
+          {
+            label: "Edit",
+            icon: Pencil,
+            onClick: (row) => setEditingReward(row),
+          },
+          {
+            label: "Hapus",
+            icon: Trash2,
+            variant: "destructive",
+            onClick: (row) => setDeletingRewardId(row.id),
+          },
+        ]}
+        actionViewType="dropdown"
+      />
+
+      {/* Create Reward Dialog */}
+      <ReusableForm
+        schema={rewardSchema}
+        defaultValues={defaultFormValues}
+        fields={rewardFields}
+        onSubmit={handleCreate}
+        withDialog
+        isDialogOpen={isCreateOpen}
+        onDialogOpenChange={setIsCreateOpen}
+        dialogTitle="Tambah Reward Baru"
+        dialogDescription="Buat reward yang bisa ditukarkan oleh member Anda."
+        submitText="Buat Reward"
+        loadingText="Membuat..."
+        isLoading={isCreating}
+        gridCols={2}
+      />
+
+      {/* Edit Reward Dialog */}
+      {editingReward && (
+        <ReusableForm
+          schema={rewardSchema}
+          defaultValues={{
+            name: editingReward.name,
+            type: editingReward.type,
+            pointsCost: editingReward.pointsCost,
+            discountAmount: editingReward.discountAmount ?? undefined,
+            discountPercent: editingReward.discountPercent ?? undefined,
+            maxDiscount: editingReward.maxDiscount ?? undefined,
+            voucherValue: editingReward.voucherValue ?? undefined,
+            cashbackAmount: editingReward.cashbackAmount ?? undefined,
+            productId: editingReward.productId ?? undefined,
+            stock: editingReward.stock,
+            isActive: editingReward.isActive,
+            description: editingReward.description ?? "",
+            validFrom: editingReward.validFrom?.slice(0, 10),
+            validUntil: editingReward.validUntil?.slice(0, 10),
+          }}
+          fields={rewardFields}
+          onSubmit={handleUpdate}
+          withDialog
+          isDialogOpen={!!editingReward}
+          onDialogOpenChange={(open) => !open && setEditingReward(null)}
+          dialogTitle={`Edit Reward — ${editingReward.name}`}
+          dialogDescription="Perbarui konfigurasi reward ini."
+          submitText="Simpan Perubahan"
+          loadingText="Menyimpan..."
+          isLoading={isUpdating}
+          gridCols={2}
+        />
+      )}
+
+      {/* Delete Confirm */}
+      <ConfirmDialog
+        open={!!deletingRewardId}
+        onOpenChange={(open) => !open && setDeletingRewardId(null)}
+        title="Hapus Reward?"
+        description="Reward yang sudah ditukar oleh member tidak akan terhapus dari riwayat, namun reward ini tidak akan tersedia lagi untuk ditukar."
+        confirmLabel="Ya, Hapus"
+        onConfirm={handleDelete}
+        confirmVariant="destructive"
+      />
+    </div>
+  );
+}

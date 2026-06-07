@@ -3,11 +3,12 @@ import { IntegrationRepository } from "../repositories/integration.repository";
 import { Integration, IntegrationProvider, IntegrationStatus } from "@prisma/client";
 import { google } from "googleapis";
 import { config } from "../config";
-import makeWASocket, { useMultiFileAuthState, DisconnectReason } from "@whiskeysockets/baileys";
+import makeWASocket, { DisconnectReason } from "@whiskeysockets/baileys";
 import { Boom } from "@hapi/boom";
 import pino from "pino";
 import path from "path";
 import fs from "fs";
+import { RedisAuthState } from "../utils/redis-auth-state";
 
 export class IntegrationService extends BaseService {
     private static activeSockets = new Map<string, any>();
@@ -110,15 +111,17 @@ export class IntegrationService extends BaseService {
             createdAt: new Date()
         });
 
-        const sessionsDir = path.join(__dirname, "../../sessions");
-        const sessionPath = path.join(sessionsDir, businessId);
-
-        if (!fs.existsSync(sessionsDir)) {
-            fs.mkdirSync(sessionsDir, { recursive: true });
-        }
+        const redisUrl = config.REDIS_URL || "redis://localhost:6379";
+        const redisAuthState = new RedisAuthState(redisUrl, businessId);
 
         try {
-            const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
+            const state = {
+                creds: await redisAuthState.get().then(r => r.creds),
+                keys: await redisAuthState.get().then(r => r.keys),
+                saveCreds: async (creds: any, keys: any) => {
+                    await redisAuthState.set({ creds, keys });
+                },
+            };
 
             const socket = makeWASocket({
                 auth: state,
@@ -128,7 +131,9 @@ export class IntegrationService extends BaseService {
 
             this.activeSockets.set(businessId, socket);
 
-            socket.ev.on("creds.update", saveCreds);
+            socket.ev.on("creds.update", async (creds) => {
+                await redisAuthState.set({ creds });
+            });
 
             socket.ev.on("connection.update", async (update) => {
                 const { connection, lastDisconnect, qr } = update;

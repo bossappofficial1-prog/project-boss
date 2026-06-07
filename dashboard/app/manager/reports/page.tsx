@@ -1,7 +1,7 @@
 "use client";
 
-import PrivilegeGuard from "@/components/manager/shared/PrivilegeGuard";
-import ReportFinancialContent from "@/components/features/owner/report/outlet/ReportFinancialContent";
+import PrivilegeGuard from "@/components/shared/privilege-guard";
+import ReportFinancialContent from "@/features/owner/report/outlet/report-financial-content";
 
 export default function ManagerReportsPage() {
   return (

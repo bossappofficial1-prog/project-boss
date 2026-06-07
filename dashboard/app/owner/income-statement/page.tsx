@@ -17,7 +17,7 @@ import { addDays } from "date-fns";
 import { formatCurrency } from "@/lib/utils";
 import { SectionHeader } from "@/components/ui/section-header";
 import { useTools } from "@/hooks/use-tools";
-import { useOutletContext } from "@/components/providers/OutletProvider";
+import { useOutletStore } from "@/stores/outlet.store";
 import { DateRangeFilter } from "@/components/ui/date-range-filter";
 import { useStoreState } from "@/stores/use-state";
 
@@ -137,7 +137,7 @@ function PLRow({
 }
 
 export default function LaporanLabaRugi() {
-  const { selectedOutletId } = useOutletContext();
+  const { selectedOutletId } = useOutletStore();
   const { dateRange: dateRangeValue } = useStoreState();
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>(

@@ -8,10 +8,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { authApi } from "@/lib/api";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import ManagerSidebar from "@/components/manager/layout/ManagerSidebar";
-import ManagerHeader from "@/components/manager/layout/ManagerHeader";
+import ManagerSidebar from "@/components/layouts/manager-sidebar";
+import ManagerHeader from "@/components/layouts/manager-header";
 import Loading from "@/components/ui/loading";
-import { OutletContext } from "@/components/providers/OutletProvider";
+import { useOutletStore } from "@/stores/outlet.store";
 import { OutletType, ProductType, type Outlet } from "@/types";
 
 const MANAGER_SESSION_CACHE_KEY = "cashier-auth-cache-v1";
@@ -111,19 +111,13 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
     }
   }, [outletData]);
 
-  const outletContextValue = useMemo(() => {
-    return {
-      selectedOutlet: outletData || null,
-      selectedOutletId: outletData?.id || null,
-      outlets: outletData ? [outletData] : [],
-      setSelectedOutlet: () => {}, // read-only for managers
-      isLoading: isLoadingAuth,
-      error: null,
-      refetch: () => queryClient.invalidateQueries({ queryKey: ["cashier-auth"] }),
-      allowedProductTypes,
-      isPlanMismatch: false,
-    };
-  }, [outletData, isLoadingAuth, allowedProductTypes, queryClient]);
+  // Set outlet data in Zustand store
+  useEffect(() => {
+    const store = useOutletStore.getState();
+    if (outletData) {
+      store.setSelectedOutlet(outletData);
+    }
+  }, [outletData]);
 
   const privilegesList = useMemo(() => {
     const rawPrivileges = cashierData?.privileges || [];
@@ -175,20 +169,18 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
 
   return (
     <ManagerContext.Provider value={{ managerData: cashierData, outletData }}>
-      <OutletContext.Provider value={outletContextValue}>
-        <SidebarProvider defaultOpen={hasPrivileges}>
-          {hasPrivileges && <ManagerSidebar />}
-          <SidebarInset className="flex flex-col flex-1">
-            <ManagerHeader />
-            <main className="flex-1 overflow-auto bg-muted/50">
-              <div className="w-full mx-auto max-w-400 p-4 md:p-6 animate-fade-in-up">
-                {children}
-              </div>
-            </main>
-          </SidebarInset>
-          <Toaster position="top-right" richColors toastOptions={{ duration: 5000 }} />
-        </SidebarProvider>
-      </OutletContext.Provider>
+      <SidebarProvider defaultOpen={hasPrivileges}>
+        {hasPrivileges && <ManagerSidebar />}
+        <SidebarInset className="flex flex-col flex-1">
+          <ManagerHeader />
+          <main className="flex-1 overflow-auto bg-muted/50">
+            <div className="w-full mx-auto max-w-400 p-4 md:p-6 animate-fade-in-up">
+              {children}
+            </div>
+          </main>
+        </SidebarInset>
+        <Toaster position="top-right" richColors toastOptions={{ duration: 5000 }} />
+      </SidebarProvider>
     </ManagerContext.Provider>
   );
 }

@@ -33,7 +33,7 @@ import { useAutoSaveCalchpp } from "@/stores/use-auto-save-calchpp";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { productApi } from "@/lib/apis/product";
-import { useOutletContext } from "@/components/providers/OutletProvider";
+import { useOutletStore } from "@/stores/outlet.store";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 type BusinessType = "manufaktur" | "dagang" | "fnb" | "jasa" | "custom";
@@ -187,7 +187,7 @@ export default function HppCalculator() {
     updateCategoryName,
   } = useAutoSaveCalchpp();
 
-  const { selectedOutletId } = useOutletContext();
+  const { selectedOutletId } = useOutletStore();
   const queryClient = useQueryClient();
   const [selectedProductId, setSelectedProductId] = useState<string>("none");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);

@@ -1,6 +1,6 @@
-import CashierLayoutClient from "@/components/cashier/layout/CashierLayoutClient";
+import { CashierLayoutClient } from "@/components/layouts";
 import { Metadata } from "next";
-import { FeatureGuideProvider } from "@/components/guides/FeatureGuideProvider";
+import { FeatureGuideProvider } from "@/features/guides/components/feature-guide-provider";
 
 const appName = "BOSS - Business One Stop System";
 

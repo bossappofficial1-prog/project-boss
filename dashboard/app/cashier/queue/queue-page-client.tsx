@@ -1,7 +1,7 @@
 "use client";
 
-import { QueueV2Content } from "@/components/cashier/queue-v2/QueueV2Content";
-import { useCashierContext } from "@/components/cashier/layout/CashierLayoutClient";
+import { QueueV2Content } from "@/features/queue";
+import { useCashierContext } from "@/components/layouts";
 
 export default function QueuePageClient() {
   const { outletData } = useCashierContext();

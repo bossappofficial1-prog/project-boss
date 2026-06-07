@@ -19,8 +19,8 @@ import { DataTable } from '@/components/ui/data-table';
 import { ColumnDef } from '@tanstack/react-table';
 import { Textarea } from '@/components/ui/textarea';
 import ConfirmationModal from '@/components/ui/confirmation-modal';
-import { useManualPayments } from '@/hooks/useManualPayments';
-import { useOutletContext } from '@/components/providers/OutletProvider';
+import { useManualPayments } from '@/hooks/use-manual-payments';
+import { useOutletStore } from '@/stores/outlet.store';
 import { formatCurrency } from '@/lib/utils';
 import { formatDateTime } from '@/lib/utils/date';
 import type {
@@ -29,7 +29,7 @@ import type {
   ManualPaymentTransaction
 } from '@/lib/apis/manual-payment';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import type { ManualPaymentStatusFilter } from '@/hooks/useManualPayments';
+import type { ManualPaymentStatusFilter } from '@/hooks/use-manual-payments';
 
 const ACTIONABLE_STATUSES: ManualPaymentStatus[] = ['PROOF_SUBMITTED', 'AWAITING_VERIFICATION'];
 
@@ -291,7 +291,7 @@ export default function ManualPaymentsPage() {
     setLimit
   } = useManualPayments();
 
-  const { outlets, selectedOutletId } = useOutletContext();
+  const { outlets, selectedOutletId } = useOutletStore();
 
   const [selectedPayment, setSelectedPayment] = useState<ManualPaymentTransaction | null>(null);
   const [verifyModalOpen, setVerifyModalOpen] = useState(false);

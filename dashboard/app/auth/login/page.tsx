@@ -1,4 +1,4 @@
-import LoginContent from '@/components/auth/login/LoginContent';
+import { LoginContent } from '@/features/auth';
 import { Metadata } from 'next';
 import { Suspense } from 'react';
 

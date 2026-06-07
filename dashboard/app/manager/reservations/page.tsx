@@ -1,7 +1,7 @@
 "use client";
 
-import PrivilegeGuard from "@/components/manager/shared/PrivilegeGuard";
-import OwnerReservationsContent from "@/components/owner/reservations/owner-reservations-content";
+import PrivilegeGuard from "@/components/shared/privilege-guard";
+import OwnerReservationsContent from "@/features/reservations/components/owner/owner-reservations-content";
 
 export default function ManagerReservationsPage() {
   return (

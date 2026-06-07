@@ -17,6 +17,8 @@ import staffPrivilegeRouter from "./staff-privilege.route";
 
 const staffRouter = Router();
 
+staffRouter.get("/outlet/:outletId", getStaffByOutletController);
+
 // Semua rute di bawah ini dilindungi dan hanya untuk Owner/Manager
 staffRouter.use(protect, authorize(UserRole.OWNER, "MANAGER"));
 
@@ -24,14 +26,10 @@ staffRouter.use(protect, authorize(UserRole.OWNER, "MANAGER"));
 staffRouter.get(
   "/import/template",
   requireActiveSubscription,
-  downloadStaffImportTemplateController
+  downloadStaffImportTemplateController,
 );
 
-staffRouter.post(
-  "/import",
-  requireActiveSubscription,
-  importStaffController
-);
+staffRouter.post("/import", requireActiveSubscription, importStaffController);
 
 staffRouter.post(
   "/",
@@ -39,11 +37,7 @@ staffRouter.post(
   validateSchema(staffSchema),
   createStaffController,
 );
-staffRouter.get(
-  "/outlet/:outletId",
-  requireActiveSubscription,
-  getStaffByOutletController,
-);
+
 staffRouter.get("/:id", requireActiveSubscription, getStaffByIdController);
 staffRouter.patch(
   "/:id",
