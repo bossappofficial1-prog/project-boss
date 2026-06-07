@@ -1,5 +1,5 @@
 import { transactionApi } from '@/lib/api';
-import type { Transaction, TransactionListParams, PaginatedResponse } from '@/lib/apis/transaction';
+import type { Transaction, TransactionListParams, PaginatedResponse, CreateManualTransactionPayload } from '@/lib/apis/transaction';
 import useReactQuery from './use-react-query';
 
 /**
@@ -68,11 +68,24 @@ export const useTransactions = () => {
     }
   );
 
+  // Mutation: Create manual transaction
+  const useCreateManualTransaction = createMutation(
+    (payload: CreateManualTransactionPayload) => transactionApi.createManualTransaction(payload),
+    {
+      invalidateKeys: ['transactions'],
+      toast: {
+        success: 'Transaksi manual berhasil dibuat',
+        error: 'Gagal membuat transaksi manual'
+      }
+    }
+  );
+
   return {
     useTransactionList,
     useTransaction,
     useApprovePayment,
     useRejectPayment,
-    useUpdateStatus
+    useUpdateStatus,
+    useCreateManualTransaction
   };
 };

@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, TrendingUp, TrendingDown, DollarSign, FileText, FileDown, Loader2, RefreshCw, X, Mail } from "lucide-react";
+import { Search, TrendingUp, TrendingDown, DollarSign, FileText, FileDown, Loader2, RefreshCw, X, Mail, Plus } from "lucide-react";
 import { formatCurrency, cn } from "@/lib/utils";
 import { format, subMonths } from "date-fns";
 import { id as localeId } from "date-fns/locale";
@@ -47,13 +47,14 @@ import { useDirectDeleteTransaction } from "@/hooks/api/use-transaction-delete";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import ManualTransactionModal from "@/components/modals/manual-transaction-modal";
 
 export default function TransactionsPage() {
   const pathname = usePathname();
   const isManagerView = pathname?.startsWith("/manager") ?? false;
 
   const { outlets, selectedOutletId } = useOutletStore();
-  const { useTransactionList } = useTransactions();
+  const { useTransactionList, useCreateManualTransaction } = useTransactions();
 
   // Query cashier auth to check privileges
   const { data: cashierData } = useQuery({
@@ -72,6 +73,20 @@ export default function TransactionsPage() {
   const [transactionToDelete, setTransactionToDelete] = useState<any | null>(null);
   const [deleteReason, setDeleteReason] = useState("");
   const directDeleteMutation = useDirectDeleteTransaction();
+
+  // Manual transaction modal state
+  const [showManualModal, setShowManualModal] = useState(false);
+  const createManualTransactionMutation = useCreateManualTransaction();
+
+  const handleManualTransactionSubmit = async (payload: any) => {
+    try {
+      await createManualTransactionMutation.mutateAsync(payload);
+      setShowManualModal(false);
+      refetch();
+    } catch (err: any) {
+      console.error("Failed to create manual transaction:", err);
+    }
+  };
 
   const confirmDirectDelete = () => {
     if (!transactionToDelete) return;
@@ -271,14 +286,23 @@ export default function TransactionsPage() {
         title="Riwayat Transaksi"
         description="Pantau arus kas masuk dan keluar bisnis Anda secara real-time."
         actions={
-          <Button
-            onClick={() => setShowExportDialog(true)}
-            disabled={totalTransactions === 0 || isLoading}
-            className="font-bold text-xs h-10 shadow-none bg-rose-600 hover:bg-rose-500 text-white"
-          >
-            <Mail className="w-4 h-4 mr-2" />
-            E-Statement Resmi
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setShowManualModal(true)}
+              className="font-bold text-xs h-10 shadow-none bg-emerald-600 hover:bg-emerald-500 text-white"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Tambah Transaksi
+            </Button>
+            <Button
+              onClick={() => setShowExportDialog(true)}
+              disabled={totalTransactions === 0 || isLoading}
+              className="font-bold text-xs h-10 shadow-none bg-rose-600 hover:bg-rose-500 text-white"
+            >
+              <Mail className="w-4 h-4 mr-2" />
+              E-Statement Resmi
+            </Button>
+          </div>
         }
       />
       </div>
@@ -752,6 +776,15 @@ export default function TransactionsPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* ══════════ Manual Transaction Modal ══════════ */}
+      <ManualTransactionModal
+        open={showManualModal}
+        onOpenChange={setShowManualModal}
+        outletId={outletId || selectedOutletId || ""}
+        onSubmit={handleManualTransactionSubmit}
+        isLoading={createManualTransactionMutation.isPending}
+      />
     </div>
   );
 }

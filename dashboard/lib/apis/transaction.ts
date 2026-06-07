@@ -68,6 +68,19 @@ export interface TransactionListParams {
   q?: string;
 }
 
+export interface CreateManualTransactionPayload {
+  outletId: string;
+  transactionDate: string;
+  customerName?: string;
+  customerPhone?: string;
+  amount: number;
+  items: Array<{
+    productId: string;
+    quantity: number;
+    bookingDate?: string;
+  }>;
+}
+
 export interface PaginatedResponse<T> {
   data: T;
   pagination: {
@@ -157,6 +170,14 @@ export const transactionApi = {
     const response = await apiClient.patch<ApiResponse<Transaction>>(`/transactions/${id}/status`, {
       status,
     });
+    return response.data;
+  },
+
+  /**
+   * Membuat transaksi manual (owner/manager)
+   */
+  createManualTransaction: async (payload: CreateManualTransactionPayload) => {
+    const response = await apiClient.post<ApiResponse<{ transaction: Transaction; order: any; calculatedAmount: number }>>("/transactions", payload);
     return response.data;
   },
 };
