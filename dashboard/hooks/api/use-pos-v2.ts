@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect, useCallback } from "react";
 import { posV2Api } from "@/lib/apis/pos-v2";
 import type { PosV2OrderRequest } from "@/lib/apis/pos-v2";
 import { toast } from "sonner";
@@ -35,6 +36,7 @@ export function saveOfflineOrder(order: any) {
             createdAt: new Date().toISOString()
         });
         localStorage.setItem(OFFLINE_ORDERS_KEY, JSON.stringify(orders));
+        window.dispatchEvent(new Event("offline-orders-updated"));
     } catch (e) {
         console.error("Gagal menyimpan transaksi offline:", e);
     }
@@ -255,6 +257,15 @@ export function usePosV2CreateOrder() {
             try {
                 return await posV2Api.createOrder(data);
             } catch (err: any) {
+                // If it is a client-side validation or business logic error (4xx), throw it immediately
+                // so the UI can display the appropriate error message, rather than falling back to offline order.
+                if (err?.response) {
+                    const status = err.response.status;
+                    if (status >= 400 && status < 500) {
+                        throw err;
+                    }
+                }
+
                 console.warn("Koneksi gagal saat kirim pesanan, menyimpan secara offline:", err);
                 const offlineId = `offline-${Date.now()}`;
                 saveOfflineOrder(data);
@@ -292,4 +303,122 @@ export function usePosV2CreateOrder() {
             });
         },
     });
+}
+
+export function usePosV2OfflineSync(outletId: string) {
+    const queryClient = useQueryClient();
+    const [offlineOrdersCount, setOfflineOrdersCount] = useState(0);
+    const [isSyncing, setIsSyncing] = useState(false);
+
+    const updateOfflineCount = useCallback(() => {
+        const orders = getOfflineOrders();
+        setOfflineOrdersCount(orders.length);
+    }, []);
+
+    // Function to run the synchronization
+    const syncOrders = useCallback(async () => {
+        if (typeof window === "undefined" || !navigator.onLine || isSyncing) return;
+        const orders = getOfflineOrders();
+        if (orders.length === 0) return;
+
+        setIsSyncing(true);
+        let successCount = 0;
+        let failedCount = 0;
+        const remainingOrders = [];
+
+        toast.info(`Menyinkronkan ${orders.length} transaksi offline... 📡`);
+
+        for (const order of orders) {
+            try {
+                // Strip local temp field
+                const { offlineId, ...orderPayload } = order;
+                
+                // Add delay between requests to avoid rate limiting
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                await posV2Api.createOrder(orderPayload);
+                successCount++;
+            } catch (err: any) {
+                console.error("Gagal menyinkronkan transaksi offline:", err);
+                
+                // Jika error 429 (Too Many Requests), tunggu lebih lama
+                if (err?.response?.status === 429) {
+                    console.warn("Rate limit terdeteksi, menunggu 5 detik sebelum retry...");
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+                }
+                
+                failedCount++;
+                remainingOrders.push(order); // Keep to retry later
+            }
+        }
+
+        localStorage.setItem(OFFLINE_ORDERS_KEY, JSON.stringify(remainingOrders));
+        setOfflineOrdersCount(remainingOrders.length);
+        setIsSyncing(false);
+
+        if (successCount > 0) {
+            toast.success(`${successCount} transaksi offline berhasil disinkronkan ke server! 🌐`);
+            // Invalidate queries to refresh lists
+            queryClient.invalidateQueries({ queryKey: ["pos-v2"] });
+            queryClient.invalidateQueries({ queryKey: ["tables"] });
+        }
+
+        if (failedCount > 0) {
+            toast.error(`${failedCount} transaksi offline gagal disinkronkan. Akan dicoba lagi nanti.`);
+        }
+    }, [isSyncing, queryClient]);
+
+    // Check status and listen for online event
+    useEffect(() => {
+        updateOfflineCount();
+
+        const handleOnline = () => {
+            // Debounce: tunggu 3 detik setelah online sebelum sync
+            setTimeout(() => {
+                if (navigator.onLine) {
+                    syncOrders();
+                }
+            }, 3000);
+        };
+
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === OFFLINE_ORDERS_KEY) {
+                updateOfflineCount();
+            }
+        };
+
+        window.addEventListener("online", handleOnline);
+        window.addEventListener("storage", handleStorageChange);
+        window.addEventListener("offline-orders-updated", updateOfflineCount);
+
+        // Run a periodic check every 60 seconds (lebih lama untuk hindari rate limit)
+        const interval = setInterval(() => {
+            updateOfflineCount();
+            if (navigator.onLine) {
+                syncOrders();
+            }
+        }, 60_000);
+
+        // Also run once on mount if online (tapi dengan delay)
+        const initialSyncTimer = setTimeout(() => {
+            if (navigator.onLine) {
+                syncOrders();
+            }
+        }, 5000);
+
+        return () => {
+            window.removeEventListener("online", handleOnline);
+            window.removeEventListener("storage", handleStorageChange);
+            window.removeEventListener("offline-orders-updated", updateOfflineCount);
+            clearInterval(interval);
+            clearTimeout(initialSyncTimer);
+        };
+    }, [syncOrders, updateOfflineCount]);
+
+    return {
+        offlineOrdersCount,
+        isSyncing,
+        syncNow: syncOrders,
+        refetchOfflineCount: updateOfflineCount
+    };
 }

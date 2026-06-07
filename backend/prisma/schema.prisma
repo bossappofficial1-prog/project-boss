@@ -257,9 +257,10 @@ model Staff {
   name                      String
   phone                     String?
   username                  String?                    @unique
-  password                  String
   email                     String?
   pin                       String?
+  faceImageUrl              String?
+  faceDescriptor            String?
   role                      StaffRole                  @default(CASHIER)
   status                    StaffStatus                @default(ACTIVE)
   outletId                  String
@@ -292,26 +293,26 @@ model StaffPrivilege {
 }
 
 model Product {
-  id            String           @id @default(uuid())
-  name          String
-  description   String?
-  type          ProductType
-  status        ServiceStatus    @default(ACTIVE)
-  outletId      String
-  categoryId    String?
-  image         String?          @default("/defaults/default-product-image.png")
-  taxPercentage Float?
-  taxName       String?
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  orderItems    OrderItem[]
-  outlet        Outlet           @relation(fields: [outletId], references: [id], onDelete: Cascade)
-  category      ProductCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  goods         ProductGoods?
-  media         ProductMedia[]
-  service       ProductService?
-  ticket        ProductTicket?
-  recipe        Recipe?
+  id                 String              @id @default(uuid())
+  name               String
+  description        String?
+  type               ProductType
+  status             ServiceStatus       @default(ACTIVE)
+  outletId           String
+  categoryId         String?
+  image              String?             @default("/defaults/default-product-image.png")
+  taxPercentage      Float?
+  taxName            String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  orderItems         OrderItem[]
+  outlet             Outlet              @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  category           ProductCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  goods              ProductGoods?
+  media              ProductMedia[]
+  service            ProductService?
+  ticket             ProductTicket?
+  recipe             Recipe?
   stockTransferItems StockTransferItem[]
 
   @@index([outletId])
@@ -511,18 +512,18 @@ model StockLog {
 }
 
 model BookingSlot {
-  id               String            @id @default(uuid())
-  date             DateTime
-  startTime        DateTime
-  endTime          DateTime
-  status           BookingSlotStatus @default(AVAILABLE)
-  reminderSent     Boolean           @default(false)
-  productServiceId String
-  orderItemId      String?           @unique
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  order            OrderItem?        @relation(fields: [orderItemId], references: [id])
-  productService   ProductService    @relation(fields: [productServiceId], references: [id], onDelete: Cascade)
+  id                    String            @id @default(uuid())
+  date                  DateTime
+  startTime             DateTime
+  endTime               DateTime
+  status                BookingSlotStatus @default(AVAILABLE)
+  reminderSent          Boolean           @default(false)
+  productServiceId      String
+  orderItemId           String?           @unique
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  order                 OrderItem?        @relation(fields: [orderItemId], references: [id])
+  productService        ProductService    @relation(fields: [productServiceId], references: [id], onDelete: Cascade)
   googleCalendarEventId String?
 
   @@index([productServiceId])
@@ -995,6 +996,9 @@ enum StaffStatus {
 enum StaffRole {
   CASHIER
   MANAGER
+  WAITER
+  KITCHEN
+  OTHER
 }
 
 enum StaffPrivilegeType {
@@ -1011,6 +1015,7 @@ enum StaffPrivilegeType {
   TOOLS_CALCULATOR
   INGREDIENT_MANAGEMENT
   RECIPE_MANAGEMENT
+  ATTENDANCE_MANAGEMENT
 }
 
 enum ManualPaymentType {
@@ -1119,21 +1124,23 @@ enum TransferStatus {
 }
 
 model Attendance {
-  id          String    @id @default(uuid())
-  staffId     String
-  outletId    String
-  clockIn     DateTime  @default(now())
-  clockOut    DateTime?
-  date        DateTime
-  notes       String?
-  clockInLat  Float?
-  clockInLng  Float?
-  clockOutLat Float?
-  clockOutLng Float?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  staff       Staff     @relation(fields: [staffId], references: [id], onDelete: Cascade)
-  outlet      Outlet    @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  id              String    @id @default(uuid())
+  staffId         String
+  outletId        String
+  clockIn         DateTime  @default(now())
+  clockOut        DateTime?
+  date            DateTime
+  notes           String?
+  clockInFaceUrl  String?
+  clockOutFaceUrl String?
+  clockInLat      Float?
+  clockInLng      Float?
+  clockOutLat     Float?
+  clockOutLng     Float?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  staff           Staff     @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  outlet          Outlet    @relation(fields: [outletId], references: [id], onDelete: Cascade)
 
   @@unique([staffId, date])
   @@index([outletId, date])
@@ -1307,10 +1314,10 @@ model StockTransfer {
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
 
-  business         Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  senderOutlet     Outlet              @relation("SentStockTransfers", fields: [senderOutletId], references: [id], onDelete: Cascade)
-  receiverOutlet   Outlet              @relation("ReceivedStockTransfers", fields: [receiverOutletId], references: [id], onDelete: Cascade)
-  items            StockTransferItem[]
+  business       Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  senderOutlet   Outlet              @relation("SentStockTransfers", fields: [senderOutletId], references: [id], onDelete: Cascade)
+  receiverOutlet Outlet              @relation("ReceivedStockTransfers", fields: [receiverOutletId], references: [id], onDelete: Cascade)
+  items          StockTransferItem[]
 
   @@index([businessId])
   @@index([senderOutletId])
@@ -1319,13 +1326,13 @@ model StockTransfer {
 }
 
 model StockTransferItem {
-  id              String        @id @default(uuid())
+  id              String @id @default(uuid())
   stockTransferId String
   productId       String
   quantity        Int
 
-  stockTransfer   StockTransfer @relation(fields: [stockTransferId], references: [id], onDelete: Cascade)
-  product         Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  stockTransfer StockTransfer @relation(fields: [stockTransferId], references: [id], onDelete: Cascade)
+  product       Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([stockTransferId])
   @@index([productId])
@@ -1340,14 +1347,14 @@ enum AccountType {
 }
 
 model Account {
-  id           String        @id @default(uuid())
-  businessId   String
-  code         String
-  name         String
-  type         AccountType
-  isSystem     Boolean       @default(false)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id         String      @id @default(uuid())
+  businessId String
+  code       String
+  name       String
+  type       AccountType
+  isSystem   Boolean     @default(false)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
 
   business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
   journalItems JournalItem[]
@@ -1357,29 +1364,29 @@ model Account {
 }
 
 model JournalEntry {
-  id           String        @id @default(uuid())
-  businessId   String
-  date         DateTime
-  reference    String?
-  description  String
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id          String   @id @default(uuid())
+  businessId  String
+  date        DateTime
+  reference   String?
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  items        JournalItem[]
+  business Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  items    JournalItem[]
 
   @@index([businessId])
 }
 
 model JournalItem {
-  id             String       @id @default(uuid())
+  id             String @id @default(uuid())
   journalEntryId String
   accountId      String
-  debit          Float        @default(0)
-  credit         Float        @default(0)
+  debit          Float  @default(0)
+  credit         Float  @default(0)
 
-  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
-  account        Account      @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  journalEntry JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  account      Account      @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
   @@index([journalEntryId])
   @@index([accountId])
@@ -1396,8 +1403,8 @@ model Integration {
   status       IntegrationStatus   @default(CONNECTED)
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
-  
-  business     Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@unique([businessId, provider])
   @@index([businessId])
@@ -1413,4 +1420,3 @@ enum IntegrationStatus {
   DISCONNECTED
   ERROR
 }
-

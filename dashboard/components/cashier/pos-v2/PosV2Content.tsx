@@ -23,6 +23,7 @@ import {
   usePosV2OpenOrders,
   usePosV2CreateOrder,
   usePosV2OutletQris,
+  usePosV2OfflineSync,
 } from "@/hooks/api/use-pos-v2";
 import { useProductBarcodeLookup } from "@/hooks/api/use-product-barcode";
 import { useLoyaltyConfig, useLoyaltyRewards } from "@/hooks/api/use-loyalty";
@@ -59,6 +60,7 @@ export function PosV2Content() {
   const { cashierData, outletData } = useCashierContext();
   const outletId = outletData?.id as string;
   const queryClient = useQueryClient();
+  const { offlineOrdersCount, isSyncing, syncNow } = usePosV2OfflineSync(outletId);
 
   const [leftTab, setLeftTab] = React.useState<LeftTab>("catalog");
   const [mobileView, setMobileView] = React.useState<MobileView>("catalog");
@@ -565,6 +567,34 @@ export function PosV2Content() {
       <div
         className={`mx-auto flex w-full max-w-350 flex-col gap-3 p-3 lg:pb-3 ${MOBILE_CONTENT_PB}`}
       >
+        {/* Offline Sync Banner */}
+        {offlineOrdersCount > 0 && (
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-3 text-sm text-yellow-600 dark:text-yellow-400">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>
+                Ada <strong>{offlineOrdersCount}</strong> transaksi tersimpan secara lokal yang belum disinkronkan ke server.
+              </span>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={syncNow}
+              disabled={isSyncing}
+              className="border-yellow-500/30 hover:bg-yellow-500/20 shrink-0 text-xs gap-1 h-8 px-3"
+            >
+              {isSyncing ? (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Mengirim...
+                </>
+              ) : (
+                "Sinkronkan Sekarang"
+              )}
+            </Button>
+          </div>
+        )}
+
         {/* Retail: Barcode Bar */}
         {isRetail && (
           <div className="rounded-md border border-primary/30 bg-primary/5 p-3">

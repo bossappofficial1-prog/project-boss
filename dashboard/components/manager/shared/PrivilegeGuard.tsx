@@ -37,6 +37,7 @@ export default function PrivilegeGuard({
     TOOLS_CALCULATOR: "Alat Bantu & Kalkulator",
     INGREDIENT_MANAGEMENT: "Manajemen Bahan Baku",
     RECIPE_MANAGEMENT: "Manajemen Resep Menu",
+    ATTENDANCE_MANAGEMENT: "Manajemen Absensi Staf",
   };
 
   if (!hasAccess) {

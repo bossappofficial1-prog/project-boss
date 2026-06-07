@@ -1,13 +1,14 @@
 import { Request, Response } from "express";
 import { StaffRepository } from "../repositories/staff.repository";
 import { HttpStatus } from "../constants/http-status";
-// import { CreateStaffInput, UpdateStaffInput } from "../schemas/staff.schema";
 import { asyncHandler } from "../middleware/error.middleware";
 import { ResponseUtil } from "../utils";
 import { AppError } from "../errors/app-error";
 import { StaffFormValues, UpdateStaffSchemaValues } from "../schemas/staff.schema";
 import { getOutletByIdService } from "../service/outlet.service";
 import { PlanLimitService } from "../service/plan-limit.service";
+import { importStaffFromCSV, generateStaffImportTemplate, StaffImportRow } from "../service/staff.service";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
 export const createStaffController = asyncHandler(async (req: Request, res: Response) => {
     const payload = req.body as StaffFormValues;
@@ -81,4 +82,49 @@ export const deleteStaffController = asyncHandler(async (req: Request, res: Resp
     await StaffRepository.delete(id as string);
     await PlanLimitService.invalidateUsageCache(businessId);
     return ResponseUtil.success(res, { message: "Staff berhasil dihapus" });
+});
+
+export const downloadStaffImportTemplateController = asyncHandler(async (req: Request, res: Response) => {
+    const workbook = await generateStaffImportTemplate();
+    const filename = "template-import-staff.xlsx";
+    
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    await workbook.xlsx.write(res);
+    res.end();
+});
+
+export const importStaffController = asyncHandler(async (req: Request, res: Response) => {
+    const storedUser = req.storedUser as typeof req.storedUser & { businessId?: string };
+    const businessId = storedUser?.businessId;
+    const { outletId, rows } = req.body;
+
+    if (!businessId) {
+        throw new AppError("Business ID tidak ditemukan", HttpStatus.FORBIDDEN);
+    }
+
+    if (!outletId) {
+        throw new AppError("Outlet ID wajib diisi", HttpStatus.BAD_REQUEST);
+    }
+
+    if (!rows || !Array.isArray(rows) || rows.length === 0) {
+        throw new AppError("Data staff kosong", HttpStatus.BAD_REQUEST);
+    }
+
+    // Verify outlet belongs to business
+    const outlet = await getOutletByIdService(outletId);
+    if (outlet.businessId !== businessId) {
+        throw new AppError("Outlet tidak termasuk dalam bisnis Anda", HttpStatus.FORBIDDEN);
+    }
+
+    // Check plan limit for total staff to be created
+    await PlanLimitService.assertCanCreateStaff(businessId, rows.length);
+
+    const result = await importStaffFromCSV(businessId, outletId, rows as StaffImportRow[]);
+    
+    // Invalidate cache after bulk import
+    await PlanLimitService.invalidateUsageCache(businessId);
+
+    return ResponseUtil.success(res, result, HttpStatus.CREATED, 
+      `Import selesai: ${result.success} berhasil, ${result.failed} gagal`);
 });

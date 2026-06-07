@@ -12,9 +12,10 @@ import { ExpenseFormDialog } from '@/components/cashier/expenses/ExpenseFormDial
 import { type Expense } from '@/hooks/api/use-expenses';
 import { toast } from 'sonner';
 import { uploadApi } from '@/lib/api';
+import { apiClient } from '@/lib/apis/base';
 import { ReceiptPreviewModal } from '@/components/modals/ReceiptPreviewModal';
 import { SectionHeader } from '@/components/ui/section-header';
-import { Receipt, Wallet, Plus, Loader2 } from 'lucide-react';
+import { Receipt, Wallet, Plus, Loader2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -24,6 +25,7 @@ export default function ExpensesPage() {
 	const { expenses, summary, loading, error, startISO, endISO, setRange, refetch, create, update, remove } = useExpenses(outletId);
 	const [modalOpen, setModalOpen] = useState(false);
 	const [editing, setEditing] = useState<Expense | null>(null);
+	const [scanning, setScanning] = useState(false);
 
 	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 	const [previewOpen, setPreviewOpen] = useState(false);
@@ -31,6 +33,35 @@ export default function ExpensesPage() {
 	const handleAdd = () => {
 		setEditing(null);
 		setModalOpen(true);
+	};
+
+	const handleScanReceipt = async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+
+		setScanning(true);
+		const toastId = toast.loading("Memindai struk belanja dengan Gemini AI...");
+		
+		try {
+			const fd = new FormData();
+			fd.append("receipt", file);
+			fd.append("outletId", outletId!);
+
+			await apiClient.post("/expenses/scan-receipt", fd, {
+				headers: {
+					"Content-Type": "multipart/form-data"
+				}
+			});
+
+			toast.success("Struk berhasil dipindai dan dicatat sebagai pengeluaran otomatis!", { id: toastId });
+			refetch();
+		} catch (err: any) {
+			const msg = err?.response?.data?.message || err?.message || "Gagal memindai struk";
+			toast.error(msg, { id: toastId });
+		} finally {
+			setScanning(false);
+			e.target.value = "";
+		}
 	};
 
 	const handleEdit = (exp: Expense) => {
@@ -79,10 +110,33 @@ export default function ExpensesPage() {
 				title="Pengeluaran Outlet"
 				description="Kelola biaya operasional harian, gaji staf, dan modal inventaris Anda."
 				actions={
-					<Button onClick={handleAdd} className="font-bold text-xs h-10 shadow-none">
-						<Plus className="w-4 h-4 mr-2" />
-						Tambah Pengeluaran
-					</Button>
+					<div className="flex items-center gap-2">
+						<input
+							type="file"
+							id="scan-receipt-input"
+							accept="image/*"
+							className="hidden"
+							onChange={handleScanReceipt}
+							disabled={scanning || !outletId}
+						/>
+						<Button
+							variant="outline"
+							onClick={() => document.getElementById("scan-receipt-input")?.click()}
+							disabled={scanning || !outletId}
+							className="font-bold text-xs h-10 shadow-none border-primary/20 text-primary hover:bg-primary/5"
+						>
+							{scanning ? (
+								<Loader2 className="w-4 h-4 mr-2 animate-spin" />
+							) : (
+								<Sparkles className="w-4 h-4 mr-2 text-primary" />
+							)}
+							Scan Struk (AI)
+						</Button>
+						<Button onClick={handleAdd} disabled={scanning || !outletId} className="font-bold text-xs h-10 shadow-none">
+							<Plus className="w-4 h-4 mr-2" />
+							Tambah Pengeluaran
+						</Button>
+					</div>
 				}
 			/>
 

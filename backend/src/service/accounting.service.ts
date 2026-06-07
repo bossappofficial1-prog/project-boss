@@ -2,6 +2,7 @@ import { BaseService } from "./base.service";
 import { AccountingRepository } from "../repositories/accounting.repository";
 import { CreateAccountInput, UpdateAccountInput, CreateJournalEntryInput } from "../schemas/accounting.schema";
 import { AccountType } from "@prisma/client";
+import { db } from "../config/prisma";
 
 export class AccountingService extends BaseService {
   static async getAccounts(businessId: string) {
@@ -231,5 +232,98 @@ export class AccountingService extends BaseService {
       this.notFound("Entri jurnal tidak ditemukan");
     }
     return AccountingRepository.deleteJournalEntry(id, businessId);
+  }
+
+  static async autoJournalPOSOrder(orderId: string): Promise<void> {
+    try {
+      const order = await db.order.findUnique({
+        where: { id: orderId },
+        include: {
+          items: {
+            include: {
+              product: true
+            }
+          },
+          outlet: true,
+          transaction: true
+        }
+      });
+
+      if (!order || order.orderStatus !== "COMPLETED") {
+        return;
+      }
+
+      const businessId = order.outlet.businessId;
+
+      // Idempotency: skip if already journaled
+      const existingEntry = await db.journalEntry.findFirst({
+        where: {
+          businessId,
+          reference: `POS-${order.id}`
+        }
+      });
+      if (existingEntry) {
+        console.log(`[Auto-Journal] Order ${order.id} already journaled, skipping.`);
+        return;
+      }
+
+      const accounts = await this.getAccounts(businessId);
+
+      const findAccountByCode = (code: string) => {
+        const acc = accounts.find((a) => a.code === code);
+        if (!acc) throw new Error(`Akun dengan kode ${code} tidak ditemukan.`);
+        return acc.id;
+      };
+
+      const kasPosId = findAccountByCode("1001");
+      const kasBankId = findAccountByCode("1002");
+      const pendapatanId = findAccountByCode("4001");
+      const hppId = findAccountByCode("5001");
+      const persediaanId = findAccountByCode("1201");
+
+      const cashAccountId = order.transaction?.paymentMethod?.toLowerCase() === "qris" ? kasBankId : kasPosId;
+      const totalHpp = order.items.reduce((sum, item) => sum + (item.hppAtTimeOfOrder ?? 0), 0);
+
+      const journalItems = [];
+
+      if (order.totalAmount > 0) {
+        journalItems.push({
+          accountId: cashAccountId,
+          debit: order.totalAmount,
+          credit: 0,
+        });
+        journalItems.push({
+          accountId: pendapatanId,
+          debit: 0,
+          credit: order.totalAmount,
+        });
+      }
+
+      if (totalHpp > 0) {
+        journalItems.push({
+          accountId: hppId,
+          debit: totalHpp,
+          credit: 0,
+        });
+        journalItems.push({
+          accountId: persediaanId,
+          debit: 0,
+          credit: totalHpp,
+        });
+      }
+
+      if (journalItems.length === 0) return;
+
+      await AccountingRepository.createJournalEntry(businessId, {
+        date: order.createdAt,
+        description: `Penjualan POS Otomatis - No. Pesanan ${order.id}`,
+        reference: `POS-${order.id}`,
+        items: journalItems,
+      });
+
+      console.log(`[Auto-Journal] Created journal entry for order ${order.id}, total: ${order.totalAmount}, HPP: ${totalHpp}`);
+    } catch (err: any) {
+      console.error(`[Auto-Journal] Failed to auto-journal order ${orderId}:`, err?.message || err);
+    }
   }
 }

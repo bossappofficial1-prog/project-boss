@@ -53,6 +53,8 @@ import recipeRouter from "./recipe.route";
 import purchaseOrderRouter from "./purchase-order.route";
 import stockTransferRouter from "./stock-transfer.route";
 import accountingRouter from "./accounting.route";
+import marketingRouter from "./marketing.route";
+import aiRouter from "./ai.route";
 
 const apiRouter = Router();
 
@@ -98,6 +100,8 @@ apiRouter.use("/reservations", reservationRouter);
 apiRouter.use("/transaction-deletes", transactionDeleteRouter);
 apiRouter.use("/accounting", accountingRouter);
 apiRouter.use("/integrations", integrationRouter);
+apiRouter.use("/marketing", marketingRouter);
+apiRouter.use("/ai", aiRouter);
 apiRouter.use("/product-categories", productCategoryRouter);
 
 apiRouter.use("/attendance", attendanceRouter);

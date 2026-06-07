@@ -1,6 +1,6 @@
 export type BookingSlotStatus = 'AVAILABLE' | 'BOOKED' | 'BLOCKED';
 
-export type StaffRole = 'CASHIER' | 'ADMIN' | 'MANAGER';
+export type StaffRole = 'CASHIER' | 'ADMIN' | 'MANAGER' | 'WAITER' | 'KITCHEN' | 'OTHER';
 export type StaffStatus = 'ACTIVE' | 'INACTIVE';
 export type StaffPrivilegeType =
   | 'OUTLET_MANAGEMENT'
@@ -15,7 +15,8 @@ export type StaffPrivilegeType =
   | 'ANALYTICS'
   | 'TOOLS_CALCULATOR'
   | 'INGREDIENT_MANAGEMENT'
-  | 'RECIPE_MANAGEMENT';
+  | 'RECIPE_MANAGEMENT'
+  | 'ATTENDANCE_MANAGEMENT';
 
 export interface StaffPrivilege {
     id: string;
@@ -31,11 +32,14 @@ export interface StaffMember {
     phone?: string | null;
     username?: string | null;
     email?: string | null;
+    pin?: string | null;
     address?: string | null;
     notes?: string | null;
     status: StaffStatus;
     role: StaffRole;
     outletId: string;
+    faceImageUrl?: string | null;
+    faceDescriptor?: string | null;
     createdAt: string;
     updatedAt: string;
     privileges?: StaffPrivilege[];

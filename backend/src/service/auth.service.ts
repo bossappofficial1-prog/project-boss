@@ -86,13 +86,13 @@ export class AuthService extends BaseService {
   static async cashierLogin(data: CashierLoginInput) {
     const staff = await StaffRepository.findByUsername(data.username);
     if (!staff) {
-      this.unauthorized("Username atau Password/PIN salah");
+      this.unauthorized("Username atau PIN salah");
     }
 
-    // Pastikan staff memiliki password (sudah disetup sebagai kasir)
-    if (!staff.password) {
+    // Pastikan staff memiliki PIN
+    if (!staff.pin) {
       this.forbidden(
-        "Akun kasir belum diaktifkan. Hubungi owner untuk mengaktifkan akun.",
+        "Akun kasir belum diaktifkan. Hubungi owner untuk mengatur PIN.",
       );
     }
 
@@ -114,13 +114,10 @@ export class AuthService extends BaseService {
       );
     }
 
-    const isPasswordValid = await BcryptUtil.compare(
-      data.password,
-      staff.password,
-    );
+    const isPinValid = await BcryptUtil.compare(data.password, staff.pin);
 
-    if (!isPasswordValid) {
-      this.unauthorized("Username atau Password/PIN salah");
+    if (!isPinValid) {
+      this.unauthorized("Username atau PIN salah");
     }
 
     // Simpan session kasir di Redis
@@ -154,10 +151,10 @@ export class AuthService extends BaseService {
     });
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...staffWithoutPassword } = staff;
+    const { pin, ...staffWithoutPin } = staff;
 
     return {
-      staff: staffWithoutPassword,
+      staff: staffWithoutPin,
       token,
     };
   }
@@ -270,9 +267,9 @@ export class AuthService extends BaseService {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...staffWithoutPassword } = staff;
+    const { pin, ...staffWithoutPin } = staff;
 
-    return staffWithoutPassword;
+    return staffWithoutPin;
   }
 
   static async getMe(userId: string) {

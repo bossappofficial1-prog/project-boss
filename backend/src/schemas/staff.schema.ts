@@ -29,13 +29,6 @@ const staffBaseSchema = z.object({
     .nullable()
     .or(z.literal("")),
 
-  password: z
-    .string()
-    .min(6, "Password minimal 6 karakter")
-    .max(20, "Password maksimal 20 karakter")
-    .optional()
-    .or(z.literal("")),
-
   email: z
     .string()
     .email("Format email tidak valid")
@@ -45,8 +38,6 @@ const staffBaseSchema = z.object({
 
   pin: z
     .string()
-    .min(4, "PIN minimal 4 digit")
-    .max(10, "PIN maksimal 10 digit")
     .optional()
     .nullable()
     .or(z.literal("")),
@@ -62,24 +53,33 @@ const staffBaseSchema = z.object({
 
   outletId: z.string(),
 
+  faceImageUrl: z.string().optional().nullable(),
+  faceDescriptor: z.string().optional().nullable(),
+
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
 });
 
 export const staffSchema = staffBaseSchema.superRefine((data, ctx) => {
-  // Kasir butuh password
-  if (data.role === "CASHIER" && !data.password) {
+  // Username wajib diisi untuk kasir
+  if (data.role === "CASHIER" && !data.username) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Password wajib diisi untuk kasir",
-      path: ["password"],
+      message: "Username wajib diisi untuk kasir",
+      path: ["username"],
     });
   }
-  // Manager butuh PIN
-  if (data.role === "MANAGER" && !data.pin) {
+  // PIN wajib diisi untuk semua staff saat create
+  if (!data.pin) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "PIN wajib diisi untuk manager",
+      message: "PIN wajib diisi untuk staff baru",
+      path: ["pin"],
+    });
+  } else if (!/^\d{6}$/.test(data.pin)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "PIN harus 6 digit angka",
       path: ["pin"],
     });
   }
@@ -90,8 +90,7 @@ export type StaffFormValues = z.infer<typeof staffSchema>;
 // Schema khusus untuk Update (semua field opsional, tidak perlu outletId)
 export const updateStaffSchema = staffBaseSchema
   .extend({
-    password: z.string().min(6).optional().or(z.literal("")),
-    pin: z.string().min(4).optional().or(z.literal("")),
+    pin: z.string().regex(/^\d{6}$/, "PIN harus 6 digit angka").optional().or(z.literal("")),
     privileges: z.array(StaffPrivilegeTypeEnum).optional(),
   })
   .partial()

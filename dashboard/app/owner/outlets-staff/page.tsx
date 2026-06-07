@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Users, UserPlus } from "lucide-react";
+import { Users, UserPlus, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { useOutletContext } from "@/components/providers/OutletProvider";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { staffApi } from "@/lib/api";
 import type { StaffMember } from "@/types/staff";
+import StaffImportModal from "@/components/modals/StaffImportModal";
 import { StaffDialog } from "@/components/features/owner/staff/StaffModal";
 import { StaffTable } from "@/components/features/owner/staff/StaffTable";
 import { EmptyOutletState } from "@/components/ui/empty-outlet";
@@ -28,6 +29,7 @@ export default function StaffManagementPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingStaff, setDeletingStaff] = useState<StaffMember | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const outletName = useMemo(
     () => selectedOutlet?.name ?? "Outlet tidak dipilih",
@@ -87,7 +89,6 @@ export default function StaffManagementPage() {
           ? `${cleanPayload.username}`
           : cleanPayload.username,
         // Strip empty strings for optional fields to avoid validation issues
-        ...(cleanPayload.password === "" && { password: undefined }),
         ...(cleanPayload.pin === "" && { pin: undefined }),
         ...(cleanPayload.email === "" && { email: undefined }),
         ...(cleanPayload.phone === "" && { phone: undefined }),
@@ -155,9 +156,14 @@ export default function StaffManagementPage() {
         title="Kelola Staff"
         description={`Atur petugas kasir untuk ${outletName}. Kelola akses masuk mereka ke sistem Point of Sale (POS).`}
         actions={
-          <Button type="button" onClick={handleOpenCreate}>
-            <UserPlus className="h-4 w-4" /> Tambah Staff Baru
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" onClick={() => setIsImportModalOpen(true)}>
+              <Upload className="h-4 w-4" /> Import Staff
+            </Button>
+            <Button type="button" onClick={handleOpenCreate}>
+              <UserPlus className="h-4 w-4" /> Tambah Staff Baru
+            </Button>
+          </div>
         }
       />
 
@@ -237,6 +243,13 @@ export default function StaffManagementPage() {
         isOpen={isModalOpen}
         onOpenChange={(open) => !isSubmitting && setIsModalOpen(open)}
         modalMode={modalMode}
+      />
+
+      <StaffImportModal
+        open={isImportModalOpen}
+        onOpenChange={setIsImportModalOpen}
+        outletId={selectedOutlet?.id}
+        onImported={loadStaff}
       />
 
       <ConfirmDialog

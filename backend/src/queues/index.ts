@@ -7,6 +7,7 @@ import { OrderExpiryQueue } from "./order-expiry.queue";
 import { OrderNotificationQueue } from "./order-sent-notification";
 import { TestQueue } from "./test.queue";
 import { moderationQueue } from "./moderation.queue";
+import { marketingBroadcastQueue } from "./marketing-broadcast.queue";
 
 export const queues = [
     new TestQueue(),
@@ -17,5 +18,6 @@ export const queues = [
     new DeleteExpireSystemPayment(),
     new GenerateServiceOrderNotificationQueue(),
     new OrderNotificationQueue(),
-    moderationQueue
+    moderationQueue,
+    marketingBroadcastQueue
 ]

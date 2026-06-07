@@ -55,6 +55,9 @@ export default function AppSidebar() {
   );
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
+  
+  const isProd = process.env.NODE_ENV === "production" || process.env.NEXT_PUBLIC_APP_ENV === "production";
+  const soonText = isProd ? "Segera Hadir" : "Soon";
 
   const {
     selectedOutlet = null,
@@ -370,7 +373,7 @@ export default function AppSidebar() {
                                           variant="outline"
                                           className="ml-auto rounded-sm px-1 py-0 text-[8px] uppercase tracking-tighter border-muted-foreground/30 text-muted-foreground"
                                         >
-                                          Soon
+                                          {soonText}
                                         </Badge>
                                       ) : subItem.badge && (
                                         <Badge
@@ -451,7 +454,7 @@ export default function AppSidebar() {
                                             variant="outline"
                                             className="ml-auto rounded-sm px-1 py-0 text-[8px] uppercase tracking-tighter border-muted-foreground/30 text-muted-foreground"
                                           >
-                                            Soon
+                                            {soonText}
                                           </Badge>
                                         ) : subItem.badge && (
                                           <Badge
@@ -506,7 +509,7 @@ export default function AppSidebar() {
                                     variant="outline"
                                     className="rounded-sm px-1 py-0 text-[8px] uppercase tracking-tighter border-muted-foreground/30 text-muted-foreground"
                                   >
-                                    Soon
+                                    {soonText}
                                   </Badge>
                                 ) : item.badge && !isCollapsed && (
                                   <Badge

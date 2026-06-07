@@ -296,7 +296,7 @@ async function main() {
       data: {
         name: "Siti Rahayu",
         username: "siti@warung.id",
-        password: await hash("staff123", 10),
+        pin: await hash("123456", 10),
         phone: "08112345001",
         outletId: outletFnb.id,
         status: StaffStatus.ACTIVE,
@@ -306,7 +306,7 @@ async function main() {
       data: {
         name: "Andi Pratama",
         username: "andi@warung.id",
-        password: await hash("staff123", 10),
+        pin: await hash("123456", 10),
         phone: "08112345002",
         outletId: outletFnb.id,
         status: StaffStatus.ACTIVE,
@@ -319,7 +319,7 @@ async function main() {
       data: {
         name: "Dewi Lestari",
         username: "dewi@toko.id",
-        password: await hash("staff123", 10),
+        pin: await hash("123456", 10),
         phone: "08112345003",
         outletId: outletRetail.id,
         status: StaffStatus.ACTIVE,
@@ -329,7 +329,7 @@ async function main() {
       data: {
         name: "Roni Susanto",
         username: "roni@toko.id",
-        password: await hash("staff123", 10),
+        pin: await hash("123456", 10),
         phone: "08112345004",
         outletId: outletRetail.id,
         status: StaffStatus.ACTIVE,

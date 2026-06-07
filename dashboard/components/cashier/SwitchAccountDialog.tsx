@@ -54,7 +54,7 @@ export function SwitchAccountDialog({
 }: SwitchAccountDialogProps) {
   const [history, setHistory] = useState<string[]>([]);
   const [selectedUser, setSelectedUser] = useState("");
-  const [password, setPassword] = useState("");
+  const [pin, setPin] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const queryClient = useQueryClient();
 
@@ -62,7 +62,7 @@ export function SwitchAccountDialog({
     if (open) {
       setHistory(getHistory());
       setSelectedUser("");
-      setPassword("");
+      setPin("");
     }
   }, [open]);
 
@@ -70,7 +70,7 @@ export function SwitchAccountDialog({
 
   const handleSelect = (username: string) => {
     setSelectedUser(username);
-    setPassword("");
+    setPin("");
   };
 
   const handleRemove = (e: React.MouseEvent, username: string) => {
@@ -80,10 +80,10 @@ export function SwitchAccountDialog({
   };
 
   const handleSwitch = async () => {
-    if (!selectedUser || !password) return;
+    if (!selectedUser || !pin) return;
     setIsLoading(true);
     try {
-      const response = await authApi.cashierLogin(selectedUser, password);
+      const response = await authApi.cashierLogin(selectedUser, pin);
       saveToHistory(selectedUser);
       sessionStorage.removeItem("cashier-auth-cache-v1");
       queryClient.removeQueries({ queryKey: ["cashier-auth"] });
@@ -100,7 +100,7 @@ export function SwitchAccountDialog({
 
   const handleBack = () => {
     setSelectedUser("");
-    setPassword("");
+    setPin("");
   };
 
   return (
@@ -110,7 +110,7 @@ export function SwitchAccountDialog({
           <DialogTitle>Ganti Akun Kasir</DialogTitle>
           <DialogDescription>
             {selectedUser
-              ? `Masukkan password untuk ${selectedUser}`
+              ? `Masukkan PIN untuk ${selectedUser}`
               : "Pilih akun yang tersedia untuk login"}
           </DialogDescription>
         </DialogHeader>
@@ -177,16 +177,19 @@ export function SwitchAccountDialog({
               </span>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="switch-password">Password</Label>
+              <Label htmlFor="switch-pin">PIN</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  id="switch-password"
-                  type="password"
-                  placeholder="••••••••"
-                  className="pl-9"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  id="switch-pin"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  placeholder="••••••"
+                  maxLength={6}
+                  className="pl-9 tracking-widest text-center"
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSwitch()}
                   autoFocus
                 />
@@ -198,7 +201,7 @@ export function SwitchAccountDialog({
               </Button>
               <Button
                 onClick={handleSwitch}
-                disabled={!password || isLoading}
+                disabled={!pin || isLoading}
                 className="flex-1"
               >
                 {isLoading ? "Memproses..." : "Masuk"}

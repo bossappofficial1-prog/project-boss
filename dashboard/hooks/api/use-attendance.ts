@@ -27,7 +27,7 @@ export function useMyAttendance(staffId: string, page = 1) {
 export function useClockIn() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { outletId: string; latitude?: number; longitude?: number; notes?: string }) =>
+    mutationFn: (data: { outletId: string; latitude?: number; longitude?: number; notes?: string; clockInFaceUrl?: string }) =>
       attendanceApi.clockIn(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["attendance"] });
@@ -38,8 +38,8 @@ export function useClockIn() {
 export function useClockOut() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (params: { id: string; latitude?: number; longitude?: number; notes?: string }) =>
-      attendanceApi.clockOut(params.id, { latitude: params.latitude, longitude: params.longitude, notes: params.notes }),
+    mutationFn: (params: { id: string; latitude?: number; longitude?: number; notes?: string; clockOutFaceUrl?: string }) =>
+      attendanceApi.clockOut(params.id, { latitude: params.latitude, longitude: params.longitude, notes: params.notes, clockOutFaceUrl: params.clockOutFaceUrl }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["attendance"] });
     },
@@ -58,5 +58,49 @@ export function useOwnerAttendance(params: {
     queryKey: KEYS.owner(params),
     queryFn: () => attendanceApi.listForOwner(params),
     enabled: !!params.outletId,
+  });
+}
+
+export function useCreateManualAttendance() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      outletId: string;
+      staffId: string;
+      date: string;
+      clockIn: string;
+      clockOut?: string | null;
+      notes?: string;
+    }) => attendanceApi.createManual(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["attendance"] });
+    },
+  });
+}
+
+export function useUpdateManualAttendance() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: {
+      id: string;
+      data: {
+        clockIn?: string;
+        clockOut?: string | null;
+        notes?: string;
+      };
+    }) => attendanceApi.updateManual(params.id, params.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["attendance"] });
+    },
+  });
+}
+
+export function useDeleteManualAttendance() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => attendanceApi.deleteManual(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["attendance"] });
+    },
   });
 }

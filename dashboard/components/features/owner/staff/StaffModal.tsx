@@ -1,7 +1,10 @@
 import { FormFieldConfig, ReusableForm } from "@/components/ui/reuseable-form";
-import { useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { z } from "zod";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { uploadApi } from "@/lib/apis/upload";
 import {
   Store,
   ShoppingBag,
@@ -43,21 +46,39 @@ const getStaffSchema = (isEditMode: boolean) =>
           (val) => !val || /^(\+62|62|0)8\d{8,12}$/.test(val),
           "Nomor telepon tidak valid (contoh: 081234567890)",
         ),
-      role: z.enum(["CASHIER", "MANAGER"]).default("CASHIER"),
+      role: z.enum(["CASHIER", "MANAGER", "WAITER", "KITCHEN", "OTHER"]).default("CASHIER"),
       status: StaffStatusEnum.default("ACTIVE"),
       address: z.string().optional().nullable().or(z.literal("")),
       notes: z.string().optional().nullable().or(z.literal("")),
 
       // Cashier specific
       username: z.string().optional().nullable().or(z.literal("")),
-      password: z.string().optional().nullable().or(z.literal("")),
 
       // Manager specific
       email: z.string().optional().nullable().or(z.literal("")),
       pin: z.string().optional().nullable().or(z.literal("")),
       privileges: z.array(z.string()).optional().default([]),
+      faceImageUrl: z.string().optional().nullable().or(z.literal("")),
+      faceDescriptor: z.string().optional().nullable().or(z.literal("")),
     })
     .superRefine((data, ctx) => {
+      // PIN is required for all new staff members, and must be 6 digits if provided
+      if (!isEditMode && (!data.pin || data.pin.trim() === "")) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "PIN wajib diisi untuk staff baru",
+          path: ["pin"],
+        });
+      } else if (data.pin && data.pin.trim() !== "") {
+        if (!/^\d{6}$/.test(data.pin)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "PIN harus 6 digit angka",
+            path: ["pin"],
+          });
+        }
+      }
+
       if (data.role === "CASHIER") {
         // Username is required for Cashier
         if (!data.username || data.username.trim() === "") {
@@ -74,24 +95,6 @@ const getStaffSchema = (isEditMode: boolean) =>
           });
         }
 
-        // Password is required for creating a Cashier
-        if (!isEditMode && (!data.password || data.password.trim() === "")) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Password wajib diisi untuk Kasir baru",
-            path: ["password"],
-          });
-        } else if (
-          data.password &&
-          data.password.length > 0 &&
-          data.password.length < 6
-        ) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Password minimal 6 karakter",
-            path: ["password"],
-          });
-        }
       } else if (data.role === "MANAGER") {
         // Email is optional but if provided must be valid
         if (data.email && data.email.trim() !== "") {
@@ -101,23 +104,6 @@ const getStaffSchema = (isEditMode: boolean) =>
               code: z.ZodIssueCode.custom,
               message: "Format email tidak valid",
               path: ["email"],
-            });
-          }
-        }
-
-        // PIN is required for creating a Manager
-        if (!isEditMode && (!data.pin || data.pin.trim() === "")) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "PIN wajib diisi untuk Manager baru",
-            path: ["pin"],
-          });
-        } else if (data.pin && data.pin.trim() !== "") {
-          if (!/^\d{6}$/.test(data.pin)) {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              message: "PIN harus 6 digit angka",
-              path: ["pin"],
             });
           }
         }
@@ -146,6 +132,117 @@ export function StaffDialog({
 }: StaffDialogProps) {
   const isEditMode = modalMode === "edit";
 
+  const [webcamStream, setWebcamStream] = useState<MediaStream | null>(null);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [faceApiLoading, setFaceApiLoading] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Sync capturedImage with initialData faceImageUrl when initialData changes
+  useEffect(() => {
+    if (initialData?.faceImageUrl) {
+      setCapturedImage(initialData.faceImageUrl);
+    } else {
+      setCapturedImage(null);
+    }
+  }, [initialData]);
+
+  useEffect(() => {
+    return () => {
+      if (webcamStream) {
+        webcamStream.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, [webcamStream]);
+
+  const startWebcam = async () => {
+    try {
+      setIsCapturing(true);
+      setCapturedImage(null);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 320, height: 240, facingMode: "user" },
+      });
+      setWebcamStream(stream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.error("Gagal mengakses kamera:", err);
+      toast.error("Gagal mengakses kamera. Pastikan izin kamera diberikan.");
+      setIsCapturing(false);
+    }
+  };
+
+  const stopWebcam = () => {
+    if (webcamStream) {
+      webcamStream.getTracks().forEach((track) => track.stop());
+      setWebcamStream(null);
+    }
+    setIsCapturing(false);
+  };
+
+  const capturePhoto = async (form: any) => {
+    if (!videoRef.current) return;
+    
+    setFaceApiLoading(true);
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = 320;
+      canvas.height = 240;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(videoRef.current, 0, 0, 320, 240);
+        const base64 = canvas.toDataURL("image/jpeg");
+        
+        // Stop camera immediately
+        stopWebcam();
+        setCapturedImage(base64);
+
+        // Load face-api and extract descriptor
+        const { getFaceDescriptorFromBase64 } = await import("@/lib/utils/face-api");
+        const descriptor = await getFaceDescriptorFromBase64(base64);
+
+        if (!descriptor) {
+          toast.error("Wajah tidak terdeteksi. Silakan coba lagi.");
+          setCapturedImage(null);
+          return;
+        }
+
+        // Save face descriptor in form
+        const descriptorArray = Array.from(descriptor);
+        form.setValue("faceDescriptor", JSON.stringify(descriptorArray), { shouldValidate: true });
+
+        // Upload to backend storage using apiClient
+        toast.info("Mengunggah foto wajah...");
+        
+        // Convert base64 to File
+        const byteString = atob(base64.split(",")[1]);
+        const mimeString = base64.split(",")[0].split(":")[1].split(";")[0];
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
+        }
+        const blob = new Blob([ab], { type: mimeString });
+        const file = new File([blob], `face-${Date.now()}.jpg`, { type: mimeString });
+        
+        const uploadResult = await uploadApi.uploadImage(file);
+        
+        if (uploadResult.url) {
+          form.setValue("faceImageUrl", uploadResult.url, { shouldValidate: true });
+          toast.success("Verifikasi wajah sukses dan terdaftar!");
+        } else {
+          toast.error("Gagal mengunggah foto wajah ke server.");
+        }
+      }
+    } catch (err) {
+      console.error("Gagal menangkap foto:", err);
+      toast.error("Gagal memproses pengenalan wajah.");
+    } finally {
+      setFaceApiLoading(false);
+    }
+  };
+
   const schema = useMemo(() => getStaffSchema(isEditMode), [isEditMode]);
 
   const defaultValues = useMemo(() => {
@@ -163,10 +260,11 @@ export function StaffDialog({
         address: initialData.address || "",
         notes: initialData.notes || "",
         username: initialData.username?.split("@")[0] || "",
-        password: "",
         email: initialData.email || "",
         pin: "",
         privileges: mappedPrivileges,
+        faceImageUrl: initialData.faceImageUrl || "",
+        faceDescriptor: initialData.faceDescriptor || "",
       } as any;
     }
     return {
@@ -177,10 +275,11 @@ export function StaffDialog({
       address: "",
       notes: "",
       username: "",
-      password: "",
       email: "",
       pin: "",
       privileges: [],
+      faceImageUrl: "",
+      faceDescriptor: "",
     } as any;
   }, [initialData, isEditMode]);
 
@@ -192,8 +291,11 @@ export function StaffDialog({
       placeholder: "Pilih Peran Staff",
       colSpan: "full",
       options: [
-        { label: "Kasir (Login via Username + Password)", value: "CASHIER" },
-        { label: "Manager (Login via Nama + PIN)", value: "MANAGER" },
+        { label: "Kasir (Akses POS & Dashboard)", value: "CASHIER" },
+        { label: "Manager (Akses POS & Dashboard)", value: "MANAGER" },
+        { label: "Waiter (Hanya Absensi)", value: "WAITER" },
+        { label: "Kitchen (Hanya Absensi)", value: "KITCHEN" },
+        { label: "Staf Lainnya (Hanya Absensi)", value: "OTHER" },
       ],
     },
     {
@@ -228,20 +330,6 @@ export function StaffDialog({
         { label: "Nonaktif (Akses Dicabut)", value: "INACTIVE" },
       ],
     },
-    // Cashier specific fields
-
-    {
-      name: "password",
-      label: "Kata Sandi Kasir/PIN",
-      type: "password",
-      colSpan: 3,
-      placeholder: isEditMode
-        ? "Biarkan kosong jika tidak ingin mengubah"
-        : "Minimal 6 karakter",
-      description:
-        "Kredensial ini digunakan kasir untuk masuk ke aplikasi POS.",
-      condition: (values) => !values.role || values.role === "CASHIER",
-    },
     // Manager specific fields
     {
       name: "email",
@@ -253,15 +341,129 @@ export function StaffDialog({
     },
     {
       name: "pin",
-      label: "PIN Manager (6 Digit Angka)",
+      label: "PIN Staf (6 Digit Angka)",
       type: "password",
       colSpan: 3,
       placeholder: isEditMode
-        ? "Biarkan kosong jika tidak ingin mengubah"
+        ? (initialData?.pin
+            ? "Biarkan kosong jika tidak ingin mengubah"
+            : "PIN BELUM DIATUR — Masukkan PIN baru")
         : "Masukkan 6 digit angka PIN",
-      description:
-        "Kredensial PIN angka 6 digit yang digunakan manager untuk login.",
-      condition: (values) => values.role === "MANAGER",
+      description: isEditMode && !initialData?.pin
+        ? "⚠️ Staf ini belum memiliki PIN absensi. Silakan buat PIN 6 digit baru agar staf bisa menggunakan portal absensi."
+        : "Kredensial PIN angka 6 digit yang digunakan untuk absensi dan login.",
+    },
+    {
+      name: "faceRegistration",
+      label: "Registrasi Wajah (Face Scan)",
+      type: "custom",
+      colSpan: "full",
+      renderCustom: ({ field, form }) => {
+        const hasRegisteredFace = form.watch("faceImageUrl");
+
+        return (
+          <div className="flex flex-col gap-3 p-4 border border-dashed rounded-lg bg-muted/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-sm font-semibold">Foto Wajah Staf</span>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Digunakan untuk verifikasi kehadiran via webcam saat absensi.
+                </p>
+              </div>
+              {!isCapturing && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={startWebcam}
+                >
+                  {hasRegisteredFace ? "Pindai Ulang Wajah" : "Mulai Scan Wajah"}
+                </Button>
+              )}
+            </div>
+
+            {/* Webcam Live Feed */}
+            {isCapturing && (
+              <div className="flex flex-col items-center gap-3">
+                <div className="relative overflow-hidden rounded-lg border bg-black aspect-video w-full max-w-[320px]">
+                  <video
+                    ref={(el) => {
+                      videoRef.current = el;
+                      if (el && webcamStream) {
+                        el.srcObject = webcamStream;
+                      }
+                    }}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover scale-x-[-1]"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={stopWebcam}
+                  >
+                    Batal
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => capturePhoto(form)}
+                  >
+                    Ambil Foto
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Captured / Registered Image display */}
+            {!isCapturing && capturedImage && (
+              <div className="flex items-center gap-4">
+                <div className="relative h-20 w-20 overflow-hidden rounded-full border bg-muted">
+                  <img
+                    src={capturedImage}
+                    alt="Face snapshot"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
+                    <Check className="h-3 w-3" /> Wajah Terdaftar
+                  </span>
+                  <p className="text-[10px] text-muted-foreground">
+                    Wajah staf ini berhasil disimpan di server.
+                  </p>
+                  {hasRegisteredFace && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-500 hover:text-red-600 hover:bg-red-50 p-0 h-auto justify-start text-[10px] font-bold"
+                      onClick={() => {
+                        form.setValue("faceImageUrl", "", { shouldValidate: true });
+                        form.setValue("faceDescriptor", "", { shouldValidate: true });
+                        setCapturedImage(null);
+                      }}
+                    >
+                      Hapus Pendaftaran
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {faceApiLoading && (
+              <div className="text-xs text-muted-foreground flex items-center gap-1.5 animate-pulse mt-2">
+                <span className="h-2 w-2 rounded-full bg-primary animate-ping" />
+                Sedang memproses pemindaian wajah & mengunggah...
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
       name: "privileges",
@@ -392,6 +594,13 @@ export function StaffDialog({
                   "Otoritas tinggi untuk menyetujui request hapus transaksi kasir atau hapus langsung.",
                 icon: Trash2,
                 isSensitive: true,
+              },
+              {
+                value: "ATTENDANCE_MANAGEMENT",
+                label: "Kelola Absensi Staf",
+                description:
+                  "Mengelola daftar kehadiran staf outlet, menyetujui revisi absensi, serta koreksi manual.",
+                icon: UsersIcon,
               },
             ],
           },

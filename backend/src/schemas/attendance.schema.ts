@@ -5,12 +5,14 @@ export const clockInSchema = z.object({
   latitude: z.number().optional(),
   longitude: z.number().optional(),
   notes: z.string().optional(),
+  clockInFaceUrl: z.string().optional(),
 });
 
 export const clockOutSchema = z.object({
   latitude: z.number().optional(),
   longitude: z.number().optional(),
   notes: z.string().optional(),
+  clockOutFaceUrl: z.string().optional(),
 });
 
 export const queryAttendanceSchema = z.object({
@@ -22,6 +24,20 @@ export const queryAttendanceSchema = z.object({
   limit: z.coerce.number().int().positive().default(20),
 });
 
+export const portalClockSchema = z.object({
+  staffId: z.string().min(1, "staffId wajib diisi"),
+  pin: z.string().min(6, "PIN harus 6 digit").max(6, "PIN harus 6 digit"),
+  outletId: z.string().min(1, "outletId wajib diisi"),
+  type: z.enum(["in", "out"]),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+  notes: z.string().optional(),
+  faceImageUrl: z.string().optional(),
+  registerFaceDescriptor: z.string().optional(),
+});
+
 export type ClockInInput = z.infer<typeof clockInSchema>;
 export type ClockOutInput = z.infer<typeof clockOutSchema>;
 export type QueryAttendanceInput = z.infer<typeof queryAttendanceSchema>;
+export type PortalClockInput = z.infer<typeof portalClockSchema>;
+

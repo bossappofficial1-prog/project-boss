@@ -12,12 +12,7 @@ export class StaffRepository {
   static async create(data: StaffFormValues): Promise<Staff> {
     const { privileges, ...staffData } = data as any;
 
-    // Hash password jika ada (untuk kasir)
-    if (staffData.password) {
-      staffData.password = await BcryptUtil.hash(staffData.password);
-    }
-
-    // Hash PIN jika ada (untuk manager)
+    // Hash PIN
     if (staffData.pin) {
       staffData.pin = await BcryptUtil.hash(staffData.pin);
     }
@@ -43,37 +38,37 @@ export class StaffRepository {
       }
     }
 
-    // Create staff + privileges dalam satu transaksi
-    const staff = await db.$transaction(async (tx) => {
-      const created = await tx.staff.create({
-        data: {
-          name: staffData.name,
-          phone: staffData.phone || null,
-          username: staffData.username || null,
-          password: staffData.password || "",
-          email: staffData.email || null,
-          pin: staffData.pin || null,
-          role: staffData.role || "CASHIER",
-          status: staffData.status || "ACTIVE",
-          outletId: staffData.outletId,
-        },
-      });
+    if (!staffData.outletId) {
+      throw new AppError("Outlet ID tidak boleh kosong", HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 
-      // Assign privileges jika manager
-      if (privileges && privileges.length > 0) {
-        await tx.staffPrivilege.createMany({
-          data: privileges.map((p: StaffPrivilegeType) => ({
-            staffId: created.id,
-            privilege: p,
-          })),
-          skipDuplicates: true,
-        });
-      }
-
-      return created;
+    const created = await db.staff.create({
+      data: {
+        name: staffData.name,
+        phone: staffData.phone || null,
+        username: staffData.username || null,
+        email: staffData.email || null,
+        pin: staffData.pin || null,
+        role: staffData.role || "CASHIER",
+        status: staffData.status || "ACTIVE",
+        outletId: staffData.outletId,
+        faceImageUrl: staffData.faceImageUrl || null,
+        faceDescriptor: staffData.faceDescriptor || null,
+      },
     });
 
-    return staff;
+    // Assign privileges jika ada
+    if (privileges && privileges.length > 0) {
+      await db.staffPrivilege.createMany({
+        data: privileges.map((p: StaffPrivilegeType) => ({
+          staffId: created.id,
+          privilege: p,
+        })),
+        skipDuplicates: true,
+      });
+    }
+
+    return created;
   }
 
   static async findById(id: string) {
@@ -103,13 +98,6 @@ export class StaffRepository {
     data: UpdateStaffSchemaValues,
   ): Promise<Staff> {
     const { privileges, ...staffData } = data as any;
-
-    // Hash password jika ada dan diubah
-    if (staffData.password && staffData.password !== "") {
-      staffData.password = await BcryptUtil.hash(staffData.password);
-    } else {
-      delete staffData.password;
-    }
 
     // Hash PIN jika ada dan diubah
     if (staffData.pin) {

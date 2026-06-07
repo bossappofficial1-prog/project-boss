@@ -31,6 +31,24 @@ const STATUS_LABEL: Record<StaffStatus, string> = STATUS_OPTIONS.reduce(
   {} as Record<StaffStatus, string>,
 );
 
+const ROLE_LABELS: Record<StaffRole, string> = {
+  MANAGER: "Manager Outlet",
+  CASHIER: "Petugas Kasir",
+  WAITER: "Waiter / Pelayan",
+  KITCHEN: "Staf Dapur",
+  OTHER: "Staf Lainnya",
+  ADMIN: "Admin",
+};
+
+const ROLE_BADGE_LABELS: Record<StaffRole, string> = {
+  MANAGER: "Manager",
+  CASHIER: "Kasir",
+  WAITER: "Waiter",
+  KITCHEN: "Kitchen",
+  OTHER: "Lainnya",
+  ADMIN: "Admin",
+};
+
 type StaffTableProps = {
   data: StaffMember[];
   onEdit: (data: StaffMember) => void;
@@ -72,7 +90,7 @@ export function StaffTable({ data, onDelete, onEdit }: StaffTableProps) {
                     </p>
                   ) : (
                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
-                      {member.role === "MANAGER" ? "Manager Outlet" : "Petugas Kasir"}
+                      {ROLE_LABELS[member.role] || member.role}
                     </p>
                   )}
                 </div>
@@ -86,18 +104,31 @@ export function StaffTable({ data, onDelete, onEdit }: StaffTableProps) {
           cell(props) {
             const member = props.row.original;
             const isManager = member.role === "MANAGER";
+            const hasPin = !!member.pin;
             return (
               <div className="space-y-1">
-                <Badge
-                  className={cn(
-                    "px-2 py-0.5 rounded-md border text-[9px] font-black uppercase tracking-widest transition-all shadow-none",
-                    isManager
-                      ? "bg-primary/10 text-primary border-primary/20"
-                      : "bg-muted text-muted-foreground border-border"
-                  )}
-                >
-                  {isManager ? "Manager" : "Kasir"}
-                </Badge>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <Badge
+                    className={cn(
+                      "px-2 py-0.5 rounded-md border text-[9px] font-black uppercase tracking-widest transition-all shadow-none",
+                      isManager
+                        ? "bg-primary/10 text-primary border-primary/20"
+                        : "bg-muted text-muted-foreground border-border"
+                    )}
+                  >
+                    {ROLE_BADGE_LABELS[member.role] || member.role}
+                  </Badge>
+                  <Badge
+                    className={cn(
+                      "px-2 py-0.5 rounded-md border text-[9px] font-black uppercase tracking-widest transition-all shadow-none",
+                      hasPin
+                        ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                        : "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                    )}
+                  >
+                    {hasPin ? "PIN Set" : "Tanpa PIN ⚠️"}
+                  </Badge>
+                </div>
                 {isManager && member.privileges && member.privileges.length > 0 && (
                   <div className="flex flex-wrap gap-1 max-w-[200px] mt-1">
                     {member.privileges.map((p: any) => {

@@ -1,4 +1,4 @@
-import { apiCall } from './base';
+import { apiCall, apiClient } from './base';
 import type {
     StaffAvailabilityResponse,
     StaffMember,
@@ -11,6 +11,24 @@ interface StaffAvailabilityParams {
     date?: string;
     startTime?: string;
     endTime?: string;
+}
+
+export interface StaffImportRow {
+    name: string;
+    phone?: string;
+    username?: string;
+    email?: string;
+    pin: string;
+    role?: "CASHIER" | "MANAGER" | "WAITER" | "KITCHEN" | "OTHER";
+    status?: "ACTIVE" | "INACTIVE";
+    privileges?: string[];
+}
+
+export interface StaffImportResult {
+    success: number;
+    failed: number;
+    errors: Array<{ row: number; message: string; data: StaffImportRow }>;
+    createdStaff: Array<{ id: string; name: string; username: string }>;
 }
 
 export const staffApi = {
@@ -48,6 +66,23 @@ export const staffApi = {
             {
                 method: 'DELETE',
             },
+        );
+    },
+
+    async downloadImportTemplate(): Promise<Blob> {
+        const res = await apiClient.get("/staff/import/template", {
+            responseType: "blob",
+        });
+        return res.data;
+    },
+
+    async importStaff(outletId: string, rows: StaffImportRow[]): Promise<StaffImportResult> {
+        return apiCall<StaffImportResult>(
+            "/staff/import",
+            {
+                method: "POST",
+                body: JSON.stringify({ outletId, rows }),
+            }
         );
     },
 

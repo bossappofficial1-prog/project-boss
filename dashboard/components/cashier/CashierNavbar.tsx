@@ -16,8 +16,6 @@ import {
   ChefHat,
   CalendarClock,
   UserPlus,
-  Clock,
-  CheckCircle2,
   ScanLine,
   HelpCircle,
 } from "lucide-react";
@@ -45,11 +43,6 @@ import {
 } from "@/schema/cashier-shift.schema";
 import { SwitchAccountDialog } from "./SwitchAccountDialog";
 import { QuickStockInDialog } from "./QuickStockInDialog";
-import {
-  useTodayAttendance,
-  useClockIn,
-  useClockOut,
-} from "@/hooks/api/use-attendance";
 
 interface CashierNavbarProps {
   cashierName: string;
@@ -97,17 +90,12 @@ export function CashierNavbar({
   const [shiftDialogOpen, setShiftDialogOpen] = React.useState(false);
   const [switchDialogOpen, setSwitchDialogOpen] = React.useState(false);
   const [stockInOpen, setStockInOpen] = React.useState(false);
-  const [attendanceLoading, setAttendanceLoading] = React.useState(false);
 
   const { cashierData } = useCashierContext();
   const cashierId = cashierData?.id as string | undefined;
   const outletIdForShift = selectedOutletId ?? undefined;
   const { data: activeShift } = useActiveCashierShift(outletIdForShift);
   const closeShift = useCloseCashierShift(outletIdForShift);
-
-  const { data: todayAttendance } = useTodayAttendance(cashierId);
-  const clockInMutation = useClockIn();
-  const clockOutMutation = useClockOut();
 
   const { data: badgeData } = useQuery({
     queryKey: ["badge-count", selectedOutletId],
@@ -339,113 +327,6 @@ export function CashierNavbar({
                 />
               </>
             )}
-            <div className="flex items-center gap-1" data-guide="attendance">
-              {todayAttendance ? (
-                todayAttendance.clockOut ? (
-                  <Badge
-                    variant="secondary"
-                    className="hidden sm:inline-flex h-6 px-2 text-[10px] font-bold bg-muted text-muted-foreground border-none rounded-sm gap-1"
-                  >
-                    <CheckCircle2 className="h-3 w-3" />
-                    Sudah Absen
-                  </Badge>
-                ) : (
-                  <Button
-                    onClick={async () => {
-                      setAttendanceLoading(true);
-                      try {
-                        let lat: number | undefined;
-                        let lng: number | undefined;
-                        if (navigator.geolocation) {
-                          const pos = await new Promise<GeolocationPosition>(
-                            (resolve, reject) =>
-                              navigator.geolocation.getCurrentPosition(
-                                resolve,
-                                reject,
-                                {
-                                  timeout: 5000,
-                                },
-                              ),
-                          ).catch(() => undefined);
-                          lat = pos?.coords?.latitude;
-                          lng = pos?.coords?.longitude;
-                        }
-                        await clockOutMutation.mutateAsync({
-                          id: todayAttendance.id,
-                          latitude: lat,
-                          longitude: lng,
-                        });
-                        toast.success("Absen pulang berhasil");
-                      } catch (e: any) {
-                        toast.error(
-                          e.response.data.message ||
-                          e?.message ||
-                          "Gagal absen pulang",
-                        );
-                      } finally {
-                        setAttendanceLoading(false);
-                      }
-                    }}
-                    disabled={attendanceLoading}
-                    variant="outline"
-                    size="sm"
-                    className="h-8 rounded-md text-xs gap-1.5"
-                  >
-                    <Clock className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">{attendanceLoading ? "..." : "Absen Pulang"}</span>
-                  </Button>
-                )
-              ) : (
-                <Button
-                  onClick={async () => {
-                    setAttendanceLoading(true);
-                    try {
-                      if (!selectedOutletId) {
-                        toast.error("Outlet tidak tersedia");
-                        return;
-                      }
-                      let lat: number | undefined;
-                      let lng: number | undefined;
-                      if (navigator.geolocation) {
-                        const pos = await new Promise<GeolocationPosition>(
-                          (resolve, reject) =>
-                            navigator.geolocation.getCurrentPosition(
-                              resolve,
-                              reject,
-                              {
-                                timeout: 5000,
-                              },
-                            ),
-                        ).catch(() => undefined);
-                        lat = pos?.coords?.latitude;
-                        lng = pos?.coords?.longitude;
-                      }
-                      await clockInMutation.mutateAsync({
-                        outletId: selectedOutletId,
-                        latitude: lat,
-                        longitude: lng,
-                      });
-                      toast.success("Absen masuk berhasil");
-                    } catch (e: any) {
-                      toast.error(
-                        e.response.data.message ||
-                        e?.message ||
-                        "Gagal absen pulang",
-                      );
-                    } finally {
-                      setAttendanceLoading(false);
-                    }
-                  }}
-                  disabled={attendanceLoading}
-                  variant="outline"
-                  size="sm"
-                  className="h-8 rounded-md text-xs gap-1.5"
-                >
-                  <Clock className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">{attendanceLoading ? "..." : "Absen Masuk"}</span>
-                </Button>
-              )}
-            </div>
             <NotificationToggle staffId={cashierId} />
             <PrinterSettings outletId={selectedOutletId!} />
             <Button

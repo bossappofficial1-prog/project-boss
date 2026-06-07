@@ -28,6 +28,7 @@ import {
   ChefHat,
   Salad,
   Calculator,
+  Sparkles,
 } from "lucide-react";
 import { OutletType } from "@/types";
 
@@ -93,6 +94,13 @@ export const MENU_GROUPS: MenuGroup[] = [
         requirePro: true,
       },
       {
+        id: "ai-analyst",
+        name: "Asisten AI",
+        href: "/owner/ai-analyst",
+        icon: Sparkles,
+        disabled: process.env.NODE_ENV === "production" || process.env.NEXT_PUBLIC_APP_ENV === "production",
+      },
+      {
         id: "subscription",
         name: "Langganan",
         href: "/owner/subscription",
@@ -142,6 +150,12 @@ export const MENU_GROUPS: MenuGroup[] = [
         href: "/owner/reservations",
         requiredTypes: [OutletType.FNB, OutletType.CUSTOM],
         requirePro: true,
+      },
+      {
+        id: "laporan-absensi",
+        name: "Laporan Absensi",
+        href: "/owner/laporan-absensi",
+        icon: ClipboardList,
       },
     ],
   },
@@ -281,13 +295,6 @@ export const MENU_GROUPS: MenuGroup[] = [
         href: "/owner/cashier-shifts",
         icon: Clock,
         requiredTypes: [OutletType.RETAIL, OutletType.CUSTOM],
-      },
-      {
-        id: "laporan-absensi",
-        name: "Laporan Absensi",
-        href: "/owner/laporan-absensi",
-        icon: ClipboardList,
-        requiredTypes: [OutletType.FNB, OutletType.RETAIL, OutletType.SERVICE],
       },
       {
         id: "expenses",

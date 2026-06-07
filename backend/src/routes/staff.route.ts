@@ -7,6 +7,8 @@ import {
   getStaffByIdController,
   getStaffByOutletController,
   updateStaffController,
+  downloadStaffImportTemplateController,
+  importStaffController,
 } from "../controller/staff.controller";
 import { authorize, protect } from "../middleware/auth.middleware";
 import { UserRole } from "@prisma/client";
@@ -15,8 +17,21 @@ import staffPrivilegeRouter from "./staff-privilege.route";
 
 const staffRouter = Router();
 
-// Semua rute di bawah ini dilindungi dan hanya untuk Owner
+// Semua rute di bawah ini dilindungi dan hanya untuk Owner/Manager
 staffRouter.use(protect, authorize(UserRole.OWNER, "MANAGER"));
+
+// Import/Export routes (before :id to avoid conflict)
+staffRouter.get(
+  "/import/template",
+  requireActiveSubscription,
+  downloadStaffImportTemplateController
+);
+
+staffRouter.post(
+  "/import",
+  requireActiveSubscription,
+  importStaffController
+);
 
 staffRouter.post(
   "/",

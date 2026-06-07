@@ -1551,6 +1551,13 @@ export async function deductStockForCompletedOrder(orderId: string) {
         }
       }
     }
+
+    try {
+      const { AccountingService } = await import("./accounting.service.js");
+      await AccountingService.autoJournalPOSOrder(orderId);
+    } catch (journalErr) {
+      console.error("[Auto-Journal] Error triggering auto-journaling for POS order:", journalErr);
+    }
   } catch (error) {
     console.error("[HPP] Error processing FnB stock deduction & HPP:", error);
   }

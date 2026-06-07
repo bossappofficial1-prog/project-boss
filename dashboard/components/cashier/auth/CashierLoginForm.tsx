@@ -54,7 +54,7 @@ function CashierLoginFormInner() {
 
   const [cashierValues, setCashierValues] = useState({
     username: "",
-    password: "",
+    pin: "",
   });
   const [managerValues, setManagerValues] = useState({
     name: "",
@@ -81,8 +81,8 @@ function CashierLoginFormInner() {
 
   const handleCashierSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!cashierValues.username || !cashierValues.password) {
-      setError("Harap isi username dan password");
+    if (!cashierValues.username || !cashierValues.pin) {
+      setError("Harap isi username dan PIN");
       return;
     }
     setIsLoading(true);
@@ -90,7 +90,7 @@ function CashierLoginFormInner() {
     try {
       const response = await authApi.cashierLogin(
         cashierValues.username,
-        cashierValues.password,
+        cashierValues.pin,
       );
       try {
         sessionStorage.setItem("auth-role", "CASHIER");
@@ -104,7 +104,7 @@ function CashierLoginFormInner() {
       const msg =
         err.response?.data?.message ||
         err.message ||
-        "Gagal login, periksa username dan password Anda";
+        "Gagal login, periksa username dan PIN Anda";
       setError(msg);
     } finally {
       setIsLoading(false);
@@ -271,13 +271,17 @@ function CashierLoginFormInner() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Password / PIN</label>
-              <PasswordInput
-                name="password"
-                placeholder="••••••••"
-                value={cashierValues.password}
+              <label className="text-sm font-medium">PIN</label>
+              <Input
+                name="pin"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                placeholder="Masukkan 6 digit PIN"
+                maxLength={6}
+                value={cashierValues.pin}
                 onChange={handleCashierChange}
-                className="h-11"
+                className="h-11 tracking-widest text-center"
               />
             </div>
 

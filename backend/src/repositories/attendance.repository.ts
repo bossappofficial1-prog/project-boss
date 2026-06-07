@@ -23,9 +23,11 @@ export class AttendanceRepository {
     outletId: string;
     date: Date;
     clockIn: Date;
+    clockOut?: Date | null;
     notes?: string;
     clockInLat?: number | null;
     clockInLng?: number | null;
+    clockInFaceUrl?: string | null;
   }) {
     return db.attendance.create({ data });
   }
@@ -35,6 +37,7 @@ export class AttendanceRepository {
     notes?: string;
     clockOutLat?: number | null;
     clockOutLng?: number | null;
+    clockOutFaceUrl?: string | null;
   }) {
     return db.attendance.update({
       where: { id },
@@ -89,6 +92,33 @@ export class AttendanceRepository {
       db.attendance.count({ where }),
     ]);
     return { data, total };
+  }
+
+  static async findAllForExport(params: {
+    outletId?: string;
+    staffId?: string;
+    startDate?: Date;
+    endDate?: Date;
+  }) {
+    const { outletId, staffId, startDate, endDate } = params;
+
+    const where: any = {};
+    if (outletId) where.outletId = outletId;
+    if (staffId) where.staffId = staffId;
+    if (startDate || endDate) {
+      where.date = {};
+      if (startDate) where.date.gte = startDate;
+      if (endDate) where.date.lte = endDate;
+    }
+
+    return db.attendance.findMany({
+      where,
+      orderBy: { date: "desc" },
+      include: {
+        staff: { select: { id: true, name: true, username: true } },
+        outlet: { select: { id: true, name: true } },
+      },
+    });
   }
 
   static async findOutletById(id: string) {
