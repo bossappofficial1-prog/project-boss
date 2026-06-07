@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 type BaseOption = {
   value: string;
   label: string;
+  description?: string;
 };
 
 type SelectOptionProps<T extends BaseOption = BaseOption> = {
@@ -103,7 +104,14 @@ export function SelectOption<T extends BaseOption = BaseOption>({
                       value === opt.value ? "opacity-100" : "opacity-0",
                     )}
                   />
-                  {opt.label}
+                  <div className="flex flex-col">
+                    <span>{opt.label}</span>
+                    {"description" in opt && opt.description && (
+                      <span className="text-xs text-muted-foreground">
+                        {opt.description}
+                      </span>
+                    )}
+                  </div>
                 </CommandItem>
               ))}
             </CommandGroup>

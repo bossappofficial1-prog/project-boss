@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { getTransactionListController, getTransactionByIdController } from "../controller/transaction.controller";
 import { manualTransactionController } from "../controller/manual-transaction.controller";
-import { authorize, protect, validate } from "../middleware/auth.middleware";
-import { UserRole } from "@prisma/client";
+import { authorize, protect } from "../middleware/auth.middleware";
+import { validateSchema } from "../middleware/zod.middleware";
+import { StaffRole, UserRole } from "@prisma/client";
 import { createManualTransactionSchema } from "../schemas/manual-transaction.schema";
 
 const transactionRouter = Router();
@@ -21,8 +22,8 @@ transactionRouter.get(
 transactionRouter.post(
     "/",
     protect,
-    authorize(UserRole.OWNER, UserRole.ADMIN, UserRole.MANAGER),
-    validate(createManualTransactionSchema),
+    authorize(UserRole.OWNER, UserRole.ADMIN, StaffRole.MANAGER),
+    validateSchema(createManualTransactionSchema),
     manualTransactionController.create
 );
 

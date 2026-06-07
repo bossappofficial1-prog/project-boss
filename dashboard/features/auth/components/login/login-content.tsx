@@ -73,7 +73,7 @@ export default function LoginContent() {
       queryClient.removeQueries({ queryKey: ["auth-me"] });
       try {
         sessionStorage.removeItem("auth-me-cache-v2");
-      } catch {}
+      } catch { }
 
       let userRole =
         loginResponse.data?.data?.user?.role || loginResponse.data?.user?.role;
@@ -81,13 +81,13 @@ export default function LoginContent() {
       if (userRole) {
         try {
           sessionStorage.setItem("auth-role", userRole);
-        } catch {}
+        } catch { }
       } else {
         const meResponse = await apiClient.get("/auth/me");
         userRole = meResponse.data.data.user.role;
         try {
           sessionStorage.setItem("auth-role", userRole);
-        } catch {}
+        } catch { }
       }
 
       if (
@@ -266,9 +266,9 @@ export default function LoginContent() {
               ? "https://cashier.bossapp.id/auth/login/cashier"
               : "/auth/login/cashier"
           }
-          className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+          className="text-xs text-primary font-medium text-muted-foreground hover:text-foreground transition-colors"
         >
-          Masuk sebagai Kasir
+          Masuk sebagai Kasir/Manager
         </Link>
       </div>
     </AuthSplitLayout>

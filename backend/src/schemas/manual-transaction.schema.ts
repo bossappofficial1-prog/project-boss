@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const createManualTransactionSchema = z.object({
-  outletId: z.string().uuid({ message: "Outlet ID tidak valid" }),
+  outletId: z.string(),
   transactionDate: z.string().datetime({ message: "Format tanggal tidak valid" }),
   customerName: z.string().max(100).optional(),
   customerPhone: z.string().regex(/^[0-9+\-\s()]+$/, { message: "Format nomor telepon tidak valid" }).optional(),

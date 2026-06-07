@@ -136,6 +136,8 @@ function applyApiErrors<T extends FieldValues>(
 function adaptNestedField<T extends FieldValues>(
   subField: FormFieldConfig<T>,
   newName: string,
+  itemIndex?: number,
+  arrayFieldName?: string,
 ): FormFieldConfig<T> {
   const cloned = { ...subField, name: newName as Path<T> };
   if (cloned.type === "array") {
@@ -144,6 +146,26 @@ function adaptNestedField<T extends FieldValues>(
     );
     (cloned as unknown as TextFieldConfig<T>).type = "text";
   }
+
+  // Wrap dependsOn for array sub-fields to resolve against item-level data first
+  if (cloned.dependsOn && itemIndex !== undefined && arrayFieldName) {
+    const originalDependsOn = cloned.dependsOn;
+    const itemPrefix = `${arrayFieldName}.${itemIndex}.`;
+    cloned.dependsOn = {
+      ...originalDependsOn,
+      condition: (value: unknown, allValues: Partial<T>) => {
+        // Check item-level data first
+        const itemKey = `${itemPrefix}${originalDependsOn.field}` as Path<T>;
+        const itemValue = (allValues as Record<string, unknown>)[itemKey as string];
+        if (itemValue !== undefined) {
+          return originalDependsOn.condition(itemValue, allValues);
+        }
+        // Fall back to form-level
+        return originalDependsOn.condition(value, allValues);
+      },
+    };
+  }
+
   return cloned as FormFieldConfig<T>;
 }
 
@@ -252,6 +274,7 @@ interface ArrayFieldConfig<T extends FieldValues> extends Omit<
   type: "array";
   name: ArrayPath<T>;
   arrayFields: FormFieldConfig<T>[];
+  defaultItem?: Partial<FieldArray<T, ArrayPath<T>>>;
   renderItem?: (
     index: number,
     remove: () => void,
@@ -317,6 +340,7 @@ interface SharedFormProps<T extends FieldValues> {
   submitDisabled?: boolean;
   gridCols?: GridCols;
   children?: ReactNode;
+  header?: ReactNode;
   renderFooter?: ReactNode;
   onValuesChange?: (values: Partial<T>) => void;
   hideSubmitButton?: boolean;
@@ -358,6 +382,7 @@ export function ReusableForm<T extends FieldValues>({
   submitDisabled = false,
   gridCols = 1,
   children,
+  header,
   renderFooter,
   onValuesChange,
   hideSubmitButton = false,
@@ -533,43 +558,47 @@ export function ReusableForm<T extends FieldValues>({
   const formControl = form.control as unknown as Control<T>;
   const gridClass = GRID_COLS_CLASS[gridCols] ?? "md:grid-cols-1";
 
-  const fieldGrid = children ?? (
+  const fieldGrid = (
     <>
-      {errorSummary && Object.keys(form.formState.errors).length > 0 && (
-        <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-          <p className="font-semibold">Terdapat kesalahan:</p>
-          <ul className="list-disc pl-5 mt-1 space-y-1">
-            {Object.entries(form.formState.errors).map(([name, error]) => (
-              <li key={name}>
-                <button
-                  type="button"
-                  onClick={() => scrollToField(name)}
-                  className="hover:underline cursor-pointer text-left"
-                >
-                  {error?.message?.toString()}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {header}
 
-      {isWizard && (
-        <div className="mb-4">
-          <h3 className="text-lg font-medium">{steps![currentStep].title}</h3>
-          {steps![currentStep].description && (
-            <p className="text-sm text-muted-foreground">
-              {steps![currentStep].description}
-            </p>
+      {children ?? (
+        <>
+          {errorSummary && Object.keys(form.formState.errors).length > 0 && (
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              <p className="font-semibold">Terdapat kesalahan:</p>
+              <ul className="list-disc pl-5 mt-1 space-y-1">
+                {Object.entries(form.formState.errors).map(([name, error]) => (
+                  <li key={name}>
+                    <button
+                      type="button"
+                      onClick={() => scrollToField(name)}
+                      className="hover:underline cursor-pointer text-left"
+                    >
+                      {error?.message?.toString()}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
-        </div>
-      )}
 
-      <div className={`grid grid-cols-1 gap-4 ${gridClass}`}>
-        {visibleFields.map((fieldConfig) => {
-          if (fieldConfig.condition && !fieldConfig.condition(watchedValues))
-            return null;
-          return (
+          {isWizard && (
+            <div className="mb-4">
+              <h3 className="text-lg font-medium">{steps![currentStep].title}</h3>
+              {steps![currentStep].description && (
+                <p className="text-sm text-muted-foreground">
+                  {steps![currentStep].description}
+                </p>
+              )}
+            </div>
+          )}
+
+          <div className={`grid grid-cols-1 gap-4 ${gridClass}`}>
+            {visibleFields.map((fieldConfig) => {
+              if (fieldConfig.condition && !fieldConfig.condition(watchedValues))
+                return null;
+              return (
             <RenderField
               key={fieldConfig.name}
               field={fieldConfig}
@@ -579,6 +608,8 @@ export function ReusableForm<T extends FieldValues>({
           );
         })}
       </div>
+        </>
+      )}
     </>
   );
 
@@ -770,6 +801,14 @@ function ArrayFieldRenderer<T extends FieldValues>({
   const addButtonText = field.addButtonText ?? "Tambah Item";
   const removeButtonText = field.removeButtonText ?? "Hapus";
 
+  const handleAddItem = useCallback(() => {
+    if (field.defaultItem) {
+      append(field.defaultItem as FieldArray<T, ArrayPath<T>>);
+    } else {
+      append(getEmptyItem<T>());
+    }
+  }, [append, field.defaultItem]);
+
   return (
     <div className="space-y-4">
       {arrayFields.map((item, index) => (
@@ -780,7 +819,12 @@ function ArrayFieldRenderer<T extends FieldValues>({
             <>
               {field.arrayFields.map((subField) => {
                 const newName = `${field.name}.${index}.${subField.name}`;
-                const adaptedField = adaptNestedField(subField, newName);
+                const adaptedField = adaptNestedField(
+                  subField,
+                  newName,
+                  index,
+                  field.name as string,
+                );
                 return (
                   <RenderField
                     key={subField.name}
@@ -805,7 +849,7 @@ function ArrayFieldRenderer<T extends FieldValues>({
       ))}
       <Button
         type="button"
-        onClick={() => append(getEmptyItem<T>())}
+        onClick={handleAddItem}
         variant="outline"
         size="sm"
       >

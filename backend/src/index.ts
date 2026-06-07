@@ -1,7 +1,7 @@
 import { networkInterfaces } from "node:os";
 import app from "./app";
 import { config } from "./config";
-import { connectRabbitMQ } from "./config/rabbitmq";
+import { connectRabbitMQ, onRabbitMQConnect } from "./config/rabbitmq";
 import http from "node:http"
 import { SocketEmitter } from "./socket/socket-emiiter";
 import { Server } from "socket.io";
@@ -40,10 +40,25 @@ async function startServer(port: number) {
 
         setUpJobs();
 
-        await connectRabbitMQ();
+        const rabbitMQConnected = await connectRabbitMQ();
 
-        // Start all backend workers automatically in the same process
-        await workerManager.startAll();
+        // Start workers immediately if connected, or defer to onConnect callback
+        if (rabbitMQConnected) {
+            await workerManager.startAll();
+        } else {
+            console.warn('⚠ RabbitMQ not available, workers will start when RabbitMQ connects.');
+        }
+
+        // Handle late/reconnecting RabbitMQ — start workers when connection becomes available
+        onRabbitMQConnect(async () => {
+            if (!workerManager.started) {
+                try {
+                    await workerManager.startAll();
+                } catch (err) {
+                    console.error('Failed to start workers on RabbitMQ reconnect:', err);
+                }
+            }
+        });
 
         // Hubungkan ulang sesi WhatsApp aktif
         await IntegrationService.initializeAllSessions();

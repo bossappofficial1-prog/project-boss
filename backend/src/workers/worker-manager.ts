@@ -13,7 +13,14 @@ class WorkerManager {
         notification: notificationWorker,
     };
 
+    started = false;
+
     async startAll() {
+        if (this.started) {
+            logger.info({ component: 'WorkerManager' }, 'Workers already started, skipping.');
+            return;
+        }
+
         logger.info({
             component: 'WorkerManager',
             workerCount: Object.keys(this.workers).length
@@ -33,6 +40,8 @@ class WorkerManager {
                 component: 'WorkerManager',
                 workers: Object.keys(this.workers)
             }, 'All backend workers started successfully');
+
+            this.started = true;
 
         } catch (error: any) {
             logger.error({
