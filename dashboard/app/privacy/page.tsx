@@ -72,8 +72,7 @@ Data Anda disimpan dengan aman menggunakan enkripsi standar industri dan kontrol
 Platform kami memungkinkan integrasi dengan berbagai layanan eksternal untuk memperlancar bisnis Anda:
 
 * **Google Calendar:** Sinkronisasi dua arah otomatis antara sistem booking BOSS dengan Google Calendar milik Owner atau staf. Anda dapat memutus (disconnect) integrasi ini kapan saja melalui menu pengaturan integrasi di dashboard.
-* **WhatsApp (Twilio):** Pengiriman pesan WhatsApp dan SMS otomatis kepada pelanggan untuk notifikasi transaksi, pengingat booking, dan kampanye pemasaran. Nomor telepon penerima hanya diproses untuk keperluan pengiriman pesan tersebut dan tidak disimpan di luar konteks layanan.
-* **Payment Gateway:** Proses verifikasi pembayaran otomatis oleh Midtrans/Xendit. Data kartu kredit, e-wallet, atau virtual account diproses secara aman oleh penyedia sistem pembayaran berlisensi Bank Indonesia dan tidak disimpan di server BOSS.
+* **Payment Gateway:** Proses verifikasi pembayaran otomatis oleh Midtrans. Data kartu kredit, e-wallet, atau virtual account diproses secara aman oleh penyedia sistem pembayaran berlisensi Bank Indonesia dan tidak disimpan di server BOSS.
 * **Web Push Notification:** Layanan push notification browser untuk mengirimkan pemberitahuan real-time kepada pengguna terkait pesanan baru, status pembayaran, pengingat, dan informasi akun penting.
 
 ---
