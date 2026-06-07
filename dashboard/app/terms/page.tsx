@@ -1,7 +1,5 @@
-import { Lightbulb } from "lucide-react";
+import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 import type { Metadata } from "next";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 
 export const metadata: Metadata = {
   title: "Syarat dan Ketentuan - BOSS",
@@ -22,16 +20,33 @@ Dengan mengakses atau menggunakan platform BOSS ("Platform") yang dimiliki dan d
 BOSS (Business One Stop System) adalah platform manajemen bisnis multi-outlet dan Point of Sale (POS) yang dirancang untuk membantu pengelolaan operasional bisnis ritel (Retail), layanan (Service), makanan & minuman (FnB), acara (Event), maupun tipe bisnis custom lainnya. Platform menyediakan fitur-fitur utama berupa:
 
 * Point of Sale (POS) Kasir & Pencatatan Transaksi
-* Manajemen Produk Fisik (Goods) & Layanan (Service)
-* Manajemen Multi-Business & Multi-Outlet
-* Sistem Booking & Penjadwalan Layanan (dengan slot management)
+* Manajemen Multi-Business & Multi-Outlet (arsitektur multi-tenant)
+* Manajemen Produk Fisik (Goods) & Layanan (Service) dengan kategori dan media gambar
+* Manajemen Stok Produk dengan metode FIFO (First In, First Out) serta transfer stok antar outlet
+* Manajemen Bahan Baku (Ingredient) dengan metode FIFO untuk bisnis F&B
+* Resep Menu (Recipe/Bill of Materials) untuk bisnis F&B
+* Supplier & Pemesanan Pembelian (Purchase Order) untuk rantai pasok
+* Sistem Booking & Penjadwalan Layanan (dengan slot management dan provider commission)
 * Antrian / Queue & Manajemen Meja (untuk FnB)
-* Pencetakan Bill / Receipt (baik cetak langsung maupun PDF)
 * Self-Order QR & Kitchen Display System (KDS)
-* Manajemen Penjualan Tiket & Scan Tiket (untuk Event)
-* Program Loyalitas (Loyalty & Poin) dan CRM (Data Pelanggan)
-* Integrasi Layanan Pihak Ketiga (Midtrans/Xendit, Google Calendar, WhatsApp API)
-* Laporan Analitik Bisnis Komprehensif
+* Manajemen Penjualan Tiket & Scan Tiket QR/Barcode (untuk Event)
+* Pencetakan Bill / Receipt (ESC/POS thermal langsung maupun PDF)
+* Split Bill / Pembagian Tagihan untuk meja grup
+* Program Loyalitas (Poin, Tiers Bronze/Silver/Gold, Rewards, Redemption) & CRM (Data Pelanggan)
+* Manajemen Staf dengan peran (Cashier, Waiter, Kitchen, Manager, Staff) & hak akses granular
+* Absensi Staf dengan verifikasi Face Recognition & validasi lokasi geografis
+* Manajemen Shift Kasir (buka/tutup shift, pergerakan kas masuk/keluar)
+* Akuntansi (Chart of Accounts, Jurnal Double-Entry)
+* Manajemen Pengeluaran Operasional
+* Permintaan Penghapusan/Void Transaksi
+* Laporan Keuangan: Laba Rugi, Profit per Produk, Kesehatan Bisnis
+* Analitik Khusus: Jam Ramai (Peak Hours), Sales Target Breakdown
+* Kalkulator HPP (Harga Pokok Penjualan) & BEP (Break Even Point)
+* Asisten Analitik berbasis AI
+* Integrasi Pihak Ketiga (Midtrans/Xendit, Google Calendar, WhatsApp/Twilio API, Web Push Notification)
+* Notifikasi In-App & Push Notification Browser
+* Pemasaran (Marketing Broadcast & Campaign)
+* Laporan Analitik Bisnis Komprehensif & Dashboard Outlet Real-time
 
 ---
 
@@ -87,7 +102,7 @@ Platform BOSS disediakan "sebagaimana adanya" dan "sebagaimana tersedia" tanpa j
 ---
 
 ### 9. Layanan dan Integrasi Pihak Ketiga
-Platform terintegrasi dengan beberapa layanan pihak ketiga untuk mengoptimalkan operasional bisnis Anda, seperti Google API (termasuk Google Calendar untuk pencatatan jadwal booking), WhatsApp API/Gateway (untuk pengiriman notifikasi otomatis), serta *Payment Gateway* (seperti Midtrans/Xendit untuk proses transaksi online). Kami tidak bertanggung jawab atas kinerja, stabilitas, keamanan, atau perubahan kebijakan dari penyedia layanan pihak ketiga tersebut. Anda disarankan untuk membaca syarat dan ketentuan dari masing-masing penyedia layanan pihak ketiga tersebut.
+Platform terintegrasi dengan beberapa layanan pihak ketiga untuk mengoptimalkan operasional bisnis Anda, seperti Google API (termasuk Google Calendar untuk pencatatan jadwal booking), WhatsApp API/Twilio (untuk pengiriman notifikasi otomatis via WhatsApp dan SMS), Web Push Notification (untuk notifikasi browser real-time), serta *Payment Gateway* (seperti Midtrans/Xendit untuk proses transaksi online). Kami tidak bertanggung jawab atas kinerja, stabilitas, keamanan, atau perubahan kebijakan dari penyedia layanan pihak ketiga tersebut. Anda disarankan untuk membaca syarat dan ketentuan dari masing-masing penyedia layanan pihak ketiga tersebut.
 
 ---
 
@@ -115,80 +130,9 @@ Jika Anda memiliki pertanyaan, keluhan, atau memerlukan bantuan terkait Syarat d
 
 export default function TermsPage() {
   return (
-    <div className="flex justify-center py-8">
+    <div className="flex px-4 md:justify-center md:py-8">
       <div className="text-sm max-w-3xl leading-relaxed text-foreground/80 space-y-4">
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={{
-            h1: ({ children }) => (
-              <h1 className="text-xl font-bold text-foreground mt-6 mb-3 border-b pb-2">
-                {children}
-              </h1>
-            ),
-            h2: ({ children }) => (
-              <h2 className="text-lg font-bold text-foreground mt-5 mb-2.5 border-b pb-1.5">
-                {children}
-              </h2>
-            ),
-            h3: ({ children }) => (
-              <h3 className="text-base font-semibold text-primary mt-4 mb-2 flex items-center gap-2">
-                <Lightbulb className="h-4 w-4 shrink-0 text-primary" />
-                {children}
-              </h3>
-            ),
-            p: ({ children }) => (
-              <p className="text-sm text-foreground/85 leading-relaxed my-2">
-                {children}
-              </p>
-            ),
-            ul: ({ children }) => (
-              <ul className="list-disc pl-5 my-2 space-y-1.5">{children}</ul>
-            ),
-            ol: ({ children }) => (
-              <ol className="list-decimal pl-5 my-2 space-y-1.5">{children}</ol>
-            ),
-            li: ({ children }) => (
-              <li className="text-sm text-foreground/85 leading-relaxed">
-                {children}
-              </li>
-            ),
-            strong: ({ children }) => (
-              <strong className="font-semibold text-foreground">
-                {children}
-              </strong>
-            ),
-            table: ({ children }) => (
-              <div className="overflow-x-auto my-4 rounded-md border border-border">
-                <table className="min-w-full divide-y divide-border text-sm">
-                  {children}
-                </table>
-              </div>
-            ),
-            thead: ({ children }) => (
-              <thead className="bg-muted/40">{children}</thead>
-            ),
-            tbody: ({ children }) => (
-              <tbody className="divide-y divide-border">{children}</tbody>
-            ),
-            tr: ({ children }) => (
-              <tr className="hover:bg-muted/10 transition-colors">
-                {children}
-              </tr>
-            ),
-            th: ({ children }) => (
-              <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground text-xs uppercase tracking-wider">
-                {children}
-              </th>
-            ),
-            td: ({ children }) => (
-              <td className="px-4 py-2.5 text-foreground/80 leading-normal">
-                {children}
-              </td>
-            ),
-          }}
-        >
-          {TERMS_CONTENT}
-        </ReactMarkdown>
+        <MarkdownRenderer markdown={TERMS_CONTENT} />
       </div>
     </div>
   );

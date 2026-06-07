@@ -45,7 +45,7 @@ const FAQ_ITEMS = [
   {
     question: "Apakah BOSS benar-benar gratis?",
     answer:
-      "Ya, paket Trial sepenuhnya gratis selama masa percobaan 35 hari. Anda bisa mencoba fitur-fitur dasar tanpa perlu kartu kredit. Setelah masa trial habis, Anda dapat memilih paket Basic atau Pro untuk melanjutkan.",
+      "Ya, paket Trial sepenuhnya gratis selama 35 hari. Anda bisa mencoba fitur-fitur dasar tanpa perlu kartu kredit. Setelah masa trial habis, Anda dapat memilih paket Basic atau Pro untuk melanjutkan.",
   },
   {
     question: "Apakah bisa dipakai di HP / smartphone?",
@@ -137,25 +137,25 @@ const FEATURES_ITEMS = [
           <line x1="12" y1="20" x2="12" y2="10" />
           <line x1="6" y1="20" x2="6" y2="16" />
         </svg>`,
-        title: "Dashboard KPI & Analitik",
-        description: `Pantau pendapatan, jumlah order, dan pelanggan per outlet dalam satu tampilan. Filter berdasarkan cabang dan periode untuk insight cepat.`,
-        subFeatures: ["Revenue Chart", "Order Metrics", "Outlet Filter"],
+        title: "Dashboard & Analitik",
+        description: `Lihat pendapatan, jumlah order, dan pelanggan dari semua cabang dalam satu layar. Filter per outlet dan periode untuk analisa cepat.`,
+        subFeatures: ["Grafik Pendapatan", "Jumlah Order", "Filter Cabang"],
       },
       {
         icon: `<svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
         </svg>`,
         title: "Manajemen Produk",
-        description: `Buat, edit, dan kelola kategori produk barang, layanan jasa, atau tiket. Import/export data produk via Excel untuk migrasi cepat.`,
-        subFeatures: ["Kategori", "Import/Export", "Low Stock Alert"],
+        description: `Buat dan kelola produk barang, jasa, atau tiket. Bisa impor data dari Excel supaya lebih cepat.`,
+        subFeatures: ["Kategori", "Impor/Ekspor", "Stok Menipis"],
       },
       {
         icon: `<svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
         </svg>`,
-        title: "Stok & Supplier",
-        description: `Riwayat stok masuk/keluar real-time, kelola data supplier, dan hitung HPP otomatis dengan metode FIFO atau Average.`,
-        subFeatures: ["Kalkulator HPP", "Supplier", "Mutasi Stok"],
+        title: "Stok & Bahan Baku",
+        description: `Pantau stok masuk keluar real-time, kelola bahan baku untuk resep, data supplier, buat PO, dan transfer stok antar cabang.`,
+        subFeatures: ["Stok Real-time", "Bahan Baku", "Resep", "PO Supplier", "Transfer Stok"],
       },
       {
         icon: `<svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -164,45 +164,42 @@ const FEATURES_ITEMS = [
           <line x1="8" y1="2" x2="8" y2="6" />
         </svg>`,
         title: "Manajemen Order",
-        description: `Lihat semua order dari seluruh outlet dalam satu tempat. Filter berdasarkan status, tanggal, dan cabang untuk monitoring cepat.`,
+        description: `Lihat semua order dari seluruh cabang di satu tempat. Filter berdasarkan status, tanggal, dan lokasi outlet.`,
         subFeatures: ["Multi Status", "Filter Cabang", "Riwayat"],
       },
       {
         icon: `<svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
         </svg>`,
-        title: "Manajemen Pelanggan",
-        description: `Daftar pelanggan lengkap dengan histori transaksi. Lihat siapa pelanggan paling loyal dan produk favorit mereka.`,
-        subFeatures: ["History Transaksi", "Data Loyalty"],
+        title: "Pelanggan & Loyalitas",
+        description: `Simpan data pelanggan, jalankan program poin loyalitas, atur level member (Bronze/Silver/Gold), dan kelola reward yang bisa ditukar.`,
+        subFeatures: ["Data Pelanggan", "Poin & Level", "Reward"],
       },
       {
         icon: `<svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
         </svg>`,
         title: "Laporan Keuangan",
-        description: `Laporan Laba Rugi (P&L), Business Health, Peak Hours, dan Profit per Produk. Ekspor ke Excel untuk analisis lebih lanjut.`,
-        subFeatures: ["P&L Statement", "Business Health", "Peak Hours"],
+        description: `Laporan laba rugi, profit tiap produk, kondisi bisnis, dan jam ramai. Semua bisa diekspor ke Excel.`,
+        subFeatures: ["Laba Rugi", "Profit Produk", "Jam Ramai"],
       },
       {
         icon: `<svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <rect x="1" y="4" width="22" height="16" rx="2" />
-          <line x1="1" y1="10" x2="23" y2="10" />
+          <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm0 14a4 4 0 1 1 4-4 4 4 0 0 1-4 4Z" />
         </svg>`,
-        title: "Tools Analitik Bisnis",
-        description: `Kalkulator BEP, Sales Target Breakdown, dan Analisis Margin. Bantu Anda mengambil keputusan bisnis berbasis data.`,
-        subFeatures: ["BEP Calc", "Target Sales", "Profit Margin"],
+        title: "Tools & AI",
+        description: `Kalkulator HPP dan BEP, target penjualan, asisten AI untuk analisa bisnis, kirim broadcast marketing, dan notifikasi push.`,
+        subFeatures: ["Kalkulator HPP/BEP", "Target Sales", "AI Assistant", "Broadcast"],
       },
       {
         icon: `<svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z" />
           <path d="m3 9 2.45-4.9A2 2 0 0 1 7.24 3h9.52a2 2 0 0 1 1.8 1.1L21 9" />
         </svg>`,
-        title: "Multi-outlet",
-        description: `Kelola banyak cabang dalam satu akun. Transfer stok antar outlet, pantau performa seluruh cabang, dan atur akses staff terpusat.`,
-        subFeatures: ["Stock Transfer", "Global Dashboard", "Akses Staff"],
+        title: "Multi Outlet",
+        description: `Kelola banyak cabang dari satu akun. Transfer stok antar outlet, pantau semua performa, dan atur akses staff terpusat.`,
+        subFeatures: ["Transfer Stok", "Dashboard Gabungan", "Akses Staff"],
       },
     ],
   },
@@ -219,9 +216,9 @@ const FEATURES_ITEMS = [
           <rect x="2" y="3" width="20" height="14" rx="2" />
           <line x1="8" y1="21" x2="16" y2="21" />
         </svg>`,
-        title: "POS Kasir",
-        description: `Proses transaksi cepat untuk barang, jasa, atau tiket. Dukung manajemen meja restoran dan bill split.`,
-        subFeatures: ["Scan Barcode", "Manajemen Meja", "Bill Split"],
+        title: "Kasir & Transaksi",
+        description: `Proses jualan cepat untuk barang, jasa, atau tiket. Bisa bagi bill, manajemen meja, dan cetak struk langsung.`,
+        subFeatures: ["Scan Barcode", "Bagi Bill", "Cetak Struk"],
       },
       {
         icon: `<svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -230,9 +227,9 @@ const FEATURES_ITEMS = [
           <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
           <path d="M16 3.13a4 4 0 0 1 0 7.75" />
         </svg>`,
-        title: "Antrian Pelanggan",
-        description: `Kanban antrian real-time — lihat posisi antrian, panggil pelanggan berikutnya, dan kelola status dengan satu klik.`,
-        subFeatures: ["Kanban", "Real-time", "Panggil Antrian"],
+        title: "Staf & Absensi",
+        description: `Kelola hak akses staf per peran (Kasir, Waiter, Dapur, Manager). Absensi pakai wajah dan validasi lokasi GPS.`,
+        subFeatures: ["Hak Akses", "Face Recognition", "Absensi GPS"],
       },
       {
         icon: `<svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -240,8 +237,8 @@ const FEATURES_ITEMS = [
           <line x1="3" y1="6" x2="21" y2="6" />
           <path d="M16 10a4 4 0 0 1-8 0" />
         </svg>`,
-        title: "Pesanan Barang",
-        description: `Kanban order barang dari pelanggan. Lacak status dari "baru" hingga "selesai" dengan antarmuka visual yang intuitif.`,
+        title: "Pesanan Pelanggan",
+        description: `Lihat antrian pesanan dari pelanggan. Lacak status dari baru sampai selesai dengan tampilan yang mudah dipahami.`,
         subFeatures: ["Kanban", "Multi Status"],
       },
       {
@@ -250,9 +247,9 @@ const FEATURES_ITEMS = [
           <line x1="8" y1="21" x2="16" y2="21" />
           <line x1="12" y1="17" x2="12" y2="21" />
         </svg>`,
-        title: "Meja & Bill",
-        description: `Visual map meja dengan status (kosong/terisi). Generate bill dari order, cetak, dan proses pembayaran dalam satu alur.`,
-        subFeatures: ["Map Meja", "Generate Bill", "Bayar"],
+        title: "Meja & Tagihan",
+        description: `Lihat peta meja dengan status kosong atau terisi. Buat tagihan dari order, cetak, dan terima pembayaran dalam satu alur.`,
+        subFeatures: ["Peta Meja", "Buat Tagihan", "Bayar"],
       },
       {
         icon: `<svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -261,17 +258,17 @@ const FEATURES_ITEMS = [
           <line x1="16" y1="13" x2="8" y2="13" />
           <line x1="16" y1="17" x2="8" y2="17" />
         </svg>`,
-        title: "POB (Purchase Order Bahan)",
-        description: `Buat Purchase Order Bahan baku ke supplier, lacak status pengiriman, dan riwayat pembelian untuk stok dapur.`,
-        subFeatures: ["PO Bahan", "Lacak Status"],
+        title: "PO Bahan Baku",
+        description: `Buat pesanan bahan baku ke supplier, lacak status pengiriman, dan lihat riwayat pembelian untuk stok dapur.`,
+        subFeatures: ["Buat PO", "Lacak Status"],
       },
       {
         icon: `<svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
         </svg>`,
-        title: "Pengeluaran Harian",
-        description: `Catat biaya operasional harian — belanja bahan, transportasi, listrik — dengan kategori dan lampiran bukti.`,
-        subFeatures: ["Kategori", "Lampiran"],
+        title: "Shift & Keuangan",
+        description: `Buka tutup shift kasir, catat pengeluaran harian, lihat riwayat transaksi, dan proses pembatalan transaksi.`,
+        subFeatures: ["Buka/Tutup Shift", "Pengeluaran", "Riwayat", "Void"],
       },
       {
         icon: `<svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -280,9 +277,9 @@ const FEATURES_ITEMS = [
           <line x1="8" y1="2" x2="8" y2="6" />
           <line x1="3" y1="10" x2="21" y2="10" />
         </svg>`,
-        title: "Reservasi",
-        description: `Kelola reservasi meja dari kasir. Lihat jadwal, konfirmasi, dan atur alokasi meja untuk pelanggan yang booking.`,
-        subFeatures: ["Kalender", "Konfirmasi"],
+        title: "Booking & Reservasi",
+        description: `Kelola reservasi meja dan booking jadwal. Lihat kalender, konfirmasi, dan otomatis sinkron ke Google Calendar.`,
+        subFeatures: ["Kalender", "Konfirmasi", "Google Calendar"],
       },
       {
         icon: `<svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -291,7 +288,7 @@ const FEATURES_ITEMS = [
           <path d="M7 16h10" />
         </svg>`,
         title: "Scan Tiket",
-        description: `Validasi tiket masuk via QR code. Cocok untuk event, tempat wisata, dan venue yang menjual tiket secara online.`,
+        description: `Validasi tiket masuk pakai QR code. Cocok untuk event, tempat wisata, atau venue yang jual tiket online.`,
         subFeatures: ["QR Code", "Validasi", "Event"],
       },
     ],
@@ -308,9 +305,27 @@ const FEATURES_ITEMS = [
           <path d="M12 20h9" />
           <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
         </svg>`,
-        title: "Kitchen Display System (KDS)",
-        description: `Layar digital untuk dapur yang menampilkan order real-time dalam 3 lane: Antrian → Dimasak → Siap Saji. Notifikasi suara otomatis saat order baru masuk. Driver WebSocket memastikan tidak ada order yang terlewat.`,
-        subFeatures: ["3 Lane Board", "WebSocket", "Sound Notif", "Real-time"],
+        title: "Layar Dapur (KDS)",
+        description: `Layar digital untuk dapur yang tampilkan order real-time dalam 3 kolom: Antrian, Sedang Dimasak, dan Siap Disajikan. Ada notifikasi suara saat order baru masuk.`,
+        subFeatures: ["3 Kolom", "Real-time", "Notifikasi Suara"],
+      },
+      {
+        icon: `<svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <path d="M16 10a4 4 0 0 1-8 0" />
+        </svg>`,
+        title: "Self-Order QR",
+        description: `Pelanggan pesan langsung dari HP tanpa install aplikasi. Scan QR di meja, pilih menu, pesanan langsung masuk ke dapur.`,
+        subFeatures: ["QR Menu", "Langsung ke Dapur"],
+      },
+      {
+        icon: `<svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </svg>`,
+        title: "Notifikasi Otomatis",
+        description: `Sistem antrian dengan notifikasi otomatis ke pelanggan via WhatsApp atau SMS. Pantau status dari dashboard real-time.`,
+        subFeatures: ["Notif WA/SMS", "Real-time", "Push Notif"],
       },
     ],
   },
@@ -328,8 +343,8 @@ const FEATURES_ITEMS = [
           <circle cx="12" cy="10" r="3" />
         </svg>`,
         title: "Cari Outlet Terdekat",
-        description: `Temukan outlet BOSS terdekat dengan geolocation. Filter berdasarkan radius, cek jam operasional, dan lihat rating langsung dari peta.`,
-        subFeatures: ["Geolocation", "Radius Filter", "Peta"],
+        description: `Temukan outlet BOSS terdekat pakai GPS. Cek jarak, jam buka, dan rating langsung dari peta.`,
+        subFeatures: ["GPS", "Peta", "Rating"],
       },
       {
         icon: `<svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -337,42 +352,53 @@ const FEATURES_ITEMS = [
           <line x1="3" y1="6" x2="21" y2="6" />
           <path d="M16 10a4 4 0 0 1-8 0" />
         </svg>`,
-        title: "Pesan & Bayar Digital",
-        description: `Pilih produk, tambah ke keranjang multi-outlet, checkout dengan QRIS, Virtual Account, atau bayar manual. Dilengkapi countdown timer.`,
-        subFeatures: ["QRIS", "Multi Outlet Cart"],
+        title: "Pesan & Bayar Online",
+        description: `Pilih produk, masuk keranjang, bayar pakai QRIS, Virtual Account, atau bayar langsung. Ada timer countdown.`,
+        subFeatures: ["QRIS", "Keranjang Multi Outlet"],
       },
       {
         icon: `<svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
         </svg>`,
-        title: "Tracking Pesanan",
-        description: `Pantau status pesanan secara real-time dengan timeline visual. Dari persiapan, dimasak, hingga siap diambil — notifikasi otomatis di setiap tahap.`,
+        title: "Lacak Pesanan",
+        description: `Pantau pesanan secara real-time dari persiapan sampai siap diambil. Dapat notifikasi di setiap tahap.`,
         subFeatures: ["Timeline", "Real-time", "Re-order"],
       },
       {
         icon: `<svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
         </svg>`,
-        title: "Favorit & Tersimpan",
-        description: `Simpan outlet dan produk favorit untuk akses cepat. Lihat riwayat pesanan dan ulangi order favorit dengan satu ketukan.`,
-        subFeatures: ["Bookmark", "Quick Re-order"],
+        title: "Poin & Loyalitas",
+        description: `Kumpulkan poin setiap belanja, naik level member, dan tukarkan poin dengan reward menarik.`,
+        subFeatures: ["Poin Reward", "Level Member", "Tukar Reward"],
+      },
+      {
+        icon: `<svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <rect x="3" y="4" width="18" height="18" rx="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="3" y1="10" x2="21" y2="10" />
+        </svg>`,
+        title: "Booking Jadwal",
+        description: `Pesan jadwal layanan langsung dari HP. Pilih waktu yang tersedia, dapat konfirmasi via WhatsApp.`,
+        subFeatures: ["Pilih Waktu", "Konfirmasi WA"],
       },
       {
         icon: `<svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="10" />
           <polyline points="12 6 12 12 16 14" />
         </svg>`,
-        title: "Nearby & Peta",
-        description: `Lihat semua outlet BOSS di sekitar Anda dalam tampilan peta interaktif. Cek jarak, jam buka, dan navigasi langsung.`,
-        subFeatures: ["Map View", "Navigasi", "Jarak"],
+        title: "Peta & Navigasi",
+        description: `Lihat semua outlet BOSS di sekitar Anda dalam peta interaktif. Cek jarak dan navigasi langsung ke lokasi.`,
+        subFeatures: ["Peta", "Navigasi", "Jarak"],
       },
       {
         icon: `<svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <rect x="5" y="2" width="14" height="20" rx="2" />
           <line x1="12" y1="18" x2="12" y2="18" />
         </svg>`,
-        title: "PWA — Installable",
-        description: `Aplikasi web progresif (PWA) yang bisa diinstal ke home screen HP. Dukungan offline, push notification, dan performa seperti native app.`,
+        title: "Bisa di Install",
+        description: `Aplikasi web yang bisa diinstal ke layar HP. Bisa dipakai tanpa internet, ada notifikasi push, dan performa seperti aplikasi native.`,
         subFeatures: ["Offline", "Push Notif", "Home Screen"],
       },
     ],

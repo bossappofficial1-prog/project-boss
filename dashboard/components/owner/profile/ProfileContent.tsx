@@ -18,11 +18,17 @@ import {
   Mail,
   Phone,
   Shield,
+  CheckCircle2,
+  Globe,
+  Calendar,
+  Building2,
+  CreditCard,
+  Clock,
 } from "lucide-react";
 import { SectionHeader } from "@/components/ui/section-header";
 
 export const ProfileContent = () => {
-  const { user, isLoading } = useAuth();
+  const { user, business, isLoading } = useAuth();
 
   if (isLoading || !user) {
     return <ProfileSkeleton />;
@@ -35,6 +41,15 @@ export const ProfileContent = () => {
       .join("")
       .substring(0, 2)
       .toUpperCase();
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "-";
+    return new Date(dateString).toLocaleDateString("id-ID", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
   };
 
   return (
@@ -68,18 +83,30 @@ export const ProfileContent = () => {
                 {user.name || "Pengguna Tanpa Nama"}
               </h2>
 
-              <Badge
-                variant="secondary"
-                className="capitalize text-xs md:text-sm px-2 md:px-3 py-0.5"
-              >
-                {user.role?.toLowerCase() || "user"}
-              </Badge>
+              <div className="flex flex-wrap gap-2">
+                <Badge
+                  variant="secondary"
+                  className="capitalize text-xs md:text-sm px-2 md:px-3 py-0.5"
+                >
+                  {user.role?.toLowerCase() || "user"}
+                </Badge>
+                
+                {user.isVerified && (
+                  <Badge
+                    variant="outline"
+                    className="text-xs md:text-sm px-2 md:px-3 py-0.5 border-green-600 text-green-700 dark:border-green-500 dark:text-green-400"
+                  >
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    Terverifikasi
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Content */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-            {/* LEFT */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+            {/* LEFT - Contact & Auth Info */}
             <div className="space-y-3 md:space-y-4">
               <h3 className="text-xs md:text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                 Informasi Kontak
@@ -96,9 +123,15 @@ export const ProfileContent = () => {
                 label="Nomor Telepon"
                 value={user.phone || "Belum ada nomor telepon"}
               />
+
+              <InfoItem
+                icon={<Globe className="h-4 w-4 md:h-5 md:w-5" />}
+                label="Metode Login"
+                value={user.provider === "google" ? "Google OAuth" : "Email & Kata Sandi"}
+              />
             </div>
 
-            {/* RIGHT */}
+            {/* RIGHT - System Details */}
             <div className="space-y-3 md:space-y-4">
               <h3 className="text-xs md:text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                 Detail Sistem
@@ -116,7 +149,61 @@ export const ProfileContent = () => {
                 value={user.id || "-"}
                 truncate
               />
+
+              <InfoItem
+                icon={<Clock className="h-4 w-4 md:h-5 md:w-5" />}
+                label="Session ID"
+                value={user.sessionId || "-"}
+                truncate
+              />
             </div>
+
+            {/* BOTTOM - Business & Subscription */}
+            {business && (
+              <>
+                <div className="space-y-3 md:space-y-4">
+                  <h3 className="text-xs md:text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                    Bisnis & Langganan
+                  </h3>
+
+                  <InfoItem
+                    icon={<Building2 className="h-4 w-4 md:h-5 md:w-5" />}
+                    label="Nama Bisnis"
+                    value={business.name || "-"}
+                  />
+
+                  <InfoItem
+                    icon={<CreditCard className="h-4 w-4 md:h-5 md:w-5" />}
+                    label="Paket Berlangganan"
+                    value={business.subscriptionPlan || "-"}
+                  />
+
+                  <InfoItem
+                    icon={<Calendar className="h-4 w-4 md:h-5 md:w-5" />}
+                    label="Berakhir pada"
+                    value={formatDate(business.subscriptionEndDate)}
+                  />
+                </div>
+
+                <div className="space-y-3 md:space-y-4">
+                  <h3 className="text-xs md:text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                    Informasi Bank
+                  </h3>
+
+                  <InfoItem
+                    icon={<Building2 className="h-4 w-4 md:h-5 md:w-5" />}
+                    label="Nama Bank"
+                    value={business.bankName || "-"}
+                  />
+
+                  <InfoItem
+                    icon={<CreditCard className="h-4 w-4 md:h-5 md:w-5" />}
+                    label="Nomor Rekening"
+                    value={business.accountHolder ? `${business.bankAccount} a.n ${business.accountHolder}` : "-"}
+                  />
+                </div>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -129,11 +216,13 @@ const InfoItem = ({
   label,
   value,
   truncate = false,
+  badge = undefined,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   truncate?: boolean;
+  badge?: React.ReactNode;
 }) => {
   return (
     <div className="flex items-center gap-3 md:gap-4 rounded-lg md:rounded-xl border p-3 md:p-4 bg-card hover:bg-muted/30 transition-colors">
@@ -141,7 +230,7 @@ const InfoItem = ({
         {icon}
       </div>
 
-      <div className="overflow-hidden">
+      <div className="overflow-hidden flex-1">
         <p
           className={`text-sm md:text-base font-semibold text-foreground ${truncate ? "truncate max-w-45 md:max-w-full" : ""
             }`}
@@ -153,12 +242,18 @@ const InfoItem = ({
           {label}
         </p>
       </div>
+
+      {badge && (
+        <div className="shrink-0">
+          {badge}
+        </div>
+      )}
     </div>
   );
 };
 
 const ProfileSkeleton = () => (
-  <div className="mx-auto max-w-4xl space-y-6 pb-10 px-4 md:px-0">
+  <div className="mx-auto max-w-6xl space-y-6 pb-10 px-4 md:px-0">
     <div className="space-y-2">
       <Skeleton className="h-6 md:h-10 w-40 md:w-48" />
       <Skeleton className="h-4 md:h-5 w-56 md:w-64" />
@@ -173,19 +268,39 @@ const ProfileSkeleton = () => (
 
           <div className="flex-1 space-y-2">
             <Skeleton className="h-6 md:h-8 w-40 md:w-48" />
-            <Skeleton className="h-5 w-16 rounded-full" />
+            <div className="flex gap-2">
+              <Skeleton className="h-5 w-16 rounded-full" />
+              <Skeleton className="h-5 w-24 rounded-full" />
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
           <div className="space-y-3">
             <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-16 md:h-20 w-full rounded-xl" />
             <Skeleton className="h-16 md:h-20 w-full rounded-xl" />
             <Skeleton className="h-16 md:h-20 w-full rounded-xl" />
           </div>
 
           <div className="space-y-3">
             <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-16 md:h-20 w-full rounded-xl" />
+            <Skeleton className="h-16 md:h-20 w-full rounded-xl" />
+            <Skeleton className="h-16 md:h-20 w-full rounded-xl" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 mt-6">
+          <div className="space-y-3">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-16 md:h-20 w-full rounded-xl" />
+            <Skeleton className="h-16 md:h-20 w-full rounded-xl" />
+            <Skeleton className="h-16 md:h-20 w-full rounded-xl" />
+          </div>
+
+          <div className="space-y-3">
+            <Skeleton className="h-4 w-24" />
             <Skeleton className="h-16 md:h-20 w-full rounded-xl" />
             <Skeleton className="h-16 md:h-20 w-full rounded-xl" />
           </div>
