@@ -10,13 +10,13 @@ const PRIVACY_CONTENT = `
 
 **Terakhir diperbarui: 6 Juni 2026**
 
-## 1. Pendahuluan
+### 1. Pendahuluan
 
 **PT BOSS APP INDONESIA** ("kami", "BOSS", atau "Platform") berkomitmen untuk melindungi dan menghormati privasi pengguna platform kami. Kebijakan Privasi ini menjelaskan dasar pengumpulan, penyimpanan, penggunaan, pemrosesan, dan perlindungan informasi/data pribadi Anda saat mengakses dan menggunakan platform BOSS, termasuk namun tidak terbatas pada situs utama [bossapp.id](https://bossapp.id), sub-domain [dashboard.bossapp.id](https://dashboard.bossapp.id) (dashboard manajemen), [customer.bossapp.id](https://customer.bossapp.id) (aplikasi pelanggan), serta seluruh layanan terkait yang kami sediakan.
 
 ---
 
-## 2. Data yang Kami Kumpulkan
+### 2. Data yang Kami Kumpulkan
 
 Kami mengumpulkan data berikut untuk menyediakan layanan terbaik bagi Anda:
 
@@ -35,7 +35,7 @@ Kami mengumpulkan data berikut untuk menyediakan layanan terbaik bagi Anda:
 
 ---
 
-## 3. Cara Kami Menggunakan Data
+### 3. Cara Kami Menggunakan Data
 
 Kami memproses data pribadi Anda untuk tujuan-tujuan berikut:
 
@@ -61,13 +61,13 @@ Kami memproses data pribadi Anda untuk tujuan-tujuan berikut:
 
 ---
 
-## 4. Penyimpanan dan Keamanan Data
+### 4. Penyimpanan dan Keamanan Data
 
 Data Anda disimpan dengan aman menggunakan enkripsi standar industri dan kontrol hak akses yang ketat. Kami mengambil langkah-langkah keamanan teknis, fisik, dan manajerial (seperti enkripsi kata sandi menggunakan bcrypt dan pembatasan akses database) untuk melindungi informasi Anda dari kehilangan, pencurian, penyalahgunaan, serta akses, pengungkapan, perubahan, atau pemusnahan yang tidak sah.
 
 ---
 
-## 5. Pengelolaan Integrasi Pihak Ketiga
+### 5. Pengelolaan Integrasi Pihak Ketiga
 
 Platform kami memungkinkan integrasi dengan berbagai layanan eksternal untuk memperlancar bisnis Anda:
 
@@ -78,7 +78,7 @@ Platform kami memungkinkan integrasi dengan berbagai layanan eksternal untuk mem
 
 ---
 
-## 6. Pembagian Data Kepada Pihak Ketiga
+### 6. Pembagian Data Kepada Pihak Ketiga
 
 Kami berkomitmen untuk tidak menjual atau menyewakan informasi pribadi Anda kepada pihak mana pun. Data Anda hanya akan dibagikan kepada pihak lain dalam batas-batas yang diizinkan sebagai berikut:
 
@@ -88,13 +88,13 @@ Kami berkomitmen untuk tidak menjual atau menyewakan informasi pribadi Anda kepa
 
 ---
 
-## 7. Retensi Data
+### 7. Retensi Data
 
 Kami akan menyimpan data pribadi Anda selama akun Anda tetap aktif dan paket berlangganan berjalan, atau selama diperlukan untuk mematuhi kewajiban hukum, perpajakan, dan audit kami. Jika Anda memutuskan untuk menghapus akun Anda, kami akan menghapus atau menganonimkan data Anda sesuai kebijakan retensi data kami, kecuali jika undang-undang mewajibkan kami menyimpannya untuk jangka waktu yang lebih lama.
 
 ---
 
-## 8. Hak-Hak Anda Sebagai Pemilik Data
+### 8. Hak-Hak Anda Sebagai Pemilik Data
 
 Sesuai dengan ketentuan Undang-Undang Perlindungan Data Pribadi (UU PDP) yang berlaku di Indonesia, Anda memiliki hak untuk:
 
@@ -107,13 +107,13 @@ Untuk mengajukan permintaan penghapusan data atau pelaksanaan hak perlindungan d
 
 ---
 
-## 9. Perubahan Kebijakan Privasi
+### 9. Perubahan Kebijakan Privasi
 
 Kebijakan Privasi ini dapat diperbarui dari waktu ke waktu untuk menyesuaikan dengan perubahan operasional Platform atau perubahan regulasi hukum yang berlaku. Kami akan memberi tahu Anda mengenai perubahan materiil melalui notifikasi di Platform atau melalui email Anda yang terdaftar. Kami menyarankan Anda untuk meninjau halaman ini secara berkala.
 
 ---
 
-## 10. Hubungi Kami
+### 10. Hubungi Kami
 
 Jika Anda memiliki kekhawatiran, pertanyaan, atau keluhan terkait dengan cara kami mengelola Kebijakan Privasi ini atau data pribadi Anda, silakan hubungi Data Protection / Support Officer kami melalui:
 
