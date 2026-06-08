@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { format, subMonths } from "date-fns";
 import { Info } from "lucide-react";
 import { ReusableForm, FormFieldConfig } from "@/components/ui/reuseable-form";
 import { productApi } from "@/lib/api";
@@ -23,7 +23,7 @@ export function ManualTransactionModal({
   onSubmit,
   isLoading = false,
 }: ManualTransactionModalProps) {
-  const [manualAmountOverride, setManualAmountOverride] = useState(false);
+  const manualAmountOverrideRef = useRef(false);
 
   const { data: productsResponse, isLoading: productsLoading } = useQuery({
     queryKey: ["products", outletId, "manual-tx"],
@@ -78,20 +78,23 @@ export function ManualTransactionModal({
     [productMap]
   );
 
-  const defaultValues: ManualTransactionFormValues = {
-    transactionDate: new Date(),
-    customerName: "",
-    customerPhone: "",
-    amount: 0,
-    items: [{ productId: "", quantity: 1, bookingDate: "" }],
-  };
+  const defaultValues = useMemo<ManualTransactionFormValues>(
+    () => ({
+      transactionDate: subMonths(new Date(), 0),
+      customerName: "",
+      customerPhone: "",
+      amount: 0,
+      items: [{ productId: "", quantity: 1, bookingDate: "" }],
+    }),
+    []
+  );
 
   const form = useForm<ManualTransactionFormValues>({
     resolver: zodResolver(manualTransactionSchema) as any,
     defaultValues,
   });
 
-  const fields: FormFieldConfig<ManualTransactionFormValues>[] = useMemo(
+  const fields = useMemo<FormFieldConfig<ManualTransactionFormValues>[]>(
     () => [
       {
         name: "transactionDate",
@@ -154,21 +157,26 @@ export function ManualTransactionModal({
           },
         ],
       },
-
     ],
     [productOptions, productMap]
   );
 
+  const lastTotalRef = useRef<number>(0);
+
   const handleValuesChange = useCallback(
     (values: Partial<ManualTransactionFormValues>) => {
-      if (!manualAmountOverride && values.items) {
+      if (!manualAmountOverrideRef.current && values.items) {
         const total = calculateTotal(values.items);
-        if (total > 0 && values.amount !== total) {
-          form.setValue("amount", total);
+        if (total > 0 && total !== lastTotalRef.current) {
+          lastTotalRef.current = total;
+          form.setValue("amount", total, {
+            shouldValidate: false,
+            shouldDirty: false,
+          });
         }
       }
     },
-    [manualAmountOverride, calculateTotal, form]
+    [calculateTotal, form]
   );
 
   const handleSubmit = async (data: ManualTransactionFormValues) => {
@@ -187,7 +195,8 @@ export function ManualTransactionModal({
             : undefined,
         })),
       });
-      setManualAmountOverride(false);
+      manualAmountOverrideRef.current = false;
+      lastTotalRef.current = 0;
     } catch (err) {
       console.error("Failed to create manual transaction:", err);
     }
