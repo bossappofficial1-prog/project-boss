@@ -40,7 +40,7 @@ export function ServiceFocusView({
 }: ServiceFocusViewProps) {
     const activeEntries = board.inProgress;
     
-    const upNext = [...board.ready, ...board.waiting];
+    const upNext = [...board.waiting];
     const recent = [...board.completed].sort((a, b) => 
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     ).slice(0, 5);
