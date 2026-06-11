@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SectionHeader } from "@/components/ui/section-header";
 import { useOutletStore } from "@/stores/outlet.store";
@@ -13,90 +12,100 @@ import { TierSettings } from "./tier-settings";
 import { RewardCatalog } from "./reward-catalog";
 import { LoyaltyDashboard } from "./loyalty-dashboard";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  BarChart3,
+  Users,
+  Settings,
+  Trophy,
+  Gift,
+} from "lucide-react";
 
 export default function LoyaltyContent() {
-    const router = useRouter();
-    const { selectedOutletId: outletId, isLoading: outletLoading } = useOutletStore();
-    const { data: authData, isLoading: authLoading } = useOutletsQuery();
+  const router = useRouter();
+  const { selectedOutletId: outletId, isLoading: outletLoading } =
+    useOutletStore();
+  const { data: authData, isLoading: authLoading } = useOutletsQuery();
 
-    if (outletLoading || authLoading) {
-        return (
-            <div className="space-y-6 animate-pulse">
-                <div className="space-y-2">
-                    <Skeleton className="h-8 w-64 bg-muted/30" />
-                    <Skeleton className="h-4 w-96 bg-muted/20" />
-                </div>
-                <div className="space-y-4">
-                    <Skeleton className="h-10 w-full max-w-md bg-muted/20" />
-                    <div className="rounded-md border border-border/40 p-1 space-y-4">
-                        <div className="flex items-center justify-between p-4 border-b border-border/40">
-                            <Skeleton className="h-6 w-32 bg-muted/20" />
-                            <Skeleton className="h-9 w-64 bg-muted/20" />
-                        </div>
-                        <div className="p-4 space-y-3">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                                <Skeleton key={i} className="h-16 w-full bg-muted/10 rounded-md" />
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
+  if (outletLoading || authLoading) {
+    return <LoyaltySkeleton />;
+  }
 
-    const hasOutlet = authData?.outlets && authData.outlets.length > 0;
-    if (!hasOutlet && !outletId) {
-        return <EmptyOutletState onAddOutlet={() => router.push(`/owner#add-outlet`)} />;
-    }
-
-    const currentOutletName = authData?.outlets?.find((o) => o.id === outletId)?.name || "Outlet";
-
+  const hasOutlet = authData?.outlets && authData.outlets.length > 0;
+  if (!hasOutlet && !outletId) {
     return (
-        <div className="space-y-6">
-            <SectionHeader
-                title="Loyalty & Poin"
-                description={`Kelola program poin, tier membership, dan basis data keanggotaan untuk ${currentOutletName}`}
-            />
-
-            <Tabs defaultValue="dashboard" className="space-y-4">
-                <TabsList className="bg-muted/50 border border-border/40 p-1 rounded-md h-auto gap-1 w-full sm:w-auto flex-wrap">
-                    <TabsTrigger value="dashboard" className="gap-2 px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">
-                        Ringkasan Analitik
-                    </TabsTrigger>
-                    <TabsTrigger value="members" className="gap-2 px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">
-                        Daftar Member
-                    </TabsTrigger>
-                    <TabsTrigger value="settings" className="gap-2 px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">
-                        Pengaturan Poin
-                    </TabsTrigger>
-                    <TabsTrigger value="tiers" className="gap-2 px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">
-                        Tier Membership
-                    </TabsTrigger>
-                    <TabsTrigger value="rewards" className="gap-2 px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">
-                        Katalog Reward
-                    </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="dashboard" className="mt-6">
-                    <LoyaltyDashboard outletId={outletId!} />
-                </TabsContent>
-
-                <TabsContent value="members" className="mt-6">
-                    <LoyaltyMembersTable outletId={outletId!} />
-                </TabsContent>
-
-                <TabsContent value="settings" className="mt-6">
-                    <LoyaltySettings outletId={outletId!} />
-                </TabsContent>
-
-                <TabsContent value="tiers" className="mt-6">
-                    <TierSettings outletId={outletId!} />
-                </TabsContent>
-
-                <TabsContent value="rewards" className="mt-6">
-                    <RewardCatalog outletId={outletId!} />
-                </TabsContent>
-            </Tabs>
-        </div >
+      <EmptyOutletState onAddOutlet={() => router.push("/owner#add-outlet")} />
     );
+  }
+
+  const currentOutletName =
+    authData?.outlets?.find((o) => o.id === outletId)?.name || "Outlet";
+
+  const tabs = [
+    { value: "dashboard", label: "Ringkasan", icon: BarChart3 },
+    { value: "members", label: "Member", icon: Users },
+    { value: "settings", label: "Pengaturan", icon: Settings },
+    { value: "tiers", label: "Tier", icon: Trophy },
+    { value: "rewards", label: "Reward", icon: Gift },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <SectionHeader
+        title="Loyalty & Poin"
+        description={`Kelola program poin, tier membership, dan reward untuk ${currentOutletName}`}
+      />
+
+      <Tabs defaultValue="dashboard" className="space-y-4">
+        <TabsList className="bg-muted/50 border border-border/40 p-1 rounded-md h-auto gap-1 w-full sm:w-auto flex-wrap">
+          {tabs.map((tab) => (
+            <TabsTrigger
+              key={tab.value}
+              value={tab.value}
+              className="gap-1.5 px-3 py-1.5 text-xs font-medium"
+            >
+              <tab.icon className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{tab.label}</span>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        <TabsContent value="dashboard">
+          <LoyaltyDashboard outletId={outletId!} />
+        </TabsContent>
+
+        <TabsContent value="members">
+          <LoyaltyMembersTable outletId={outletId!} />
+        </TabsContent>
+
+        <TabsContent value="settings">
+          <LoyaltySettings outletId={outletId!} />
+        </TabsContent>
+
+        <TabsContent value="tiers">
+          <TierSettings outletId={outletId!} />
+        </TabsContent>
+
+        <TabsContent value="rewards">
+          <RewardCatalog outletId={outletId!} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function LoyaltySkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Skeleton className="h-8 w-56 rounded-md" />
+        <Skeleton className="h-4 w-80 rounded-md" />
+      </div>
+      <Skeleton className="h-10 w-full max-w-md rounded-md" />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-24 rounded-lg" />
+        ))}
+      </div>
+    </div>
+  );
 }

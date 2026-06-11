@@ -37,15 +37,13 @@ const SERVICE_QUEUE_STATUSES: OrderStatus[] = [
   OrderStatus.AWAITING_PAYMENT,
   OrderStatus.PROCESSING,
   OrderStatus.CONFIRMED,
-  OrderStatus.READY,
   OrderStatus.ON_GOING,
 ];
 
 const SERVICE_QUEUE_TRANSITIONS: Partial<Record<OrderStatus, OrderStatus[]>> = {
   [OrderStatus.AWAITING_PAYMENT]: [OrderStatus.PROCESSING, OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
   [OrderStatus.PROCESSING]: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
-  [OrderStatus.CONFIRMED]: [OrderStatus.READY, OrderStatus.CANCELLED],
-  [OrderStatus.READY]: [OrderStatus.ON_GOING, OrderStatus.COMPLETED, OrderStatus.CANCELLED],
+  [OrderStatus.CONFIRMED]: [OrderStatus.ON_GOING, OrderStatus.CANCELLED],
   [OrderStatus.ON_GOING]: [OrderStatus.COMPLETED, OrderStatus.CANCELLED],
   [OrderStatus.COMPLETED]: [],
   [OrderStatus.CANCELLED]: [],
@@ -474,7 +472,7 @@ export async function createOrderAndMidtransTransactionService(data: CreateOrder
 
     // Determine status: If no booking, cash/qris payment means COMPLETED
     const isInstantPayment = data.paymentMethod === "cash" || data.paymentMethod === "qris";
-    const finalStatus = !data.bookingSlotId && isInstantPayment ? OrderStatus.COMPLETED : OrderStatus.READY;
+    const finalStatus = !data.bookingSlotId && isInstantPayment ? OrderStatus.COMPLETED : OrderStatus.CONFIRMED;
 
     const updatedOrder = await db.order.update({
       where: { id: order.id },
@@ -807,7 +805,7 @@ export async function updateOrderStatusService(
     const queuedOrders = await db.order.findMany({
       where: {
         outletId: updatedOrder.outletId,
-        orderStatus: OrderStatus.READY,
+        orderStatus: OrderStatus.CONFIRMED,
         items: {
           some: {
             product: {
@@ -873,7 +871,7 @@ export async function completeServiceOrderService(orderId: string) {
     const queuedOrders = await db.order.findMany({
       where: {
         outletId: completedOrder.outletId,
-        orderStatus: OrderStatus.READY,
+        orderStatus: OrderStatus.CONFIRMED,
         items: {
           some: {
             product: {
@@ -1213,7 +1211,6 @@ export async function updateServiceQueueStatusService(
 
   // Block advancing beyond PROCESSING for future-date bookings
   const REQUIRES_TODAY: OrderStatus[] = [
-    OrderStatus.READY,
     OrderStatus.ON_GOING,
     OrderStatus.COMPLETED,
   ];
@@ -1243,7 +1240,7 @@ export async function updateServiceQueueStatusService(
           year: "numeric",
         });
         throw new AppError(
-          `Pesanan ini dijadwalkan untuk ${formatted}. Tidak dapat mengubah status menjadi ${nextStatus === OrderStatus.READY ? "Siap" : nextStatus === OrderStatus.ON_GOING ? "Sedang Dilayani" : "Selesai"} sebelum tanggal jadwal.`,
+          `Pesanan ini dijadwalkan untuk ${formatted}. Tidak dapat mengubah status menjadi ${nextStatus === OrderStatus.ON_GOING ? "Sedang Dilayani" : "Selesai"} sebelum tanggal jadwal.`,
           HttpStatus.BAD_REQUEST,
         );
       }
@@ -1263,7 +1260,7 @@ export async function confirmOrderByCustomerService(orderId: string, phone: stri
 
   assertCustomerOwnsOrder(orderRecord, phone);
 
-  const confirmableStatuses: OrderStatus[] = [OrderStatus.READY, OrderStatus.ON_GOING];
+  const confirmableStatuses: OrderStatus[] = [OrderStatus.CONFIRMED, OrderStatus.ON_GOING];
 
   if (!confirmableStatuses.includes(orderRecord.orderStatus)) {
     throw new AppError("Pesanan belum dapat dikonfirmasi", HttpStatus.BAD_REQUEST);

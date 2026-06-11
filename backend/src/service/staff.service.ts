@@ -56,7 +56,7 @@ export async function getStaffAvailabilityForWindow({
         lt: endTime,
       },
       orderStatus: {
-        in: ["AWAITING_PAYMENT", "PROCESSING", "CONFIRMED", "READY", "ON_GOING"],
+        in: ["AWAITING_PAYMENT", "PROCESSING", "CONFIRMED", "ON_GOING"],
       },
     },
     select: {

@@ -39,7 +39,6 @@ interface OrderEntry {
 interface OrdersBoard {
   pending: OrderEntry[];
   processing: OrderEntry[];
-  ready: OrderEntry[];
   completed: OrderEntry[];
 }
 
@@ -47,7 +46,6 @@ interface OrdersStats {
   totalActive: number;
   pendingCount: number;
   processingCount: number;
-  readyCount: number;
   completedToday: number;
   cancelledToday: number;
   revenueToday: number;
@@ -132,7 +130,6 @@ export class OrdersV2Service {
     const board: OrdersBoard = {
       pending: [],
       processing: [],
-      ready: [],
       completed: [],
     };
 
@@ -148,8 +145,6 @@ export class OrdersV2Service {
         status === OrderStatus.ON_GOING
       ) {
         board.processing.push(entry);
-      } else if (status === OrderStatus.READY) {
-        board.ready.push(entry);
       }
     }
 
@@ -159,7 +154,6 @@ export class OrdersV2Service {
       totalActive: activeOrders.length,
       pendingCount: board.pending.length,
       processingCount: board.processing.length,
-      readyCount: board.ready.length,
       completedToday: todayStats.completedCount,
       cancelledToday: todayStats.cancelledCount,
       revenueToday: todayStats.revenue,

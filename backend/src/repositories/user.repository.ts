@@ -76,6 +76,7 @@ export class UserRepository {
                 isOpen: true,
                 latitude: true,
                 longitude: true,
+                instagramUrl: true,
                 manualQrImageUrl: true,
                 qrisString: true,
                 type: true,

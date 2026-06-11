@@ -23,7 +23,7 @@ export class NotificationRepository {
             where: {
                 outletId,
                 paymentStatus: PaymentStatus.SUCCESS,
-                orderStatus: { in: [OrderStatus.AWAITING_PAYMENT, OrderStatus.PROCESSING, OrderStatus.READY] },
+                orderStatus: { in: [OrderStatus.AWAITING_PAYMENT, OrderStatus.PROCESSING, OrderStatus.CONFIRMED] },
             },
         });
     }

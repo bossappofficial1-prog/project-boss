@@ -47,6 +47,7 @@ import { MENU_GROUPS, getDynamicMenuName } from "./sidebar/sidebar";
 import { OutletSelector } from "./sidebar/outlet-selector";
 import { ChevronDown, ChevronRight, Settings } from "lucide-react";
 import { InstantLink } from "@/components/ui/instant-link";
+import Link from "next/link";
 
 export default function AppSidebar() {
   const pathname = usePathname();
@@ -55,8 +56,10 @@ export default function AppSidebar() {
   );
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
-  
-  const isProd = process.env.NODE_ENV === "production" || process.env.NEXT_PUBLIC_APP_ENV === "production";
+
+  const isProd =
+    process.env.NODE_ENV === "production" ||
+    process.env.NEXT_PUBLIC_APP_ENV === "production";
   const soonText = isProd ? "Segera Hadir" : "Soon";
 
   const {
@@ -81,7 +84,7 @@ export default function AppSidebar() {
                 selectedOutlet: parsed,
                 outlets: [parsed],
                 isLoading: false,
-                setSelectedOutlet: () => { },
+                setSelectedOutlet: () => {},
               };
             }
           } catch {
@@ -96,14 +99,14 @@ export default function AppSidebar() {
         selectedOutlet: null,
         outlets: [],
         isLoading: true,
-        setSelectedOutlet: () => { },
+        setSelectedOutlet: () => {},
       };
     }
   })();
 
   const { data: userData, isLoading, error, refetch } = useUserData();
   const hasProAccess = ["TRIAL", "PRO", "ENTERPRISE"].includes(
-    userData?.business?.subscriptionPlan?.toUpperCase() || "BASIC"
+    userData?.business?.subscriptionPlan?.toUpperCase() || "BASIC",
   );
 
   // Auto-expand menu if a sub-item is active
@@ -131,14 +134,17 @@ export default function AppSidebar() {
   const router = useRouter();
 
   // Prefetch on hover for better performance (lazy prefetch)
-  const handlePrefetch = useCallback((href: string) => {
-    if (!href || typeof window === "undefined") return;
-    try {
-      router.prefetch(href);
-    } catch {
-      // Prefetch failures are non-blocking
-    }
-  }, [router]);
+  const handlePrefetch = useCallback(
+    (href: string) => {
+      if (!href || typeof window === "undefined") return;
+      try {
+        router.prefetch(href);
+      } catch {
+        // Prefetch failures are non-blocking
+      }
+    },
+    [router],
+  );
 
   const handleOutletChange = useCallback(
     (outletId: string) => {
@@ -163,51 +169,55 @@ export default function AppSidebar() {
     return MENU_GROUPS.filter((group) => {
       // Check if group itself is allowed for this outlet type
       return !group.showOn || group.showOn.includes(selectedOutlet.type);
-    }).map((group) => ({
-      ...group,
-      items: group.items
-        .map((item) => {
-          const clonedItem = { ...item };
-          if (clonedItem.id === "products") {
-            clonedItem.name = getDynamicMenuName(selectedOutlet.type);
-          }
-          if (clonedItem.requirePro && !hasProAccess) {
-            clonedItem.badge = "PRO";
-          }
-          return clonedItem;
-        }) // Clone item to avoid mutating original MENU_GROUPS
-        .filter((item) => {
-          // Check if item itself is allowed
-          const itemAllowed =
-            !item.requiredTypes ||
-            item.requiredTypes.includes(selectedOutlet.type);
-          if (!itemAllowed) return false;
+    })
+      .map((group) => ({
+        ...group,
+        items: group.items
+          .map((item) => {
+            const clonedItem = { ...item };
+            if (clonedItem.id === "products") {
+              clonedItem.name = getDynamicMenuName(selectedOutlet.type);
+            }
+            if (clonedItem.requirePro && !hasProAccess) {
+              clonedItem.badge = "PRO";
+            }
+            return clonedItem;
+          }) // Clone item to avoid mutating original MENU_GROUPS
+          .filter((item) => {
+            // Check if item itself is allowed
+            const itemAllowed =
+              !item.requiredTypes ||
+              item.requiredTypes.includes(selectedOutlet.type);
+            if (!itemAllowed) return false;
 
-          // If it has subitems, filter them too
-          if (item.subItems) {
-            const originalSubItems = [...item.subItems];
-            const filteredSubItems = originalSubItems.filter(
-              (sub) =>
-                !sub.requiredTypes ||
-                sub.requiredTypes.includes(selectedOutlet.type),
-            ).map((sub) => {
-              const clonedSub = { ...sub };
-              if (clonedSub.requirePro && !hasProAccess) {
-                clonedSub.badge = "PRO";
-              }
-              return clonedSub;
-            });
+            // If it has subitems, filter them too
+            if (item.subItems) {
+              const originalSubItems = [...item.subItems];
+              const filteredSubItems = originalSubItems
+                .filter(
+                  (sub) =>
+                    !sub.requiredTypes ||
+                    sub.requiredTypes.includes(selectedOutlet.type),
+                )
+                .map((sub) => {
+                  const clonedSub = { ...sub };
+                  if (clonedSub.requirePro && !hasProAccess) {
+                    clonedSub.badge = "PRO";
+                  }
+                  return clonedSub;
+                });
 
-            // If all subitems are filtered out, don't show the parent either
-            if (filteredSubItems.length === 0) return false;
+              // If all subitems are filtered out, don't show the parent either
+              if (filteredSubItems.length === 0) return false;
 
-            // Note: we're creating a shallow copy with filtered subitems
-            item.subItems = filteredSubItems;
-          }
+              // Note: we're creating a shallow copy with filtered subitems
+              item.subItems = filteredSubItems;
+            }
 
-          return true;
-        }),
-    })).filter((group) => group.items.length > 0);
+            return true;
+          }),
+      }))
+      .filter((group) => group.items.length > 0);
   }, [selectedOutlet, hasProAccess]);
   const isHrefActive = useCallback(
     (href?: string) => {
@@ -226,7 +236,7 @@ export default function AppSidebar() {
     >
       {/* Header with Logo */}
       <SidebarHeader className="border-b border-sidebar-border bg-sidebar px-3 py-4">
-        <div className="flex items-center justify-center">
+        <Link href={"/owner"} className="flex items-center justify-center">
           {isCollapsed ? (
             <div className="flex h-10 w-10 items-center justify-center rounded-lg text-primary-foreground">
               <Image
@@ -261,7 +271,7 @@ export default function AppSidebar() {
               />
             </div>
           )}
-        </div>
+        </Link>
 
         {/* Outlet Selector */}
         <div className="mt-4">
@@ -355,16 +365,20 @@ export default function AppSidebar() {
                                     disabled={subItem.disabled}
                                   >
                                     <InstantLink
-                                      href={subItem.disabled ? "#" : subItem.href}
+                                      href={
+                                        subItem.disabled ? "#" : subItem.href
+                                      }
                                       onMouseEnter={() =>
-                                        !subItem.disabled && handlePrefetch(subItem.href)
+                                        !subItem.disabled &&
+                                        handlePrefetch(subItem.href)
                                       }
                                       className={cn(
                                         "cursor-pointer flex items-center w-full px-2 py-1.5 text-sm rounded-md outline-none transition-colors",
                                         isSubActive
                                           ? "bg-primary/10 text-primary font-medium"
                                           : "hover:bg-sidebar-accent focus:bg-sidebar-accent",
-                                        subItem.disabled && "opacity-50 pointer-events-none"
+                                        subItem.disabled &&
+                                          "opacity-50 pointer-events-none",
                                       )}
                                     >
                                       <span>{subItem.name}</span>
@@ -375,13 +389,15 @@ export default function AppSidebar() {
                                         >
                                           {soonText}
                                         </Badge>
-                                      ) : subItem.badge && (
-                                        <Badge
-                                          variant="secondary"
-                                          className="ml-auto rounded-sm px-1.5 py-0 text-[10px]"
-                                        >
-                                          {subItem.badge}
-                                        </Badge>
+                                      ) : (
+                                        subItem.badge && (
+                                          <Badge
+                                            variant="secondary"
+                                            className="ml-auto rounded-sm px-1.5 py-0 text-[10px]"
+                                          >
+                                            {subItem.badge}
+                                          </Badge>
+                                        )
                                       )}
                                     </InstantLink>
                                   </DropdownMenuItem>
@@ -438,15 +454,22 @@ export default function AppSidebar() {
                                         isSubActive
                                           ? "bg-primary/10 text-primary hover:bg-primary/10"
                                           : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                                        subItem.disabled && "opacity-50"
+                                        subItem.disabled && "opacity-50",
                                       )}
                                     >
                                       <InstantLink
-                                        href={subItem.disabled ? "#" : subItem.href}
-                                        onMouseEnter={() =>
-                                          !subItem.disabled && handlePrefetch(subItem.href)
+                                        href={
+                                          subItem.disabled ? "#" : subItem.href
                                         }
-                                        className={subItem.disabled ? "pointer-events-none" : ""}
+                                        onMouseEnter={() =>
+                                          !subItem.disabled &&
+                                          handlePrefetch(subItem.href)
+                                        }
+                                        className={
+                                          subItem.disabled
+                                            ? "pointer-events-none"
+                                            : ""
+                                        }
                                       >
                                         <span>{subItem.name}</span>
                                         {subItem.disabled ? (
@@ -456,13 +479,15 @@ export default function AppSidebar() {
                                           >
                                             {soonText}
                                           </Badge>
-                                        ) : subItem.badge && (
-                                          <Badge
-                                            variant="secondary"
-                                            className="ml-auto text-xs"
-                                          >
-                                            {subItem.badge}
-                                          </Badge>
+                                        ) : (
+                                          subItem.badge && (
+                                            <Badge
+                                              variant="secondary"
+                                              className="ml-auto text-xs"
+                                            >
+                                              {subItem.badge}
+                                            </Badge>
+                                          )
                                         )}
                                       </InstantLink>
                                     </SidebarMenuSubButton>
@@ -491,13 +516,17 @@ export default function AppSidebar() {
                                 isActive
                                   ? "bg-primary/10 text-primary shadow-sm hover:bg-primary/10"
                                   : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                                item.disabled && "opacity-50"
+                                item.disabled && "opacity-50",
                               )}
                             >
                               <InstantLink
                                 href={item.disabled ? "#" : item.href!}
-                                onMouseEnter={() => !item.disabled && handlePrefetch(item.href!)}
-                                className={item.disabled ? "pointer-events-none" : ""}
+                                onMouseEnter={() =>
+                                  !item.disabled && handlePrefetch(item.href!)
+                                }
+                                className={
+                                  item.disabled ? "pointer-events-none" : ""
+                                }
                               >
                                 {isActive && (
                                   <span className="absolute left-0 top-2 h-7 w-1 rounded-r-full bg-primary" />
@@ -511,13 +540,16 @@ export default function AppSidebar() {
                                   >
                                     {soonText}
                                   </Badge>
-                                ) : item.badge && !isCollapsed && (
-                                  <Badge
-                                    variant="secondary"
-                                    className="rounded-sm text-xs"
-                                  >
-                                    {item.badge}
-                                  </Badge>
+                                ) : (
+                                  item.badge &&
+                                  !isCollapsed && (
+                                    <Badge
+                                      variant="secondary"
+                                      className="rounded-sm text-xs"
+                                    >
+                                      {item.badge}
+                                    </Badge>
+                                  )
                                 )}
                                 {isActive && !isCollapsed && (
                                   <ChevronRight className="h-4 w-4 opacity-70" />

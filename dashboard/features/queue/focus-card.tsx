@@ -58,13 +58,6 @@ const STATUS_CONFIG: Record<
         borderColor: "border-primary/30",
         accentColor: "bg-primary",
     },
-    READY: {
-        label: "Siap Dilayani",
-        color: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10",
-        icon: PlayCircle,
-        borderColor: "border-emerald-500/30",
-        accentColor: "bg-emerald-500",
-    },
     ON_GOING: {
         label: "Sedang Dilayani",
         color: "text-blue-600 dark:text-blue-400 bg-blue-500/10",
@@ -93,8 +86,7 @@ const PRIMARY_ACTIONS: Partial<
 > = {
     AWAITING_PAYMENT: { nextStatus: "CONFIRMED", label: "Konfirmasi Pembayaran", variant: "default" },
     PROCESSING: { nextStatus: "CONFIRMED", label: "Konfirmasi", variant: "default" },
-    CONFIRMED: { nextStatus: "READY", label: "Siapkan Antrian", variant: "default" },
-    READY: { nextStatus: "ON_GOING", label: "Mulai Layanan", variant: "default" },
+    CONFIRMED: { nextStatus: "ON_GOING", label: "Mulai Layanan", variant: "default" },
     ON_GOING: { nextStatus: "COMPLETED", label: "Selesaikan Layanan", variant: "default" },
 };
 
@@ -139,7 +131,7 @@ export function FocusCard({
     const primary = PRIMARY_ACTIONS[entry.orderStatus];
     const isTerminal = entry.orderStatus === "COMPLETED" || entry.orderStatus === "CANCELLED";
     const isFuture = isFutureDate(entry.scheduledStart);
-    const NEEDS_TODAY_STATUSES: QueueOrderStatus[] = ["READY", "ON_GOING", "COMPLETED"];
+    const NEEDS_TODAY_STATUSES: QueueOrderStatus[] = ["ON_GOING", "COMPLETED"];
     const blockAction = isFuture && primary && NEEDS_TODAY_STATUSES.includes(primary.nextStatus);
 
     const isAwaitingManualProof =

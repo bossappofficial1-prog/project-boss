@@ -52,7 +52,6 @@ interface QueueEntry {
 
 interface QueueBoard {
   waiting: QueueEntry[];
-  ready: QueueEntry[];
   inProgress: QueueEntry[];
   completed: QueueEntry[];
 }
@@ -60,7 +59,6 @@ interface QueueBoard {
 interface QueueStats {
   totalActive: number;
   waitingCount: number;
-  readyCount: number;
   inProgressCount: number;
   completedToday: number;
   cancelledToday: number;
@@ -189,7 +187,7 @@ export class QueueV2Service {
     enriched.sort((a, b) => a.sortValue - b.sortValue);
 
     // Build board columns with per-service position numbering
-    const board: QueueBoard = { waiting: [], ready: [], inProgress: [], completed: [] };
+    const board: QueueBoard = { waiting: [], inProgress: [], completed: [] };
     const servicePositionCounters = new Map<string, number>();
 
     for (const { order } of enriched) {
@@ -204,8 +202,6 @@ export class QueueV2Service {
 
       if (WAITING_STATUSES.includes(status)) {
         board.waiting.push(entry);
-      } else if (status === OrderStatus.READY) {
-        board.ready.push(entry);
       } else if (status === OrderStatus.ON_GOING || status === OrderStatus.PROCESSING) {
         board.inProgress.push(entry);
       }
@@ -231,7 +227,6 @@ export class QueueV2Service {
     const stats: QueueStats = {
       totalActive: enriched.length,
       waitingCount: board.waiting.length,
-      readyCount: board.ready.length,
       inProgressCount: board.inProgress.length,
       completedToday: board.completed.length,
       cancelledToday: cancelledCount,

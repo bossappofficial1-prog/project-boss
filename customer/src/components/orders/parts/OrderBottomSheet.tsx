@@ -79,13 +79,13 @@ const STATUS_MAP = {
         iconColor: "text-cyan-600 dark:text-cyan-400",
     },
     [OrderStatus.READY]: {
-        icon: PackageCheck,
-        dotColor: "bg-green-500",
-        textColor: "text-green-700 dark:text-green-400",
-        badgeBg: "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800",
-        accentBar: "bg-green-400",
-        iconBg: "bg-green-100 dark:bg-green-900/40",
-        iconColor: "text-green-600 dark:text-green-400",
+        icon: CheckCircle2,
+        dotColor: "bg-cyan-500",
+        textColor: "text-cyan-700 dark:text-cyan-400",
+        badgeBg: "bg-cyan-50 dark:bg-cyan-900/30 border-cyan-200 dark:border-cyan-800",
+        accentBar: "bg-cyan-400",
+        iconBg: "bg-cyan-100 dark:bg-cyan-900/40",
+        iconColor: "text-cyan-600 dark:text-cyan-400",
     },
     [OrderStatus.ON_GOING]: {
         icon: Play,
@@ -192,7 +192,6 @@ export default function OrderBottomSheet({
     const isCalendarEligible =
         hasServiceProduct &&
         (order.orderStatus === OrderStatus.CONFIRMED ||
-            order.orderStatus === OrderStatus.READY ||
             order.orderStatus === OrderStatus.ON_GOING);
 
     const isCancelled = order.orderStatus === OrderStatus.CANCELLED;
@@ -210,7 +209,6 @@ export default function OrderBottomSheet({
             { status: "AWAITING_VERIFICATION", label: t("timeline.awaiting_verification") },
             { status: OrderStatus.PROCESSING, label: t("timeline.processing") },
             { status: OrderStatus.CONFIRMED, label: t("timeline.confirmed_service") },
-            { status: OrderStatus.READY, label: t("timeline.ready_service") },
             { status: OrderStatus.ON_GOING, label: t("timeline.on_going") },
             { status: OrderStatus.COMPLETED, label: t("timeline.completed") },
         ]
@@ -219,7 +217,6 @@ export default function OrderBottomSheet({
             { status: "AWAITING_VERIFICATION", label: t("timeline.awaiting_verification") },
             { status: OrderStatus.PROCESSING, label: t("timeline.processing") },
             { status: OrderStatus.CONFIRMED, label: t("timeline.confirmed") },
-            { status: OrderStatus.READY, label: t("timeline.ready") },
             { status: OrderStatus.COMPLETED, label: t("timeline.completed") },
         ];
 
@@ -231,7 +228,6 @@ export default function OrderBottomSheet({
             : t("status.awaiting_payment"),
         [OrderStatus.PROCESSING]: t("status.processing"),
         [OrderStatus.CONFIRMED]: t("status.confirmed_label"),
-        [OrderStatus.READY]: hasServiceProduct ? t("status.ready_service_label") : t("status.ready_label"),
         [OrderStatus.ON_GOING]: t("status.on_going_label"),
         [OrderStatus.COMPLETED]: t("status.completed_label"),
         [OrderStatus.CANCELLED]: t("status.cancelled_label"),
@@ -583,7 +579,7 @@ export default function OrderBottomSheet({
                                 )}
 
                             {/* Confirm (goods only) */}
-                            {order.orderStatus === OrderStatus.READY && !hasServiceProduct && (
+                            {order.orderStatus === OrderStatus.CONFIRMED && !hasServiceProduct && (
                                 <Button
                                     variant="default"
                                     className="w-full h-11 sm:h-10 text-sm font-semibold gap-2"

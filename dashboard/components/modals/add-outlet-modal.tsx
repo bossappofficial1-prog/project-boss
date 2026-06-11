@@ -135,7 +135,7 @@ export default function AddOutletModal({
         status: outlet.isOpen === true ? "ACTIVE" : "INACTIVE",
         latitude: outlet.latitude || undefined,
         longitude: outlet.longitude || undefined,
-        instagramUrl: (outlet as any).instagramUrl || "",
+        instagramUrl: outlet.instagramUrl || "",
       });
     } else {
       form.reset({

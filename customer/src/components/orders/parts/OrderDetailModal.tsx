@@ -44,11 +44,6 @@ const statusConfig: any = {
     icon: <CheckCircle className="w-4 h-4" />,
     color: "text-cyan-600",
   },
-  READY: {
-    label: "Siap Diambil",
-    icon: <PackageCheck className="w-4 h-4" />,
-    color: "text-green-600",
-  },
   COMPLETED: { label: "Selesai", icon: <CheckCircle className="w-4 h-4" />, color: "text-primary" },
   CANCELLED: {
     label: "Dibatalkan",

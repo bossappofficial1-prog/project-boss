@@ -57,7 +57,7 @@ export async function handlePaymentSuccess(orderId: string) {
     } else if (hasTicket) {
         orderStatus = OrderStatus.COMPLETED;
     } else {
-        orderStatus = OrderStatus.READY;
+        orderStatus = OrderStatus.CONFIRMED;
     }
 
     // Gunakan transaksi Prisma untuk memastikan semua pembaruan berhasil atau tidak sama sekali

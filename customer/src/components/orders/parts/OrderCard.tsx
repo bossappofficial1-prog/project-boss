@@ -32,11 +32,6 @@ const statusConfig: Partial<Record<OrderStatusType, { label: string; icon: JSX.E
         icon: <CheckCircle className="w-3 h-3" />,
         color: "bg-cyan-500",
     },
-    [OrderStatus.READY]: {
-        label: "Siap Diambil",
-        icon: <PackageCheck className="w-3 h-3" />,
-        color: "bg-green-500",
-    },
     [OrderStatus.COMPLETED]: {
         label: "Selesai",
         icon: <CheckCircle className="w-3 h-3" />,

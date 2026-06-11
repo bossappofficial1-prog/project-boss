@@ -1,8 +1,6 @@
 import { BaseService } from "./base.service";
 import { recognize } from "tesseract.js";
-import sharp from "sharp";
 import fs from "fs";
-import axios from "axios";
 import { AppError } from "../errors/app-error";
 import { HttpStatus } from "../constants/http-status";
 
@@ -51,96 +49,8 @@ export class ModerationService extends BaseService {
   }
 
   /**
-   * Analyzes an image for potential nudity or excessive skin exposure locally.
-   * Resizes image to 100x100 for high performance, then applies an RGB Skin Color Heuristic.
-   */
-  static async analyzeSkinToneRatio(imagePath: string): Promise<number> {
-    try {
-      const { data, info } = await sharp(imagePath)
-        .resize(100, 100, { fit: "cover" })
-        .raw()
-        .toBuffer({ resolveWithObject: true });
-
-      let skinPixels = 0;
-      const totalPixels = info.width * info.height;
-
-      // Scan raw pixel buffers (R, G, B sequentially)
-      for (let i = 0; i < data.length; i += info.channels) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-
-        // Standard RGB skin color space boundaries
-        const max = Math.max(r, g, b);
-        const min = Math.min(r, g, b);
-
-        const isSkin =
-          r > 95 &&
-          g > 40 &&
-          b > 20 &&
-          max - min > 15 &&
-          Math.abs(r - g) > 15 &&
-          r > g &&
-          r > b;
-
-        if (isSkin) {
-          skinPixels++;
-        }
-      }
-
-      return skinPixels / totalPixels;
-    } catch (error: any) {
-      console.error("[Moderation] Skin tone analysis failed:", error?.message || error);
-      return 0;
-    }
-  }
-
-  /**
-   * Validates image for safe search/vulgarity using Cloud Vision API if key is present,
-   * or falls back to local OCR + Skin Tone heuristic.
-   */
-  static async checkGoogleVisionSafeSearch(imagePath: string, apiKey: string): Promise<{ isVulgar: boolean; reason?: string }> {
-    try {
-      const fileBuffer = await fs.promises.readFile(imagePath);
-      const base64Image = fileBuffer.toString("base64");
-
-      const response = await axios.post(
-        `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
-        {
-          requests: [
-            {
-              image: { content: base64Image },
-              features: [{ type: "SAFE_SEARCH_DETECTION" }]
-            }
-          ]
-        },
-        { timeout: 5000 }
-      );
-
-      const annotation = response.data?.responses?.[0]?.safeSearchAnnotation;
-      if (annotation) {
-        const { adult, violence, racy } = annotation;
-        const isAdult = adult === "LIKELY" || adult === "VERY_LIKELY";
-        const isRacy = racy === "LIKELY" || racy === "VERY_LIKELY";
-        const isViolent = violence === "LIKELY" || violence === "VERY_LIKELY";
-
-        if (isAdult || isRacy || isViolent) {
-          return {
-            isVulgar: true,
-            reason: `Google Vision SafeSearch: Terdeteksi konten sensitif (${isAdult ? "Adult" : ""}${isRacy ? " Racy" : ""}${isViolent ? " Violence" : ""})`
-          };
-        }
-      }
-      return { isVulgar: false };
-    } catch (error: any) {
-      console.error("[Moderation] Google Vision API failed, falling back to local heuristics:", error?.message || error);
-      return { isVulgar: false }; // fallback to local on API error
-    }
-  }
-
-  /**
-   * Complete, synchronous moderation gate for uploaded image files.
-   * Must be called inside file controllers right after receiving standard files.
+   * Validates uploaded image for toxic text content via OCR.
+   * Vulgar image detection has been removed.
    */
   static async validateUploadedImage(file: Express.Multer.File): Promise<void> {
     const filename = file.originalname.toLowerCase();
@@ -169,41 +79,13 @@ export class ModerationService extends BaseService {
       }
     }
 
-    // 3. Perform Vulgarity/Nudity analysis (Google Vision or Skin tone fallback)
-    const visionApiKey = process.env.GOOGLE_VISION_API_KEY;
-    let vulgarCheck: { isVulgar: boolean; reason?: string } = { isVulgar: false, reason: "" };
-
-    if (visionApiKey) {
-      console.log(`[Moderation] Running Google Cloud Vision check on: ${file.filename}`);
-      vulgarCheck = await this.checkGoogleVisionSafeSearch(file.path, visionApiKey);
-    } else {
-      console.log(`[Moderation] Running local smart skin-tone heuristic check on: ${file.filename}`);
-      const skinRatio = await this.analyzeSkinToneRatio(file.path);
-      console.log(`[Moderation] Image skin-tone ratio: ${(skinRatio * 100).toFixed(2)}%`);
-      
-      // If skin ratio exceeds 85%, flag as potentially vulgar
-      if (skinRatio > 0.85) {
-        vulgarCheck = {
-          isVulgar: true,
-          reason: `Heuristik Lokal: Terlalu banyak menampilkan area kulit terbuka (${(skinRatio * 100).toFixed(0)}%).`
-        };
-      }
-    }
-
-    if (vulgarCheck.isVulgar) {
-      if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
-      throw new AppError(
-        `File ditolak karena terdeteksi mengandung konten vulgar/sensitif. (${vulgarCheck.reason})`,
-        HttpStatus.BAD_REQUEST
-      );
-    }
-
     console.log(`[Moderation] Moderation passed successfully for: ${file.filename}`);
   }
 
   /**
    * Asynchronous background moderation processing.
-   * Scans the file, and if toxic/vulgar content is found, deletes the file and clears database references.
+   * Scans the file for toxic text content via OCR.
+   * Vulgar image detection has been removed.
    */
   static async processBackgroundModeration(filePath: string, filename: string): Promise<void> {
     if (!fs.existsSync(filePath)) {
@@ -231,32 +113,6 @@ export class ModerationService extends BaseService {
         await this.handleFailedModeration(filePath, filename);
         return;
       }
-    }
-
-    // 3. Vulgarity/Nudity check
-    const visionApiKey = process.env.GOOGLE_VISION_API_KEY;
-    let vulgarCheck: { isVulgar: boolean; reason?: string } = { isVulgar: false, reason: "" };
-
-    if (visionApiKey) {
-      console.log(`[Moderation Background] Running Google Cloud Vision check on: ${filename}`);
-      vulgarCheck = await this.checkGoogleVisionSafeSearch(filePath, visionApiKey);
-    } else {
-      console.log(`[Moderation Background] Running local skin-tone heuristic check on: ${filename}`);
-      const skinRatio = await this.analyzeSkinToneRatio(filePath);
-      console.log(`[Moderation Background] Image skin-tone ratio: ${(skinRatio * 100).toFixed(2)}%`);
-      
-      if (skinRatio > 0.85) {
-        vulgarCheck = {
-          isVulgar: true,
-          reason: `Heuristik Lokal: Terlalu banyak menampilkan area kulit terbuka (${(skinRatio * 100).toFixed(0)}%).`
-        };
-      }
-    }
-
-    if (vulgarCheck.isVulgar) {
-      console.warn(`[Moderation Background] File ${filename} rejected. Vulgar content detected: ${vulgarCheck.reason}`);
-      await this.handleFailedModeration(filePath, filename);
-      return;
     }
 
     console.log(`[Moderation Background] Moderation passed successfully for: ${filename}`);

@@ -134,7 +134,6 @@ const serviceQueueStatuses = [
   OrderStatus.AWAITING_PAYMENT,
   OrderStatus.CONFIRMED,
   OrderStatus.PROCESSING,
-  OrderStatus.READY,
   OrderStatus.ON_GOING,
   OrderStatus.COMPLETED,
   OrderStatus.CANCELLED,

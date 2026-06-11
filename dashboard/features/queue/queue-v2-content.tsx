@@ -48,7 +48,6 @@ const STATUS_LABELS: Record<string, string> = {
   AWAITING_PAYMENT: "Menunggu Bayar",
   CONFIRMED: "Dikonfirmasi",
   PROCESSING: "Diproses",
-  READY: "Siap Dilayani",
   ON_GOING: "Sedang Dilayani",
   COMPLETED: "Selesai",
   CANCELLED: "Dibatalkan",

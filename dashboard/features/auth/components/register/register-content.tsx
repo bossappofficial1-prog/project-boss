@@ -142,6 +142,9 @@ export default function RegistrationContent() {
 
             const invoiceId = data.data?.invoice?.id;
 
+            // Invalidate auth query to refresh user data with new businessId
+            await queryClient.invalidateQueries({ queryKey: ['auth-me'] });
+
             if (formData.selectedPlan === 'TRIAL') {
                 router.push('/owner');
             } else if (invoiceId) {

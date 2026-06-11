@@ -72,13 +72,13 @@ const STATUS_CONFIG = {
         iconColor: "text-cyan-600 dark:text-cyan-400",
     },
     [OrderStatus.READY]: {
-        icon: PackageCheck,
-        dotColor: "bg-green-500",
-        textColor: "text-green-700 dark:text-green-400",
-        badgeBg: "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800",
-        accentBar: "bg-green-400",
-        iconBg: "bg-green-100 dark:bg-green-900/40",
-        iconColor: "text-green-600 dark:text-green-400",
+        icon: CheckCircle2,
+        dotColor: "bg-cyan-500",
+        textColor: "text-cyan-700 dark:text-cyan-400",
+        badgeBg: "bg-cyan-50 dark:bg-cyan-900/30 border-cyan-200 dark:border-cyan-800",
+        accentBar: "bg-cyan-400",
+        iconBg: "bg-cyan-100 dark:bg-cyan-900/40",
+        iconColor: "text-cyan-600 dark:text-cyan-400",
     },
     [OrderStatus.ON_GOING]: {
         icon: Play,
@@ -145,9 +145,6 @@ export const EnhancedOrderCard = memo(function EnhancedOrderCard({
             : t("status.awaiting_payment"),
         [OrderStatus.PROCESSING]: t("status.processing"),
         [OrderStatus.CONFIRMED]: t("status.confirmed_label"),
-        [OrderStatus.READY]: hasServiceProduct
-            ? t("status.ready_service_label")
-            : t("status.ready_label"),
         [OrderStatus.ON_GOING]: t("status.on_going_label"),
         [OrderStatus.COMPLETED]: t("status.completed_label"),
         [OrderStatus.CANCELLED]: t("status.cancelled_label"),
@@ -168,7 +165,6 @@ export const EnhancedOrderCard = memo(function EnhancedOrderCard({
     const isCalendarEligible =
         hasServiceProduct &&
         (order.orderStatus === OrderStatus.CONFIRMED ||
-            order.orderStatus === OrderStatus.READY ||
             order.orderStatus === OrderStatus.ON_GOING);
 
     const showCountdown =
@@ -210,14 +206,6 @@ export const EnhancedOrderCard = memo(function EnhancedOrderCard({
                 break;
             case OrderStatus.PROCESSING:
             case OrderStatus.CONFIRMED:
-                actions.push({
-                    label: t("actions.contact"),
-                    icon: Phone,
-                    action: "contact",
-                    variant: "outline",
-                });
-                break;
-            case OrderStatus.READY:
                 actions.push({
                     label: t("actions.contact"),
                     icon: Phone,

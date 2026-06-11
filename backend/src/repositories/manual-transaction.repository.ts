@@ -139,7 +139,7 @@ export class ManualTransactionRepository {
 
   static async updateOrderAmounts(
     orderId: string,
-    data: { totalAmount: number; taxAmount?: number },
+    data: { totalAmount: number; taxAmount?: number; createdAt?: Date },
   ): Promise<void> {
     await db.order.update({ where: { id: orderId }, data });
   }

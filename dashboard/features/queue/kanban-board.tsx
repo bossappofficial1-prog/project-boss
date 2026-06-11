@@ -21,12 +21,6 @@ const COLUMNS = [
         accent: "bg-amber-500",
     },
     {
-        key: "ready" as const,
-        title: "Siap Dilayani",
-        icon: <Clock className="w-4 h-4 text-emerald-500" />,
-        accent: "bg-emerald-500",
-    },
-    {
         key: "inProgress" as const,
         title: "Sedang Dilayani",
         icon: <Play className="w-4 h-4 text-primary" />,
@@ -44,7 +38,7 @@ export function KanbanBoard({ board, onPrimaryAction, onCancel, onDetail, onView
     return (
         <>
             {/* Desktop: horizontal columns */}
-            <div className="hidden lg:grid lg:grid-cols-4 gap-3">
+            <div className="hidden lg:grid lg:grid-cols-3 gap-3">
                 {COLUMNS.map((col) => (
                     <KanbanColumn
                         key={col.key}

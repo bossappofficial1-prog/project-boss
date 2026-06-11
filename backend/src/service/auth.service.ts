@@ -232,7 +232,7 @@ export class AuthService extends BaseService {
     });
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, pin, ...staffWithoutSensitive } = staff;
+    const { pin, ...staffWithoutSensitive } = staff;
 
     return {
       staff: {

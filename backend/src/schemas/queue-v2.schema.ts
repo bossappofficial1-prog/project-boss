@@ -6,7 +6,6 @@ export const transitionQueueStatusSchema = z
             "AWAITING_PAYMENT",
             "CONFIRMED",
             "PROCESSING",
-            "READY",
             "ON_GOING",
             "COMPLETED",
             "CANCELLED",

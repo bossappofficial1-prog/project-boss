@@ -100,6 +100,7 @@ export class ManualTransactionService extends BaseService {
       customerType: "GUEST",
       paymentStatus: PaymentStatus.SUCCESS,
       orderStatus: OrderStatus.COMPLETED,
+      createdAt: input.transactionDate,
       items: {
         create: input.items.map((item) => {
           const product = productMap.get(item.productId)!;
@@ -285,9 +286,13 @@ export class ManualTransactionService extends BaseService {
       });
     }
 
-    // Update transaction date
+    // Update transaction date (both Transaction and Order)
     if (input.transactionDate) {
       await ManualTransactionRepository.updateTransaction(transactionId, {
+        createdAt: input.transactionDate,
+      });
+      await ManualTransactionRepository.updateOrderAmounts(order.id, {
+        totalAmount: order.totalAmount,
         createdAt: input.transactionDate,
       });
     }

@@ -115,7 +115,7 @@ export function ServiceFocusView({
                             <Button 
                                 size="lg" 
                                 className="h-12 px-8 font-bold text-[10px] uppercase tracking-[0.2em] shadow-none rounded-md mt-4"
-                                onClick={() => onPrimaryAction(upNext[0], upNext[0].orderStatus === 'READY' ? 'ON_GOING' : 'READY')}
+                                onClick={() => onPrimaryAction(upNext[0], 'ON_GOING')}
                             >
                                 <UserPlus className="w-4 h-4 mr-3" />
                                 Panggil Antrean #{upNext[0].position}

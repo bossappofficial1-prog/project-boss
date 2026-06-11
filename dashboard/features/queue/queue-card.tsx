@@ -34,11 +34,6 @@ const STATUS_CONFIG: Record<
         color: "bg-primary/10 text-primary",
         borderColor: "border-l-primary",
     },
-    READY: {
-        label: "Siap Dilayani",
-        color: "bg-emerald-500/10 text-emerald-500",
-        borderColor: "border-l-emerald-500",
-    },
     ON_GOING: {
         label: "Sedang Dilayani",
         color: "bg-primary/10 text-primary",
@@ -61,8 +56,7 @@ const PRIMARY_ACTIONS: Partial<
 > = {
     AWAITING_PAYMENT: { nextStatus: "CONFIRMED", label: "Konfirmasi", variant: "default" },
     PROCESSING: { nextStatus: "CONFIRMED", label: "Konfirmasi", variant: "default" },
-    CONFIRMED: { nextStatus: "READY", label: "Siapkan", variant: "default" },
-    READY: { nextStatus: "ON_GOING", label: "Mulai Layanan", variant: "default" },
+    CONFIRMED: { nextStatus: "ON_GOING", label: "Mulai Layanan", variant: "default" },
     ON_GOING: { nextStatus: "COMPLETED", label: "Selesaikan", variant: "default" },
 };
 
@@ -103,7 +97,7 @@ function formatShortDate(dateStr: string): string {
 }
 
 // Transitions beyond PROCESSING require today's date
-const NEEDS_TODAY_STATUSES: QueueOrderStatus[] = ["READY", "ON_GOING", "COMPLETED"];
+const NEEDS_TODAY_STATUSES: QueueOrderStatus[] = ["ON_GOING", "COMPLETED"];
 
 export function QueueCard({ 
     entry, 

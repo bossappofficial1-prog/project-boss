@@ -30,7 +30,6 @@ const STATUS_CONFIG: Record<
     AWAITING_PAYMENT: { label: "Menunggu Bayar", variant: "warning" },
     CONFIRMED: { label: "Dikonfirmasi", variant: "secondary" },
     PROCESSING: { label: "Diproses", variant: "secondary" },
-    READY: { label: "Siap Dilayani", variant: "success" },
     ON_GOING: { label: "Sedang Dilayani", variant: "default" },
     COMPLETED: { label: "Selesai", variant: "success" },
     CANCELLED: { label: "Dibatalkan", variant: "destructive" },
@@ -41,8 +40,7 @@ const PRIMARY_ACTIONS: Partial<
 > = {
     AWAITING_PAYMENT: { nextStatus: "CONFIRMED", label: "Konfirmasi Pesanan" },
     PROCESSING: { nextStatus: "CONFIRMED", label: "Konfirmasi Antrian" },
-    CONFIRMED: { nextStatus: "READY", label: "Tandai Siap" },
-    READY: { nextStatus: "ON_GOING", label: "Mulai Layanan" },
+    CONFIRMED: { nextStatus: "ON_GOING", label: "Mulai Layanan" },
     ON_GOING: { nextStatus: "COMPLETED", label: "Selesaikan Layanan" },
 };
 
@@ -104,7 +102,7 @@ function getPaymentLabel(method: string | null): string {
     return PAYMENT_LABELS[method.toLowerCase()] ?? method;
 }
 
-const NEEDS_TODAY: QueueOrderStatus[] = ["READY", "ON_GOING", "COMPLETED"];
+const NEEDS_TODAY: QueueOrderStatus[] = ["ON_GOING", "COMPLETED"];
 
 function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
     return (

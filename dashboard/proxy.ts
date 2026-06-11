@@ -172,12 +172,20 @@ export async function proxy(req: NextRequest) {
   }
 
   /**
-   * USER BELUM MEMBUAT BISNIS
    * arahkan ke step=2
    */
   if (role === "OWNER" && !businessId) {
     if (!pathname.startsWith("/auth/register") || !searchParams.get("step")) {
-      return NextResponse.redirect(new URL("/auth/register?step=2", req.url));
+      const params = new URLSearchParams({
+        step: payload.isVerified ? "2" : "1",
+        isVerified: String(payload.isVerified ?? false),
+        email: String(payload.email),
+      });
+      if (payload.provider) params.set("provider", payload.provider as string);
+      if (payload.name) params.set("name", payload.name as string);
+      return NextResponse.redirect(
+        new URL(`/auth/register?${params.toString()}`, req.url),
+      );
     }
   }
 
