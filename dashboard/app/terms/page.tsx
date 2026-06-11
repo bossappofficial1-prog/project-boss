@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 
 const TERMS_CONTENT = `
 # Syarat dan Ketentuan
-**Terakhir diperbarui:** 6 Juni 2026
+**Terakhir diperbarui:** 11 Juni 2026
 
 ---
 
@@ -124,7 +124,7 @@ Syarat dan Ketentuan ini tunduk pada dan ditafsirkan sesuai dengan hukum Negara 
 ### 13. Hubungi Kami
 Jika Anda memiliki pertanyaan, keluhan, atau memerlukan bantuan terkait Syarat dan Ketentuan ini atau layanan Platform, silakan hubungi tim support kami melalui:
 
-* Email: [support@bossapp.id](mailto:support@bossapp.id)
+* Email: [bossappofficial1@gmail.com](mailto:bossappofficial1@gmail.com)
 * Situs Web Utama: [bossapp.id](https://bossapp.id)
 `;
 

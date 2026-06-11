@@ -382,9 +382,8 @@ export default function AccountingPage() {
             onClick={handleAddRow}
             size="sm"
             variant="outline"
-            className="h-8"
           >
-            <Plus className="w-3.5 h-3.5 mr-1" /> Tambah Baris
+            <Plus className="w-3.5 h-3.5" /> Tambah Baris
           </Button>
         </div>
 
@@ -547,9 +546,8 @@ export default function AccountingPage() {
           <div className="flex items-center gap-2">
             <Button
               onClick={() => setEditingAccount({ id: acc.id, name: acc.name })}
-              size="icon"
+              size="icon-sm"
               variant="ghost"
-              className="h-8 w-8 hover:bg-muted text-muted-foreground"
             >
               <Pencil className="w-3.5 h-3.5" />
             </Button>
@@ -671,10 +669,10 @@ export default function AccountingPage() {
       />
 
       {/* ══════════ Main Tabs Bar ══════════ */}
-      <div className="flex border-b border-border/60 bg-card rounded-md shadow-sm p-1 pl-1 pr-1 gap-1">
+      <div className="flex border-b border-border/60 bg-card rounded-md shadow-sm p-1 gap-1 overflow-x-auto hide-scrollbar">
         <button
           onClick={() => setActiveTab("coa")}
-          className={`flex items-center gap-2 rounded-sm px-4 py-2.5 text-sm font-semibold transition-all ${
+          className={`flex items-center gap-2 rounded-sm px-4 py-2.5 text-sm font-semibold whitespace-nowrap transition-all ${
             activeTab === "coa"
               ? "bg-primary text-primary-foreground shadow-sm"
               : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"
@@ -684,17 +682,17 @@ export default function AccountingPage() {
         </button>
         <button
           onClick={() => setActiveTab("journal")}
-          className={`flex items-center gap-2 rounded-sm px-4 py-2.5 text-sm font-semibold transition-all ${
+          className={`flex items-center gap-2 rounded-sm px-4 py-2.5 text-sm font-semibold whitespace-nowrap transition-all ${
             activeTab === "journal"
               ? "bg-primary text-primary-foreground shadow-sm"
               : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"
           }`}
         >
-          <BookOpen className="w-4 h-4" /> Jurnal Umum (Buku Besar)
+          <BookOpen className="w-4 h-4" /> Jurnal Umum
         </button>
         <button
           onClick={() => setActiveTab("reports")}
-          className={`flex items-center gap-2 rounded-sm px-4 py-2.5 text-sm font-semibold transition-all ${
+          className={`flex items-center gap-2 rounded-sm px-4 py-2.5 text-sm font-semibold whitespace-nowrap transition-all ${
             activeTab === "reports"
               ? "bg-primary text-primary-foreground shadow-sm"
               : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"
@@ -746,28 +744,27 @@ export default function AccountingPage() {
       {activeTab === "reports" && (
         <div className="space-y-6">
           {/* Inner Report Switching Tabs */}
-          <div className="flex rounded-md border p-1 bg-muted/20 w-full sm:w-fit gap-1">
+          <div className="flex rounded-md border p-1 bg-muted/20 w-full sm:w-fit gap-1 overflow-x-auto hide-scrollbar">
             <button
               onClick={() => setReportType("balance-sheet")}
-              className={`flex-1 sm:flex-initial rounded-sm px-4 py-1.5 text-xs font-bold transition-all ${
+              className={`flex-1 sm:flex-initial rounded-sm px-4 py-1.5 text-xs font-bold whitespace-nowrap transition-all ${
                 reportType === "balance-sheet"
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground"
               }`}
             >
               <Activity className="w-3.5 h-3.5 mr-1 inline-block" /> Neraca
-              Keuangan (Balance Sheet)
+              Keuangan
             </button>
             <button
               onClick={() => setReportType("profit-loss")}
-              className={`flex-1 sm:flex-initial rounded-sm px-4 py-1.5 text-xs font-bold transition-all ${
+              className={`flex-1 sm:flex-initial rounded-sm px-4 py-1.5 text-xs font-bold whitespace-nowrap transition-all ${
                 reportType === "profit-loss"
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground"
               }`}
             >
               <TrendingUp className="w-3.5 h-3.5 mr-1 inline-block" /> Laba Rugi
-              Lanjut (P&L)
             </button>
           </div>
 

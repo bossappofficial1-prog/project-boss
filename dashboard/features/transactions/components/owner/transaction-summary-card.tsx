@@ -35,7 +35,7 @@ export function TransactionSummaryCard({
 
   return (
     <Card className="rounded-md border-border/80 bg-background shadow-sm p-1 pl-4 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-8 py-2 overflow-x-auto no-scrollbar">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-8 py-2 overflow-x-auto hide-scrollbar">
         <div className="flex items-center gap-3 shrink-0">
           <div className="w-1 h-8 rounded-full bg-emerald-500/80" />
           <div>
@@ -78,7 +78,7 @@ export function TransactionSummaryCard({
             <p
               className={cn(
                 "text-base font-bold tabular-nums leading-none",
-                margin >= 0 ? "text-blue-600" : "text-orange-600"
+                margin >= 0 ? "text-blue-600 dark:text-blue-400" : "text-orange-600 dark:text-orange-400"
               )}
             >
               {formatCurrency(margin)}
@@ -103,7 +103,6 @@ export function TransactionSummaryCard({
           variant="ghost"
           size="icon"
           onClick={onRefresh}
-          className="h-9 w-9 rounded-md hover:bg-muted/50 transition-all text-muted-foreground"
         >
           <RefreshCw
             className={cn("w-4 h-4", isFetching && "animate-spin")}

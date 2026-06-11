@@ -143,7 +143,7 @@ export class EmailTemplates {
         <div class="email-footer">
             <p class="footer-text">
                 Terima kasih telah menggunakan BOSS App<br>
-                Jika Anda memiliki pertanyaan, hubungi tim support kami di <a href="mailto:support@bossapp.id" class="footer-link">support@bossapp.id</a>
+                Jika Anda memiliki pertanyaan, hubungi tim support kami di <a href="mailto:bossappofficial1@gmail.com" class="footer-link">bossappofficial1@gmail.com</a>
             </p>
         </div>
     </div>
@@ -295,7 +295,7 @@ export class EmailTemplates {
         <div class="email-footer">
             <p class="footer-text">
                 Terima kasih telah menggunakan BOSS App<br>
-                Jika Anda memiliki pertanyaan, hubungi tim support kami di <a href="mailto:support@bossapp.id" class="footer-link">support@bossapp.id</a>
+                Jika Anda memiliki pertanyaan, hubungi tim support kami di <a href="mailto:bossappofficial1@gmail.com" class="footer-link">bossappofficial1@gmail.com</a>
             </p>
         </div>
     </div>
@@ -487,7 +487,7 @@ export class EmailTemplates {
         <div class="email-footer">
             <p class="footer-text">
                 Terima kasih telah menggunakan BOSS App<br>
-                Jika Anda memiliki pertanyaan, hubungi tim support kami di <a href="mailto:support@bossapp.id" class="footer-link">support@bossapp.id</a>
+                Jika Anda memiliki pertanyaan, hubungi tim support kami di <a href="mailto:bossappofficial1@gmail.com" class="footer-link">bossappofficial1@gmail.com</a>
             </p>
         </div>
     </div>

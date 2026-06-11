@@ -315,19 +315,21 @@ export default function TransactionsPage() {
           title="Riwayat Transaksi"
           description="Pantau arus kas masuk dan keluar bisnis Anda secara real-time."
           actions={
-            <div className="flex items-center gap-2">
-              <Button onClick={openCreateModal} size="lg">
+            <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar">
+              <Button onClick={openCreateModal} size="sm">
                 <Plus className="w-4 h-4" />
-                Tambah Transaksi
+                <span className="hidden sm:inline">Tambah Transaksi</span>
+                <span className="sm:hidden">Tambah</span>
               </Button>
               <Button
                 onClick={() => setShowExportDialog(true)}
                 disabled={totalTransactions === 0 || isLoading}
                 variant="outline"
-                size="lg"
+                size="sm"
               >
                 <Mail className="w-4 h-4" />
-                E-Statement Resmi
+                <span className="hidden sm:inline">E-Statement Resmi</span>
+                <span className="sm:hidden">E-Statement</span>
               </Button>
             </div>
           }

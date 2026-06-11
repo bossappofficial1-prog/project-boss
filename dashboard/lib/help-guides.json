@@ -1109,6 +1109,60 @@
       ],
       "tip": "Fitur Self-Order QR sangat efektif menghemat tenaga pelayan dan meminimalkan kesalahan pencatatan menu saat jam sibuk.",
       "requirePro": true
+    },
+    {
+      "id": "staff-attendance",
+      "role": "owner",
+      "category": "outlets",
+      "title": "Memantau Laporan Absensi Karyawan",
+      "description": "Cara memantau kehadiran staf yang menggunakan Face Recognition dan validasi lokasi GPS dari dashboard owner.",
+      "icon": "UserCheck",
+      "steps": [
+        {
+          "title": "Buka Menu Laporan Absensi",
+          "desc": "Klik menu 'Laporan Absensi' di bagian grup 'Manajemen Outlet' pada menu sebelah kiri dashboard owner."
+        },
+        {
+          "title": "Pilih Outlet dan Periode",
+          "desc": "Pilih outlet yang ingin dipantau dan tentukan rentang tanggal untuk melihat data absensi staf pada periode tersebut."
+        },
+        {
+          "title": "Lihat Data Kehadiran",
+          "desc": "Sistem menampilkan daftar absensi staf lengkap dengan waktu check-in/check-out, foto verifikasi wajah, dan lokasi GPS saat absen."
+        },
+        {
+          "title": "Ekspor Laporan",
+          "desc": "Klik tombol 'Export' untuk mengunduh data absensi dalam format CSV yang bisa digunakan untuk penggajian atau keperluan HR."
+        }
+      ],
+      "tip": "Pastikan semua staf sudah mendaftarkan wajah mereka melalui aplikasi kasir agar sistem Face Recognition dapat berfungsi dengan optimal."
+    },
+    {
+      "id": "transfer-outlet-owner",
+      "role": "owner",
+      "category": "outlets",
+      "title": "Transfer Kepemilikan Outlet",
+      "description": "Cara mentransfer kepemilikan outlet ke akun owner lain dengan proses verifikasi yang aman.",
+      "icon": "ArrowRightLeft",
+      "steps": [
+        {
+          "title": "Buka Menu Transfer Outlet",
+          "desc": "Klik menu 'Transfer Outlet' di bagian grup 'Manajemen Outlet' pada menu sebelah kiri dashboard owner."
+        },
+        {
+          "title": "Pilih Outlet yang Akan Ditransfer",
+          "desc": "Pilih outlet yang ingin Anda transfer dari daftar outlet yang tersedia di akun Anda."
+        },
+        {
+          "title": "Masukkan Email Penerima",
+          "desc": "Masukkan alamat email akun owner yang akan menerima kepemilikan outlet tersebut. Pastikan email sudah terdaftar di BOSS."
+        },
+        {
+          "title": "Konfirmasi Transfer",
+          "desc": "Sistem akan mengirimkan permintaan transfer ke penerima. Penerima harus menerima permintaan dalam waktu 7 hari atau transfer akan dibatalkan otomatis."
+        }
+      ],
+      "warning": "Setelah transfer berhasil, Anda tidak lagi memiliki akses ke outlet tersebut. Semua data produk, staf, dan transaksi akan berpindah ke akun penerima."
     }
   ]
 }

@@ -50,22 +50,32 @@ const FAQ_ITEMS = [
   {
     question: "Apakah bisa dipakai di HP / smartphone?",
     answer:
-      "Ya, BOSS berbasis web dan responsif — bisa diakses dari browser HP, tablet, maupun komputer tanpa perlu instalasi apapun.",
+      "Ya, BOSS berbasis web dan responsif — bisa diakses dari browser HP, tablet, maupun komputer tanpa perlu instalasi apapun. Juga bisa diinstal sebagai PWA (Progressive Web App) untuk akses lebih cepat.",
   },
   {
     question: "Apakah mendukung pembayaran digital?",
     answer:
-      "Ya, BOSS mendukung QRIS, Virtual Account, dan pembayaran manual. Pelanggan bisa bayar dari aplikasi, kasir memproses, dan semua transaksi tercatat otomatis.",
+      "Ya, BOSS mendukung QRIS, Virtual Account, dan pembayaran manual transfer bank. Pelanggan bisa bayar dari aplikasi, kasir memproses, dan semua transaksi tercatat otomatis.",
   },
   {
     question: "Bisa untuk jenis bisnis apa saja?",
     answer:
-      "BOSS cocok untuk warung makan, kafe, toko retail, barbershop, salon, laundry, apotek, service bisnis, dan hampir semua jenis UMKM di Indonesia.",
+      "BOSS cocok untuk warung makan, kafe, toko retail, barbershop, salon, laundry, apotek, service bisnis, event & tiket, dan hampir semua jenis UMKM di Indonesia. Setiap tipe bisnis punya fitur yang disesuaikan.",
   },
   {
     question: "Apakah bisa untuk banyak cabang?",
     answer:
       "Ya, paket Basic sudah mendukung 2 outlet, dan Pro mendukung outlet dan staff tanpa batas. Pantau semua cabang dari satu dashboard, transfer stok antar outlet, dan kelola akses terpusat.",
+  },
+  {
+    question: "Bagaimana sistem absensi karyawan?",
+    answer:
+      "BOSS memiliki sistem absensi dengan Face Recognition (pengenalan wajah) dan validasi lokasi GPS. Karyawan bisa absen masuk dan pulang langsung dari HP. Semua data absensi tercatat dan bisa dipantau owner dari dashboard.",
+  },
+  {
+    question: "Apakah ada sistem akuntansi?",
+    answer:
+      "Ya, paket Pro memiliki sistem akuntansi double-entry lengkap dengan Bagan Akun (COA), Jurnal Umum, Buku Besar, dan Neraca Keuangan. Semua transaksi tercatat otomatis dan laporan bisa diekspor.",
   },
   {
     question: "Apa itu Kitchen Display System?",
@@ -80,7 +90,17 @@ const FAQ_ITEMS = [
   {
     question: "Apakah data bisnis saya aman?",
     answer:
-      "Keamanan adalah prioritas kami. Data Anda dienkripsi, disimpan di server cloud aman, dan ada backup otomatis. Setiap akses staff tercatat untuk audit trail lengkap.",
+      "Keamanan adalah prioritas kami. Data Anda dienkripsi, disimpan di server cloud aman, dan ada backup otomatis. Setiap akses staff tercatat untuk audit trail lengkap. Kami patuh terhadap UU Pelindungan Data Pribadi (PDP) Indonesia.",
+  },
+  {
+    question: "Apakah bisa integrasi dengan Google Calendar?",
+    answer:
+      "Ya, BOSS bisa terhubung dengan Google Calendar untuk sinkronisasi reservasi dan booking secara otomatis. Pelanggan juga bisa menerima notifikasi via WhatsApp.",
+  },
+  {
+    question: "Bagaimana jika internet terputus?",
+    answer:
+      "Aplikasi kasir BOSS bisa berjalan offline saat internet terputus. Transaksi tersimpan lokal dan otomatis sinkron saat koneksi pulih. Tidak ada transaksi yang hilang.",
   },
 ];
 
@@ -186,6 +206,14 @@ const FEATURES_ITEMS = [
       },
       {
         icon: `<svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+        </svg>`,
+        title: "Akuntansi Lanjut",
+        description: `Sistem akuntansi double-entry dengan Bagan Akun (COA), Jurnal Umum, Buku Besar, dan Neraca Keuangan. Export laporan lengkap.`,
+        subFeatures: ["Chart of Accounts", "Jurnal Umum", "Buku Besar", "Neraca"],
+      },
+      {
+        icon: `<svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm0 14a4 4 0 1 1 4-4 4 4 0 0 1-4 4Z" />
         </svg>`,
         title: "Tools & AI",
@@ -200,6 +228,14 @@ const FEATURES_ITEMS = [
         title: "Multi Outlet",
         description: `Kelola banyak cabang dari satu akun. Transfer stok antar outlet, pantau semua performa, dan atur akses staff terpusat.`,
         subFeatures: ["Transfer Stok", "Dashboard Gabungan", "Akses Staff"],
+      },
+      {
+        icon: `<svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>`,
+        title: "Transfer Outlet",
+        description: `Transfer kepemilikan outlet ke akun owner lain. Proses aman dengan verifikasi dan audit trail lengkap.`,
+        subFeatures: ["Transfer Kepemilikan", "Verifikasi", "Audit Trail"],
       },
     ],
   },

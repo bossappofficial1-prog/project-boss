@@ -49,7 +49,7 @@ export function TransactionFilterBar({
           placeholder="Cari transaksi (ID, Deskripsi)..."
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-9 h-10 text-xs font-bold bg-background/50 border-border/40 focus:border-primary/40 focus:ring-primary/10 transition-all"
+          className="pl-9 h-9 text-xs"
         />
         {searchTerm && (
           <button
@@ -61,9 +61,9 @@ export function TransactionFilterBar({
         )}
       </div>
 
-      <div className="flex items-center gap-3 w-full md:w-auto">
+      <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto hide-scrollbar">
         <Select value={type} onValueChange={onTypeChange}>
-          <SelectTrigger className="h-10 w-[140px] text-[10px] font-bold bg-background/50 border-border/40">
+          <SelectTrigger className="h-9 w-[130px] text-xs">
             <SelectValue placeholder="Tipe" />
           </SelectTrigger>
           <SelectContent>
@@ -78,7 +78,7 @@ export function TransactionFilterBar({
             value={outletId || "all"}
             onValueChange={(v) => onOutletIdChange(v === "all" ? "" : v)}
           >
-            <SelectTrigger className="h-10 w-[180px] text-[10px] font-bold bg-background/50 border-border/40">
+            <SelectTrigger className="h-9 w-[160px] text-xs">
               <SelectValue placeholder="Outlet" />
             </SelectTrigger>
             <SelectContent>
@@ -96,7 +96,7 @@ export function TransactionFilterBar({
           value={status || "all"}
           onValueChange={(v) => onStatusChange(v === "all" ? "" : v)}
         >
-          <SelectTrigger className="h-10 w-[140px] text-[10px] font-bold bg-background/50 border-border/40">
+          <SelectTrigger className="h-9 w-[130px] text-xs">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -111,11 +111,10 @@ export function TransactionFilterBar({
         {hasActiveFilters && (
           <Button
             variant="ghost"
-            size="icon"
+            size="icon-sm"
             onClick={onResetFilters}
-            className="h-10 w-10 text-rose-500 hover:bg-rose-500/10 hover:text-rose-600 transition-all"
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4 text-destructive" />
           </Button>
         )}
       </div>

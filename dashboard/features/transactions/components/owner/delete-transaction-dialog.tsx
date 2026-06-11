@@ -47,22 +47,27 @@ export function DeleteTransactionDialog({
         <div className="space-y-3 mt-2">
           <div className="rounded-md border border-border/60 bg-muted/30 p-3 space-y-1.5 font-sans">
             <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground font-medium">Deskripsi</span>
-              <span className="font-semibold text-foreground truncate max-w-[200px]">
+              <span className="text-muted-foreground font-medium">
+                Deskripsi
+              </span>
+              <span className="font-semibold text-foreground truncate max-w-50">
                 {transaction.description}
               </span>
             </div>
             <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground font-medium">Total Pembayaran</span>
+              <span className="text-muted-foreground font-medium">
+                Total Pembayaran
+              </span>
               <span className="font-bold text-foreground">
-                Rp{" "}
-                {new Intl.NumberFormat("id-ID").format(transaction.amount)}
+                Rp {new Intl.NumberFormat("id-ID").format(transaction.amount)}
               </span>
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-muted-foreground font-medium">Metode</span>
               <span className="font-semibold text-foreground uppercase text-[10px]">
-                {transaction.manualMethod || transaction.paymentMethod || "Online"}
+                {transaction.manualMethod ||
+                  transaction.paymentMethod ||
+                  "Online"}
               </span>
             </div>
           </div>

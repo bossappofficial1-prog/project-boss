@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 const PRIVACY_CONTENT = `
 # Kebijakan Privasi
 
-**Terakhir diperbarui: 6 Juni 2026**
+**Terakhir diperbarui: 11 Juni 2026**
 
 ### 1. Pendahuluan
 
@@ -102,7 +102,7 @@ Sesuai dengan ketentuan Undang-Undang Perlindungan Data Pribadi (UU PDP) yang be
 * Meminta penghapusan atau pemusnahan data pribadi Anda (dengan konsekuensi penghentian layanan Platform Anda).
 * Menarik persetujuan Anda atas pemrosesan data pribadi tertentu, termasuk mencabut akses OAuth Google Calendar atau WhatsApp.
 
-Untuk mengajukan permintaan penghapusan data atau pelaksanaan hak perlindungan data lainnya, silakan hubungi kami melalui email resmi di **[support@bossapp.id](mailto:support@bossapp.id)**.
+Untuk mengajukan permintaan penghapusan data atau pelaksanaan hak perlindungan data lainnya, silakan hubungi kami melalui email resmi di **[bossappofficial1@gmail.com](mailto:bossappofficial1@gmail.com)**.
 
 ---
 
@@ -116,7 +116,7 @@ Kebijakan Privasi ini dapat diperbarui dari waktu ke waktu untuk menyesuaikan de
 
 Jika Anda memiliki kekhawatiran, pertanyaan, atau keluhan terkait dengan cara kami mengelola Kebijakan Privasi ini atau data pribadi Anda, silakan hubungi Data Protection / Support Officer kami melalui:
 
-* **Email:** [support@bossapp.id](mailto:support@bossapp.id)
+* **Email:** [bossappofficial1@gmail.com](mailto:bossappofficial1@gmail.com)
 * **Alamat Surat:** PT BOSS APP INDONESIA, Jakarta, Indonesia
 `;
 export default function PrivacyPage() {
