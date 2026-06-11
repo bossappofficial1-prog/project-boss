@@ -65,12 +65,12 @@ export function PendingInvoiceCard({ pendingInvoice, onCancel, isCancelling }: P
                 )}
 
                 <div className="flex flex-col gap-3 sm:flex-row pt-2">
-                    <Button asChild className="flex-1 h-12 gap-2 font-black uppercase tracking-widest text-xs bg-amber-600 hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-600 shadow-sm transition-all active:scale-95">
+                    <Button asChild size="lg" className="flex-1">
                         <Link href={`/subscription/payment/${pendingInvoice.id}`}>
                             Selesaikan Pembayaran Sekarang <ArrowRight className="h-3.5 w-3.5" />
                         </Link>
                     </Button>
-                    <Button asChild variant="outline" className="flex-1 h-12 gap-2 font-bold uppercase tracking-widest text-xs border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 shadow-none transition-all active:scale-95">
+                    <Button asChild variant="outline" size="lg" className="flex-1">
                         <Link href="/subscription/verification-pending">
                             Lihat Status Verifikasi <ExternalLink className="h-3.5 w-3.5" />
                         </Link>
@@ -78,9 +78,9 @@ export function PendingInvoiceCard({ pendingInvoice, onCancel, isCancelling }: P
                     {pendingInvoice.status === 'PENDING' && onCancel && (
                         <Button
                             variant="ghost"
+                            size="lg"
                             disabled={isCancelling}
                             onClick={() => onCancel(pendingInvoice.id)}
-                            className="h-12 px-6 font-bold uppercase tracking-widest text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-500/10 transition-all active:scale-95"
                         >
                             {isCancelling ? 'Membatalkan...' : 'Batalkan'}
                         </Button>

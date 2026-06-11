@@ -440,11 +440,10 @@ export default function AccountingPage() {
                 <Button
                   type="button"
                   onClick={() => handleRemoveRow(index)}
-                  size="icon"
+                  size="icon-sm"
                   variant="ghost"
-                  className="h-8 w-8 text-rose-500 hover:bg-rose-50 hover:text-rose-600"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-4 h-4 text-destructive" />
                 </Button>
               </div>
             </div>
@@ -557,11 +556,10 @@ export default function AccountingPage() {
             {!acc.isSystem && (
               <Button
                 onClick={() => setDeleteAccountId(acc.id)}
-                size="icon"
+                size="icon-sm"
                 variant="ghost"
-                className="h-8 w-8 text-rose-500 hover:bg-rose-50"
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 className="w-3.5 h-3.5 text-destructive" />
               </Button>
             )}
           </div>
@@ -632,11 +630,10 @@ export default function AccountingPage() {
         return (
           <Button
             onClick={() => setDeleteJournalId(entry.id)}
-            size="icon"
+            size="icon-sm"
             variant="ghost"
-            className="h-8 w-8 text-rose-500 hover:bg-rose-50"
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <Trash2 className="w-3.5 h-3.5 text-destructive" />
           </Button>
         );
       },
@@ -654,18 +651,18 @@ export default function AccountingPage() {
             {activeTab === "coa" && (
               <Button
                 onClick={() => setAccountDialogOpen(true)}
-                className="font-bold text-xs h-10 shadow-none"
+                size="lg"
               >
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus className="w-4 h-4" />
                 Tambah Akun Baru
               </Button>
             )}
             {activeTab === "journal" && (
               <Button
                 onClick={() => setJournalDialogOpen(true)}
-                className="font-bold text-xs h-10 shadow-none"
+                size="lg"
               >
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus className="w-4 h-4" />
                 Catat Jurnal Manual
               </Button>
             )}

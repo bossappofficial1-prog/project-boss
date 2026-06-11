@@ -14,7 +14,8 @@ import OutletsSection from "@/features/owner/dashboard/outlets-section";
 import { PageSkeleton } from "@/features/owner/dashboard/skeletons";
 import { Card } from "@/components/ui/card";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/apis/base";
+import { outletManagementApi } from "@/lib/api";
+import { toast } from "sonner";
 import { PageGuide } from "@/features/guides/components/page-guide";
 
 export default function DashboardPage() {
@@ -29,11 +30,70 @@ export default function DashboardPage() {
   } = useDashboardData();
   const queryClient = useQueryClient();
   const { mutateAsync: updateStatusOutletMutate } = useMutation({
-    mutationFn: async ({ outletId, status }: { outletId: string; status: boolean }) => {
-      return apiClient.put(`/outlets/${outletId}`, { isOpen: status });
+    mutationFn: async ({
+      outletId,
+      status,
+    }: {
+      outletId: string;
+      status: boolean;
+    }) => {
+      return outletManagementApi.update(outletId, { isOpen: status });
     },
-    onSuccess: () => {
+    onMutate: async ({ outletId, status }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["outlets"] });
+      await queryClient.cancelQueries({ queryKey: ["dashboard"] });
+
+      // Snapshot previous value
+      const previousOutlets = queryClient.getQueryData(["outlets"]);
+      const previousDashboard = queryClient.getQueryData(["dashboard"]);
+
+      // Optimistically update outlets cache
+      queryClient.setQueryData(["outlets"], (old: any) => {
+        if (!old) return old;
+        if (Array.isArray(old)) {
+          return old.map((outlet: any) =>
+            outlet.id === outletId ? { ...outlet, isOpen: status } : outlet
+          );
+        }
+        if (old.data && Array.isArray(old.data)) {
+          return {
+            ...old,
+            data: old.data.map((outlet: any) =>
+              outlet.id === outletId ? { ...outlet, isOpen: status } : outlet
+            ),
+          };
+        }
+        return old;
+      });
+
+      // Optimistically update dashboard cache
+      queryClient.setQueryData(["dashboard"], (old: any) => {
+        if (!old?.outlets) return old;
+        return {
+          ...old,
+          outlets: old.outlets.map((outlet: any) =>
+            outlet.id === outletId ? { ...outlet, isOpen: status } : outlet
+          ),
+        };
+      });
+
+      return { previousOutlets, previousDashboard };
+    },
+    onError: (_err, _variables, context) => {
+      // Rollback on error
+      if (context?.previousOutlets) {
+        queryClient.setQueryData(["outlets"], context.previousOutlets);
+      }
+      if (context?.previousDashboard) {
+        queryClient.setQueryData(["dashboard"], context.previousDashboard);
+      }
+      toast.error("Gagal mengubah status outlet");
+    },
+    onSettled: () => {
+      // Always refetch after error or success
       queryClient.invalidateQueries({ queryKey: ["outlets"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 
@@ -181,10 +241,7 @@ export default function DashboardPage() {
                   kepercayaan pelanggan pada outlet Anda.
                 </p>
                 <div className="pt-4 flex flex-wrap justify-center sm:justify-start gap-3">
-                  <Button
-                    onClick={() => setShowBusinessModal(true)}
-                    className="gap-2 font-bold uppercase tracking-wider text-xs px-6 py-5 rounded-md shadow-lg shadow-red-500/20"
-                  >
+                  <Button onClick={() => setShowBusinessModal(true)} size="lg">
                     Lengkapi Profil Bisnis Sekarang
                   </Button>
                 </div>
@@ -218,13 +275,13 @@ export default function DashboardPage() {
 
         {/* Bank owner info empty card if business exists but no bank */}
         {business && !(business.bankName && business.bankAccount) && (
-          <Card className="rounded-md overflow-hidden border-2 border-dashed border-emerald-200 bg-emerald-500/5 p-6 sm:p-8 animate-fade-in group hover:bg-emerald-500/10 transition-colors">
+          <Card className="rounded-md gap-0 py-0 overflow-hidden border-2 border-dashed border-foreground bg-emerald-500/5 p-6 sm:p-8 animate-fade-in group hover:bg-emerald-500/10 transition-colors">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
               <div className="p-4 rounded-full bg-emerald-500/10 text-emerald-600 group-hover:scale-110 transition-transform shadow-sm border border-emerald-500/20">
                 <CreditCard className="h-10 w-10" />
               </div>
               <div className="flex-1 text-center sm:text-left space-y-2">
-                <h2 className="text-xl font-black text-foreground tracking-tight text-emerald-700">
+                <h2 className="text-xl font-black text-foreground tracking-tight">
                   Metode Penarikan Belum Siap
                 </h2>
                 <p className="text-sm text-muted-foreground max-w-lg leading-relaxed">
@@ -233,10 +290,7 @@ export default function DashboardPage() {
                   outlet ke rekening pribadi atau perusahaan Anda.
                 </p>
                 <div className="pt-4 flex flex-wrap justify-center sm:justify-start gap-3">
-                  <Button
-                    onClick={() => setShowBankModal(true)}
-                    className="gap-2 font-bold uppercase tracking-wider text-xs px-6 py-5 rounded-md shadow-lg shadow-emerald-500/20 bg-emerald-600 hover:bg-emerald-700 text-white border-none"
-                  >
+                  <Button onClick={() => setShowBankModal(true)} size="lg">
                     Atur Rekening Penarikan
                   </Button>
                 </div>

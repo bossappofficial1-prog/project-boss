@@ -98,7 +98,9 @@ export const MENU_GROUPS: MenuGroup[] = [
         name: "Asisten AI",
         href: "/owner/ai-analyst",
         icon: Sparkles,
-        disabled: process.env.NODE_ENV === "production" || process.env.NEXT_PUBLIC_APP_ENV === "production",
+        disabled:
+          process.env.NODE_ENV === "production" ||
+          process.env.NEXT_PUBLIC_APP_ENV === "production",
       },
       {
         id: "subscription",
@@ -133,7 +135,7 @@ export const MENU_GROUPS: MenuGroup[] = [
         id: "transfer-outlet",
         icon: ArrowRightLeft,
         name: "Transfer Outlet",
-        href: "/owner/outlets-transfer",
+        href: "/owner/transfer-outlet",
       },
       {
         id: "kelola-meja",

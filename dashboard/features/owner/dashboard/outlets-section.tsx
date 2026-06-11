@@ -2,7 +2,13 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { useOutletStore } from "@/stores/outlet.store";
 import { toast } from "sonner";
@@ -21,7 +27,7 @@ import {
   Store,
   Link2,
   ArrowRight,
-  LayoutDashboard
+  LayoutDashboard,
 } from "lucide-react";
 import { copyToClipboard } from "@/lib/url";
 import { useRouter } from "next/navigation";
@@ -32,7 +38,10 @@ interface OutletsSectionProps {
   onAddOutlet: () => void;
   onEditOutlet?: (outlet: Outlet) => void;
   onDeleteOutlet?: (outlet: Outlet) => void;
-  onToggleOutletActive?: (outlet: Outlet, isActive: boolean) => Promise<void> | void;
+  onToggleOutletActive?: (
+    outlet: Outlet,
+    isActive: boolean,
+  ) => Promise<void> | void;
   isLoading?: boolean;
 }
 
@@ -60,19 +69,24 @@ export default function OutletsSection({
 
   const handleCopy = async (outletSlug: string) => {
     try {
-      await copyToClipboard(`${process.env.NEXT_PUBLIC_CUSTOMER_URL}/outlet/${outletSlug}`);
-      toast.success('Link outlet berhasil disalin');
+      await copyToClipboard(
+        `${process.env.NEXT_PUBLIC_CUSTOMER_URL}/outlet/${outletSlug}`,
+      );
+      toast.success("Link outlet berhasil disalin");
     } catch {
-      toast.error('Gagal menyalin link');
+      toast.error("Gagal menyalin link");
     }
   };
 
-  const handleToOutletDashboard = (outlet: Outlet, e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+  const handleToOutletDashboard = (
+    outlet: Outlet,
+    e: React.MouseEvent<HTMLDivElement, MouseEvent>,
+  ) => {
     e.preventDefault();
     e.stopPropagation();
     router.push(`/owner/outlets`);
     setSelectedOutlet(outlet);
-  }
+  };
 
   const handleToggleOutletActive = async (outlet: Outlet, checked: boolean) => {
     if (!onToggleOutletActive) return;
@@ -92,9 +106,10 @@ export default function OutletsSection({
         </div>
         <CardTitle className="text-xl font-bold">Belum Ada Outlet</CardTitle>
         <CardDescription className="max-w-xs mt-2">
-          Tambahkan outlet pertama Anda untuk mulai mengelola bisnis dan menerima pesanan.
+          Tambahkan outlet pertama Anda untuk mulai mengelola bisnis dan
+          menerima pesanan.
         </CardDescription>
-        <Button onClick={onAddOutlet} className="mt-6 gap-2">
+        <Button onClick={onAddOutlet} className="mt-6">
           <Plus className="h-4 w-4" /> Tambah Outlet Pertama
         </Button>
       </Card>
@@ -102,21 +117,27 @@ export default function OutletsSection({
   }
 
   return (
-    <Card className="rounded-md gap-0 py-0 overflow-hidden border-border/60 shadow-md bg-gradient-to-b from-background to-muted/5">
+    <Card className="rounded-md gap-0 py-0 overflow-hidden border-border/60 shadow-md bg-linear-to-b from-background to-muted/5">
       <CardHeader className="flex flex-row items-center justify-between border-b border-border/40 bg-muted/20 p-4 sm:p-6">
         <div className="flex items-center gap-4">
           <div className="hidden sm:flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-sm">
             <Store className="h-6 w-6" />
           </div>
           <div className="space-y-1">
-            <CardTitle className="text-xl font-bold tracking-tight">Manajemen Outlet</CardTitle>
+            <CardTitle className="text-xl font-bold tracking-tight">
+              Manajemen Outlet
+            </CardTitle>
             <CardDescription className="text-xs font-medium">
               {outlets.length} outlet terdaftar dalam ekosistem bisnis Anda.
             </CardDescription>
           </div>
         </div>
-        <Button onClick={onAddOutlet} disabled={isLoading} size="sm" className="gap-2 font-bold text-xs uppercase tracking-wider rounded-md">
-          {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+        <Button onClick={onAddOutlet} disabled={isLoading} size="sm">
+          {isLoading ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Plus className="h-3.5 w-3.5" />
+          )}
           Tambah Outlet
         </Button>
       </CardHeader>
@@ -135,7 +156,7 @@ export default function OutletsSection({
                   "group relative flex flex-col p-5 rounded-xl border-2 transition-all duration-300 cursor-pointer overflow-hidden",
                   isSelected
                     ? "border-primary bg-primary/5 shadow-lg shadow-primary/5 scale-[1.02]"
-                    : "border-border bg-background hover:border-primary/40 hover:shadow-md"
+                    : "border-border bg-background hover:border-primary/40 hover:shadow-md",
                 )}
               >
                 {/* Selection Pulse */}
@@ -151,21 +172,31 @@ export default function OutletsSection({
                 <div className="flex items-start gap-4 mb-4">
                   <div className="relative shrink-0">
                     {outlet.image ? (
-                      <img src={outlet.image} alt={outlet.name} className="h-14 w-14 rounded-xl object-cover shadow-sm border border-border/50" />
+                      <img
+                        src={outlet.image}
+                        alt={outlet.name}
+                        className="h-14 w-14 rounded-xl object-cover shadow-sm border border-border/50"
+                      />
                     ) : (
-                      <div className={cn(
-                        "h-14 w-14 rounded-xl flex items-center justify-center shadow-sm border border-border/50",
-                        isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                      )}>
+                      <div
+                        className={cn(
+                          "h-14 w-14 rounded-xl flex items-center justify-center shadow-sm border border-border/50",
+                          isSelected
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-muted-foreground",
+                        )}
+                      >
                         <Building2 className="h-7 w-7" />
                       </div>
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h3 className={cn(
-                      "text-base font-bold truncate pr-16",
-                      isSelected ? "text-primary" : "text-foreground"
-                    )}>
+                    <h3
+                      className={cn(
+                        "text-base font-bold truncate pr-16",
+                        isSelected ? "text-primary" : "text-foreground",
+                      )}
+                    >
                       {outlet.name}
                     </h3>
                     <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1 mt-1 truncate">
@@ -179,46 +210,65 @@ export default function OutletsSection({
                     <div className="flex items-center gap-2">
                       <Switch
                         checked={isOutletActive}
-                        onCheckedChange={(checked) => handleToggleOutletActive(outlet, checked)}
+                        onCheckedChange={(checked) =>
+                          handleToggleOutletActive(outlet, checked)
+                        }
                         disabled={togglingOutletId === outlet.id}
                         onClick={(e) => e.stopPropagation()}
                         className="scale-75 origin-left"
                       />
-                      <span className={cn(
-                        "text-[10px] font-bold uppercase tracking-widest",
-                        isOutletActive ? "text-emerald-600" : "text-muted-foreground"
-                      )}>
-                        {isOutletActive ? 'AKTIF' : 'NONAKTIF'}
+                      <span
+                        className={cn(
+                          "text-[10px] font-bold uppercase tracking-widest",
+                          isOutletActive
+                            ? "text-emerald-600"
+                            : "text-muted-foreground",
+                        )}
+                      >
+                        {isOutletActive ? "AKTIF" : "NONAKTIF"}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1.5">
                       <Button
-                        variant="ghost" size="icon" className="h-7 w-7 rounded-md"
-                        onClick={(e) => { e.stopPropagation(); onEditOutlet?.(outlet); }}
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditOutlet?.(outlet);
+                        }}
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
                       <Button
-                        variant="ghost" size="icon" className="h-7 w-7 rounded-md"
-                        onClick={(e) => { e.stopPropagation(); handleCopy(outlet.slug!); }}
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCopy(outlet.slug!);
+                        }}
                       >
                         <Link2 className="h-3.5 w-3.5" />
                       </Button>
                       <Button
-                        variant="ghost" size="icon" className="h-7 w-7 rounded-md text-red-500 hover:text-red-600 hover:bg-red-50"
-                        onClick={(e) => { e.stopPropagation(); onDeleteOutlet?.(outlet); }}
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteOutlet?.(outlet);
+                        }}
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
                       </Button>
                     </div>
                   </div>
 
-                  <div className={cn(
-                    "flex items-center justify-between text-[10px] font-bold py-2 px-3 rounded-lg border transition-colors",
-                    isSelected
-                      ? "bg-primary/10 border-primary/20 text-primary"
-                      : "bg-muted/50 border-border/50 text-muted-foreground"
-                  )}
+                  <div
+                    className={cn(
+                      "flex items-center justify-between text-[10px] font-bold py-2 px-3 rounded-lg border transition-colors",
+                      isSelected
+                        ? "bg-primary/10 border-primary/20 text-primary"
+                        : "bg-muted/50 border-border/50 text-muted-foreground",
+                    )}
                     onClick={(e) => handleToOutletDashboard(outlet, e)}
                   >
                     <span className="flex items-center gap-1.5 uppercase tracking-widest">

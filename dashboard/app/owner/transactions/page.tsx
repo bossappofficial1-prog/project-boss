@@ -13,7 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import { authApi } from "@/lib/api";
 import { useDirectDeleteTransaction } from "@/hooks/api/use-transaction-delete";
 import { toast } from "sonner";
-import { Plus, Mail, Trash2 } from "lucide-react";
+import { Plus, Mail, Trash2, Pencil, Eye } from "lucide-react";
 import { format, subMonths } from "date-fns";
 import { usePathname } from "next/navigation";
 import {
@@ -24,7 +24,8 @@ import {
   EStatementDialog,
   ProofPreviewDialog,
   DeleteTransactionDialog,
-  ManualTransactionModal,
+  ManualTransactionFormModal,
+  TransactionDetailSheet,
 } from "@/features/transactions";
 
 export default function TransactionsPage() {
@@ -32,7 +33,12 @@ export default function TransactionsPage() {
   const isManagerView = pathname?.startsWith("/manager") ?? false;
 
   const { outlets, selectedOutletId } = useOutletStore();
-  const { useTransactionList, useCreateManualTransaction } = useTransactions();
+  const {
+    useTransactionList,
+    useCreateManualTransaction,
+    useUpdateManualTransaction,
+    useDeleteManualTransaction,
+  } = useTransactions();
 
   const { data: cashierData } = useQuery({
     queryKey: ["cashier-auth"],
@@ -47,19 +53,35 @@ export default function TransactionsPage() {
       return privName === "TRANSACTION_DELETE";
     }) ?? false;
 
-  const [transactionToDelete, setTransactionToDelete] = useState<any | null>(null);
+  const [transactionToDelete, setTransactionToDelete] = useState<any | null>(
+    null,
+  );
   const directDeleteMutation = useDirectDeleteTransaction();
 
   const [showManualModal, setShowManualModal] = useState(false);
+  const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const createManualTransactionMutation = useCreateManualTransaction();
 
+  const [editingTransaction, setEditingTransaction] = useState<any | null>(
+    null,
+  );
+  const updateManualTransactionMutation = useUpdateManualTransaction();
+
+  const [detailTransaction, setDetailTransaction] = useState<any | null>(null);
+
+  const [showDeleteManualConfirm, setShowDeleteManualConfirm] = useState(false);
+  const [deletingManualTransaction, setDeletingManualTransaction] = useState<
+    any | null
+  >(null);
+  const deleteManualTransactionMutation = useDeleteManualTransaction();
+
   const [outletId, setOutletId] = useState<string>(
-    isManagerView ? selectedOutletId || "" : ""
+    isManagerView ? selectedOutletId || "" : "",
   );
   const [status, setStatus] = useState<string>("");
   const [type, setType] = useState<string>("ALL");
   const [startDate, setStartDate] = useState<string>(
-    subMonths(new Date(), 1).toISOString()
+    subMonths(new Date(), 1).toISOString(),
   );
   const [endDate, setEndDate] = useState<string>(new Date().toISOString());
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -119,6 +141,65 @@ export default function TransactionsPage() {
     }
   };
 
+  const handleEditManualTransactionSubmit = async ({
+    transactionId,
+    payload,
+  }: {
+    transactionId: string;
+    payload: any;
+  }) => {
+    try {
+      await updateManualTransactionMutation.mutateAsync({
+        transactionId,
+        payload,
+      });
+      setShowManualModal(false);
+      setEditingTransaction(null);
+      refetch();
+    } catch (err: any) {
+      console.error("Failed to update manual transaction:", err);
+    }
+  };
+
+  const handleFormSubmit = async (payload: any) => {
+    if (formMode === "edit" && payload.transactionId) {
+      await handleEditManualTransactionSubmit(payload);
+    } else {
+      await handleManualTransactionSubmit(payload);
+    }
+  };
+
+  const openCreateModal = () => {
+    setFormMode("create");
+    setEditingTransaction(null);
+    setShowManualModal(true);
+  };
+
+  const openEditModal = (transaction: any) => {
+    setFormMode("edit");
+    setEditingTransaction(transaction);
+    setShowManualModal(true);
+  };
+
+  const handleDeleteManualConfirm = () => {
+    if (!deletingManualTransaction) return;
+    deleteManualTransactionMutation.mutate(deletingManualTransaction.id, {
+      onSuccess: () => {
+        toast.success("Transaksi manual berhasil dihapus.");
+        setShowDeleteManualConfirm(false);
+        setDeletingManualTransaction(null);
+        refetch();
+      },
+      onError: (err: any) => {
+        toast.error(
+          err?.response?.data?.message ||
+            err?.message ||
+            "Gagal menghapus transaksi manual",
+        );
+      },
+    });
+  };
+
   const handleDeleteConfirm = (reason: string) => {
     if (!transactionToDelete) return;
     directDeleteMutation.mutate(
@@ -133,17 +214,17 @@ export default function TransactionsPage() {
           toast.error(
             err?.response?.data?.message ||
               err?.message ||
-              "Gagal menghapus transaksi"
+              "Gagal menghapus transaksi",
           );
         },
-      }
+      },
     );
   };
 
   const handleExportPDF = (start: string, end: string) => {
     exportReport.mutate(
       { startDate: start, endDate: end },
-      { onSuccess: () => setShowExportDialog(false) }
+      { onSuccess: () => setShowExportDialog(false) },
     );
   };
 
@@ -157,13 +238,14 @@ export default function TransactionsPage() {
   const columns = useMemo(
     () =>
       getTransactionColumns({
-        onProofPreview: (url, txn) => setProofPreview({ url, transaction: txn }),
+        onProofPreview: (url, txn) =>
+          setProofPreview({ url, transaction: txn }),
       }),
-    []
+    [],
   );
 
   const hasActiveFilters = Boolean(
-    outletId || status || type !== "ALL" || searchTerm
+    outletId || status || type !== "ALL" || searchTerm,
   );
 
   return (
@@ -234,19 +316,17 @@ export default function TransactionsPage() {
           description="Pantau arus kas masuk dan keluar bisnis Anda secara real-time."
           actions={
             <div className="flex items-center gap-2">
-              <Button
-                onClick={() => setShowManualModal(true)}
-                className="font-bold text-xs h-10 shadow-none bg-emerald-600 hover:bg-emerald-500 text-white"
-              >
-                <Plus className="w-4 h-4 mr-2" />
+              <Button onClick={openCreateModal} size="lg">
+                <Plus className="w-4 h-4" />
                 Tambah Transaksi
               </Button>
               <Button
                 onClick={() => setShowExportDialog(true)}
                 disabled={totalTransactions === 0 || isLoading}
-                className="font-bold text-xs h-10 shadow-none bg-rose-600 hover:bg-rose-500 text-white"
+                variant="outline"
+                size="lg"
               >
-                <Mail className="w-4 h-4 mr-2" />
+                <Mail className="w-4 h-4" />
                 E-Statement Resmi
               </Button>
             </div>
@@ -302,20 +382,50 @@ export default function TransactionsPage() {
           enableExport
           exportFilename={`transaksi-${format(new Date(), "yyyy-MM-dd")}`}
           exportConfig={getTransactionExportConfig()}
-          rowActions={
-            isManagerView && hasDeletePrivilege
-              ? (row) => [
-                  {
-                    label: "Hapus Transaksi",
-                    icon: Trash2,
-                    variant: "destructive" as const,
-                    onClick: (row: any) => {
-                      setTransactionToDelete(row);
-                    },
-                  },
-                ]
-              : undefined
-          }
+          rowActions={(row: any) => {
+            const actions: Array<{
+              label: string;
+              icon: any;
+              variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+              onClick: (row: any) => void;
+            }> = [];
+
+            actions.push({
+              label: "Detail",
+              icon: Eye,
+              onClick: (r: any) => setDetailTransaction(r),
+            });
+
+            if (row.isManual && !isManagerView) {
+              actions.push({
+                label: "Edit Transaksi",
+                icon: Pencil,
+                onClick: (r: any) => openEditModal(r),
+              });
+              actions.push({
+                label: "Hapus Transaksi",
+                icon: Trash2,
+                variant: "destructive",
+                onClick: (r: any) => {
+                  setDeletingManualTransaction(r);
+                  setShowDeleteManualConfirm(true);
+                },
+              });
+            }
+
+            if (isManagerView && hasDeletePrivilege) {
+              actions.push({
+                label: "Hapus Transaksi",
+                icon: Trash2,
+                variant: "destructive",
+                onClick: (r: any) => {
+                  setTransactionToDelete(r);
+                },
+              });
+            }
+
+            return actions;
+          }}
           actionViewType="dropdown"
         />
       </div>
@@ -341,12 +451,41 @@ export default function TransactionsPage() {
         onOpenChange={(open) => !open && setProofPreview(null)}
       />
 
-      <ManualTransactionModal
+      <ManualTransactionFormModal
         open={showManualModal}
-        onOpenChange={setShowManualModal}
+        onOpenChange={(open) => {
+          setShowManualModal(open);
+          if (!open) setEditingTransaction(null);
+        }}
         outletId={outletId || selectedOutletId || ""}
-        onSubmit={handleManualTransactionSubmit}
-        isLoading={createManualTransactionMutation.isPending}
+        mode={formMode}
+        transaction={editingTransaction}
+        onSubmit={handleFormSubmit}
+        isLoading={
+          formMode === "edit"
+            ? updateManualTransactionMutation.isPending
+            : createManualTransactionMutation.isPending
+        }
+      />
+
+      <TransactionDetailSheet
+        transaction={detailTransaction}
+        open={Boolean(detailTransaction)}
+        onOpenChange={(open) => {
+          if (!open) setDetailTransaction(null);
+        }}
+      />
+
+      <DeleteTransactionDialog
+        transaction={deletingManualTransaction}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowDeleteManualConfirm(false);
+            setDeletingManualTransaction(null);
+          }
+        }}
+        onConfirm={handleDeleteManualConfirm}
+        isPending={deleteManualTransactionMutation.isPending}
       />
     </div>
   );

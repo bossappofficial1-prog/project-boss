@@ -2,21 +2,57 @@ read skills @.agents/skills/ui-guidelines-dashbord if you work on dahboard
 
 ## Backend Coding Standards
 
-Ketika menulis kode di folder `backend/`, WAJIB ikuti pola class-based:
+Ketika menulis kode di folder `backend/`, WAJIB ikuti pola class-based dengan **Dependency Injection (Awilix)**:
 
-- **Controller** → extends `BaseController` (`src/controller/base.controller.ts`)
-- **Service** → extends `BaseService` (`src/service/base.service.ts`)
-- **Repository** → class dengan static methods, satu-satunya layer yang boleh akses `db` (Prisma)
+- **Controller** → extends `BaseController`, menerima service via constructor
+- **Service** → extends `BaseService`, menerima repository via constructor
+- **Repository** → extends `BaseRepository`, menerima `db` (Prisma) via constructor
 
 ### Aturan Utama:
 
-1. Service TIDAK BOLEH langsung akses Prisma (`db`) — semua lewat Repository
-2. Controller TIDAK BOLEH punya business logic — hanya extract request + panggil service
-3. Semua response pakai `ResponseUtil`
-4. Error handling pakai `AppError`
-5. Validasi input pakai Zod schema di middleware
+1. Repository TIDAK BOLEH import `db` langsung — gunakan `this.db` dari constructor
+2. Service TIDAK BOLEH langsung akses Prisma (`db`) — semua lewat Repository
+3. Controller TIDAK BOLEH punya business logic — hanya extract request + panggil service
+4. Semua response pakai `ResponseUtil`
+5. Error handling pakai `AppError`
+6. Validasi input pakai Zod schema di middleware
+7. Semua dependency di-register di `src/container.ts`
+8. Route resolve controller dari container
 
-Referensi lengkap: `.github/instructions/backend-coding-standards.md`
+### Standar DI Pattern:
+
+```typescript
+// Repository
+export class UserRepository extends BaseRepository {
+  async findById(id: string) {
+    return this.db.user.findUnique({ where: { id } });
+  }
+}
+
+// Service
+export class AuthService extends BaseService {
+  constructor(private userRepo: UserRepository) { super(); }
+  async login(email: string) {
+    const user = await this.userRepo.findByEmail(email);
+    if (!user) this.notFound("User tidak ditemukan");
+  }
+}
+
+// Controller
+export class AuthController extends BaseController {
+  constructor(private authService: AuthService) { super(); }
+  login = this.handler(async (req, res) => {
+    const result = await this.authService.login(req.body.email);
+    return this.success(res, result);
+  });
+}
+
+// Route
+const authController = container.resolve("authController");
+router.post("/login", authController.login);
+```
+
+Referensi lengkap: `docs/di-pattern.md`
 
 Untuk struktur folder pada folder dashboard adalah seperti dibawah ini:
 

@@ -90,9 +90,9 @@ export default function BookingCalendar() {
             <SectionHeader title="Kalender Booking" description="Jadwal slot layanan berdasarkan minggu atau hari" icon={CalendarDays} />
             <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex items-center gap-1">
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={handlePrev}><ChevronLeft className="h-4 w-4" /></Button>
-                    <Button variant="outline" size="sm" className="h-8 text-sm" onClick={handleToday}>Hari ini</Button>
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleNext}><ChevronRight className="h-4 w-4" /></Button>
+                    <Button variant="outline" size="icon-sm" onClick={handlePrev}><ChevronLeft className="h-4 w-4" /></Button>
+                    <Button variant="outline" size="sm" onClick={handleToday}>Hari ini</Button>
+                    <Button variant="outline" size="icon-sm" onClick={handleNext}><ChevronRight className="h-4 w-4" /></Button>
                 </div>
                 <span className="text-sm font-medium text-foreground">{rangeLabel}</span>
                 <div className="ml-auto flex items-center gap-2">

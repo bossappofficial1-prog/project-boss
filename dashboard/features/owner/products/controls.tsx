@@ -24,15 +24,15 @@ export default function ProductsControls({
   return (
     <>
       <div className="flex flex-col sm:flex-row gap-3">
-        <Button onClick={() => hasOutlet && onAdd()} disabled={!hasOutlet} className={`${hasOutlet ? 'text-white hover:shadow-lg' : 'cursor-not-allowed'}`}>
+        <Button onClick={() => hasOutlet && onAdd()} disabled={!hasOutlet}>
           <Plus />
           Tambah Produk/Jasa
         </Button>
-        <Button onClick={() => hasOutlet && onImport()} disabled={!hasOutlet} className={` ${hasOutlet ? 'bg-green-500 cursor-pointer hover:bg-green-600 text-white hover:shadow-md' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}>
+        <Button onClick={() => hasOutlet && onImport()} disabled={!hasOutlet} variant="secondary">
           <Import />
           Import Data
         </Button>
-        <Button onClick={onExport} className="bg-orange-500 hover:bg-orange-600 cursor-pointer">
+        <Button onClick={onExport} variant="outline">
           <DownloadCloud />
           Export Data
         </Button>

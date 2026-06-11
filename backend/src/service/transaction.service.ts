@@ -81,7 +81,10 @@ export async function getTransactionListService(params: TransactionListParams) {
       status: transaction.status,
       description: `Penjualan - ${transaction.order.guestCustomer?.name || "Customer"}`,
       paymentMethod: transaction.paymentMethod,
-      cashier: transaction.order.handledByStaff?.name ?? transaction.verifiedBy?.name ?? "Owner",
+      cashier:
+        transaction.order.handledByStaff?.name ??
+        transaction.verifiedBy?.name ??
+        "Owner",
       isManual: transaction.isManual,
       manualMethod: transaction.manualMethod,
       paymentProofUrl: transaction.paymentProofUrl,
@@ -101,6 +104,7 @@ export async function getTransactionListService(params: TransactionListParams) {
         guestCustomer: transaction.order.guestCustomer,
         items: transaction.order.items.map((item: any) => ({
           id: item.id,
+          productId: item.productId,
           quantity: item.quantity,
           priceAtTimeOfOrder: item.priceAtTimeOfOrder,
           product: item.product,

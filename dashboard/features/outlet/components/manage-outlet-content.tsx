@@ -18,15 +18,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import MapPicker from "@/components/ui/map-picker";
 import { toast } from "sonner";
 import OperatingHoursModal from "@/components/operating-hours-modal";
@@ -43,6 +42,12 @@ import {
 } from "@/components/ui/reuseable-form";
 import { z } from "zod";
 import { useUserData } from "@/hooks/use-user-data";
+import { OutletHero } from "./outlet-hero";
+import {
+  OutletInfoCard,
+  OutletInfoField,
+  OutletStatusGrid,
+} from "./outlet-info-card";
 
 const outletSchema = z.object({
   name: z.string().min(1, "Nama outlet wajib diisi"),
@@ -62,56 +67,15 @@ type OutletFormValues = z.infer<typeof outletSchema>;
 
 function ManageOutletSkeleton() {
   return (
-    <div className="space-y-4 animate-fade-in">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-border/40">
-        <div className="space-y-2">
-          <Skeleton className="h-10 w-64 rounded-md" />
-          <Skeleton className="h-4 w-96 rounded-full opacity-50" />
-        </div>
-        <div className="flex gap-2">
-          <Skeleton className="h-10 w-32 rounded-md" />
-          <Skeleton className="h-10 w-32 rounded-md" />
-        </div>
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <Skeleton className="h-10 w-64 rounded-md" />
+        <Skeleton className="h-5 w-96 rounded-md" />
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 space-y-4">
-          <Card className="rounded-md gap-0 py-0 overflow-hidden border-border/40 bg-muted/5">
-            <Skeleton className="h-56 w-full rounded-t-md" />
-            <CardContent className="p-6 space-y-4">
-              <Skeleton className="h-8 w-1/2 rounded-md" />
-              <Skeleton className="h-16 w-full rounded-md opacity-40" />
-            </CardContent>
-          </Card>
-          <Card className="rounded-md border-border/40 bg-muted/5">
-            <CardHeader className="gap-0 pt-4">
-              <Skeleton className="h-6 w-48 rounded-md" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {[...Array(3)].map((_, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-4 p-3 rounded-lg bg-muted/20"
-                >
-                  <Skeleton className="h-10 w-10 rounded-md shrink-0" />
-                  <div className="space-y-2 w-full">
-                    <Skeleton className="h-2 w-16 rounded-full" />
-                    <Skeleton className="h-4 w-1/2 rounded-md" />
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-        <div className="space-y-4">
-          <Card className="rounded-md gap-py-0 border-border/40 bg-muted/5">
-            <CardHeader>
-              <Skeleton className="h-6 w-24 rounded-md" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="aspect-square w-full rounded-xl opacity-40" />
-            </CardContent>
-          </Card>
-        </div>
+      <Skeleton className="h-64 w-full rounded-xl" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Skeleton className="h-48 rounded-lg" />
+        <Skeleton className="h-48 rounded-lg" />
       </div>
     </div>
   );
@@ -148,7 +112,6 @@ export default function ManageOutletContent() {
     const outletImage = values.get("image");
     const qrisImage = values.get("manualQrImageUrl");
 
-    // Only send image fields when the user uploads a new file.
     if (outletImage instanceof File) {
       try {
         nextImageUrl = (
@@ -374,351 +337,185 @@ export default function ManageOutletContent() {
     );
   if (outletLoading) return <ManageOutletSkeleton />;
 
+  const statusItems = [
+    {
+      label: "Operasional",
+      value: selectedOutlet.isOpen ? "Buka" : "Tutup",
+      variant: (selectedOutlet.isOpen ? "success" : "destructive") as
+        | "success"
+        | "destructive",
+    },
+    {
+      label: "Payment",
+      value: selectedOutlet.manualQrImageUrl ? "Tersedia" : "Belum Ada",
+      variant: (selectedOutlet.manualQrImageUrl ? "success" : "outline") as
+        | "success"
+        | "outline",
+    },
+    {
+      label: "Geolokasi",
+      value: selectedOutlet.latitude ? "Tersedia" : "Belum Set",
+      variant: (selectedOutlet.latitude ? "success" : "outline") as
+        | "success"
+        | "outline",
+    },
+  ];
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Plan mismatch alert */}
       {isPlanMismatch && (
-        <Alert
-          variant="destructive"
-          className="border-rose-500/50 bg-rose-500/5 py-4"
-        >
-          <AlertTriangle className="h-5 w-5 text-rose-500" />
-          <div className="ml-3">
-            <AlertTitle className="text-sm font-black uppercase tracking-widest text-rose-600">
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <div className="ml-1">
+            <AlertTitle className="text-sm font-semibold">
               Limitasi Paket Terdeteksi
             </AlertTitle>
-            <AlertDescription className="mt-1 text-xs font-medium text-rose-500/80 leading-relaxed">
+            <AlertDescription className="text-xs mt-1">
               Outlet ini bertipe <strong>CUSTOM</strong>, namun paket langganan
-              Anda saat ini tidak mendukung tipe tersebut. Beberapa fitur akan
-              dibatasi dan outlet akan beroperasi dengan mode standar{" "}
-              <strong>(F&B)</strong> sampai Anda melakukan upgrade ke paket{" "}
-              <strong>PRO</strong> atau mengubah tipe outlet.
+              Anda tidak mendukung tipe tersebut. Beberapa fitur akan dibatasi.
             </AlertDescription>
           </div>
-          <div className="ml-auto">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 border-rose-500/20 bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 font-bold text-[10px] uppercase tracking-widest"
-              onClick={() => setIsEditing(true)}
-            >
-              Ubah Tipe Outlet
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsEditing(true)}
+            className="ml-auto shrink-0"
+          >
+            Ubah Tipe
+          </Button>
         </Alert>
       )}
 
       <SectionHeader
         title="Profil Outlet"
         description="Kelola identitas visual dan informasi operasional outlet Anda."
-        badge={
-          <div className="flex items-center gap-2">
-            <Badge
-              variant={selectedOutlet.isOpen ? "success" : "destructive"}
-              className="px-3 py-0.5 rounded-md border border-current/20 text-[10px] font-black uppercase tracking-widest bg-current/5 shadow-none"
-            >
-              {selectedOutlet.isOpen ? "Buka" : "Tutup"}
-            </Badge>
-            <Badge
-              variant="outline"
-              className="px-3 py-0.5 rounded-md border-border/80 text-[10px] font-black uppercase tracking-widest bg-muted/20 text-muted-foreground shadow-none"
-            >
-              {selectedOutlet.type || "Custom"}
-            </Badge>
-          </div>
-        }
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            {!isEditing && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsOperatingHoursModalOpen(true)}
-                  className="h-10 px-4 font-bold text-xs uppercase tracking-wider rounded-md border-border/60 hover:bg-muted/50 transition-all shadow-none"
-                >
-                  <Clock className="mr-2 h-3.5 w-3.5" />
-                  Jam Operasional
-                </Button>
-                <Separator
-                  orientation="vertical"
-                  className="h-8 mx-1 hidden sm:block"
-                />
-                <Button
-                  size="sm"
-                  onClick={() => setIsEditing(true)}
-                  className="h-10 px-6 font-bold text-xs uppercase tracking-wider rounded-md shadow-sm transition-all"
-                >
-                  <Pencil className="mr-2 h-3.5 w-3.5" />
-                  Edit Profil
-                </Button>
-              </>
-            )}
-          </div>
-        }
+        icon={Store}
       />
 
-      <div className="w-full">
-        {isEditing ? (
-          <Card className="rounded-md border-border/80 gap-0 py-0 bg-background shadow-sm overflow-hidden">
-            <CardHeader className="border-b gap-0 pt-4 border-border/40 bg-muted/10 flex flex-row items-center justify-between">
-              <div className="space-y-1">
-                <CardTitle className="text-sm font-black uppercase tracking-widest">
-                  Edit Profil Outlet
-                </CardTitle>
-                <CardDescription className="text-[10px] font-bold uppercase tracking-wider">
-                  Perbarui informasi dasar dan visual outlet Anda.
-                </CardDescription>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsEditing(false)}
-                className="h-8 w-8 rounded-full"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </CardHeader>
-            <CardContent className="p-4">
-              <div className="mx-auto w-full">
-                <ReusableForm
-                  schema={outletSchema}
-                  fields={formFields}
-                  defaultValues={{
-                    name: selectedOutlet.name,
-                    isOpen: selectedOutlet.isOpen ?? false,
-                    type: selectedOutlet.type || OutletType.CUSTOM,
-                    description: selectedOutlet.description || "",
-                    phone: selectedOutlet.phone || "",
-                    address: selectedOutlet.address || "",
-                    latitude: selectedOutlet.latitude || 0,
-                    longitude: selectedOutlet.longitude || 0,
-                    image: selectedOutlet.image,
-                    manualQrImageUrl: selectedOutlet.manualQrImageUrl,
-                    qrisString: (selectedOutlet as any).qrisString || "",
-                  }}
-                  onSubmit={(v) => submit(v)}
-                  isLoading={isSaving}
-                  submitText="Simpan Perubahan"
-                  errorSummary
-                  gridCols={12}
-                  useFormData
-                  renderFooter={
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setIsEditing(false)}
-                        disabled={isSaving}
-                        className="h-10 px-4 font-bold text-xs uppercase tracking-wider"
-                      >
-                        <X className="mr-2 h-3.5 w-3.5" />
-                        Batal
-                      </Button>
-                      <Button
-                        type="submit"
-                        disabled={isSaving}
-                        className="h-10 px-5 font-bold text-xs uppercase tracking-wider"
-                      >
-                        <Save className="mr-2 h-3.5 w-3.5" />
-                        Simpan Perubahan
-                      </Button>
-                    </div>
-                  }
-                />
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-2 space-y-4">
-              <Card className="rounded-md overflow-hidden gap-0 py-0 border-border/80 bg-background shadow-sm">
-                <div className="relative h-48 overflow-hidden bg-muted">
-                  {selectedOutlet.image ? (
-                    <img
-                      src={selectedOutlet.image}
-                      alt={selectedOutlet.name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center bg-muted/30">
-                      <Store className="h-20 w-20 text-muted-foreground/30" />
-                    </div>
-                  )}
-                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-linear-to-t from-black/80 to-transparent text-white">
-                    <h2 className="text-xl font-black tracking-tight">
-                      {selectedOutlet.name}
-                    </h2>
-                    <p className="text-[10px] font-black uppercase tracking-widest opacity-70">
-                      Profil Outlet
-                    </p>
-                  </div>
-                </div>
-                <CardContent className="p-4">
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                      Biodata & Deskripsi
-                    </p>
-                    <p className="text-sm font-medium leading-relaxed text-foreground/80 italic">
-                      {selectedOutlet.description ||
-                        "Tidak ada deskripsi untuk outlet ini."}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+      {/* Hero Section */}
+      <OutletHero
+        outlet={selectedOutlet}
+        onEdit={() => setIsEditing(true)}
+        onOperatingHours={() => setIsOperatingHoursModalOpen(true)}
+        onTransfer={() => router.push("/owner/transfer-outlet")}
+      />
 
-              <Card className="rounded-md border-border/80 gap-0 py-0 bg-background shadow-sm overflow-hidden">
-                <CardHeader className="border-b gap-0 pt-4 border-border/40 bg-muted/30">
-                  <CardTitle className="flex items-center gap-3 text-sm font-black uppercase tracking-widest text-foreground">
-                    <MapPin className="h-4 w-4 text-primary" />
-                    Kontak & Lokasi
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 space-y-3">
-                  <div className="grid gap-2">
-                    <div className="flex items-center gap-3 rounded-md border border-border/40 bg-muted/20 p-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-card border border-border shadow-sm">
-                        <Phone className="h-4 w-4 text-primary" />
-                      </div>
-                      <div className="space-y-0.5">
-                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                          Telepon
-                        </p>
-                        <p className="text-sm font-black text-foreground">
-                          {selectedOutlet.phone || "-"}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3 rounded-md border border-border/40 bg-muted/20 p-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-card border border-border shadow-sm mt-0.5">
-                        <MapPin className="h-4 w-4 text-primary" />
-                      </div>
-                      <div className="space-y-0.5">
-                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                          Alamat Fisik
-                        </p>
-                        <p className="text-sm font-bold text-foreground/90 leading-relaxed">
-                          {selectedOutlet.address || "-"}
-                        </p>
-                      </div>
-                    </div>
-                    {selectedOutlet.latitude && (
-                      <div className="flex items-center gap-3 rounded-md border border-border/40 bg-muted/20 p-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-card border border-border shadow-sm">
-                          <Globe className="h-4 w-4 text-primary" />
-                        </div>
-                        <div className="space-y-0.5">
-                          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                            Koordinat
-                          </p>
-                          <p className="text-sm font-mono font-bold text-foreground tabular-nums">
-                            {selectedOutlet.latitude.toFixed(6)},{" "}
-                            {selectedOutlet.longitude?.toFixed(6)}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="space-y-4">
-              <Card className="rounded-md gap-0 py-0 border-border/80 bg-background shadow-sm overflow-hidden">
-                <CardHeader className="border-b gap-0 pt-4 border-border/40 bg-muted/30">
-                  <CardTitle className="flex items-center gap-3 text-sm font-black uppercase tracking-widest text-foreground">
-                    <QrCode className="h-4 w-4 text-primary" />
-                    Pembayaran QRIS
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4">
-                  {selectedOutlet.manualQrImageUrl ? (
-                    <div className="space-y-4">
-                      <div className="relative overflow-hidden rounded-md border border-border/80 bg-card p-4 shadow-sm">
-                        <img
-                          src={selectedOutlet.manualQrImageUrl}
-                          alt="QRIS"
-                          className="mx-auto aspect-square w-full object-contain"
-                        />
-                        <div className="absolute top-3 right-3">
-                          <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[8px] font-black uppercase tracking-tighter shadow-none">
-                            Terverifikasi
-                          </Badge>
-                        </div>
-                      </div>
-                      <p className="text-[10px] text-center font-bold text-muted-foreground uppercase tracking-widest">
-                        Scan untuk melakukan pembayaran digital.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="aspect-square flex flex-col items-center justify-center rounded-md border border-border/60 bg-muted/20 text-muted-foreground/40">
-                      <QrCode className="h-16 w-16 mb-2 opacity-20" />
-                      <p className="text-[10px] font-black uppercase tracking-widest text-center px-4">
-                        QRIS belum dikonfigurasi
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card className="rounded-md gap-0 py-0 border-border/80 bg-background shadow-sm overflow-hidden">
-                <CardHeader className="border-b gap-0 pt-4 border-border/40 bg-muted/30 p-4">
-                  <CardTitle className="flex items-center gap-3 text-sm font-black uppercase tracking-widest text-foreground">
-                    <Zap className="h-4 w-4 text-primary" />
-                    Ringkasan
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4">
-                  <div className="space-y-4">
-                    {[
-                      {
-                        label: "Operasional",
-                        value: selectedOutlet.isOpen ? "Buka" : "Tutup",
-                        variant: selectedOutlet.isOpen
-                          ? "success"
-                          : "destructive",
-                      },
-                      {
-                        label: "Payment",
-                        value: selectedOutlet.manualQrImageUrl
-                          ? "Tersedia"
-                          : "Belum Ada",
-                        variant: selectedOutlet.manualQrImageUrl
-                          ? "success"
-                          : "outline",
-                      },
-                      {
-                        label: "Geolokasi",
-                        value: selectedOutlet.latitude
-                          ? "Tersedia"
-                          : "Belum Set",
-                        variant: selectedOutlet.latitude
-                          ? "success"
-                          : "outline",
-                      },
-                    ].map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between"
-                      >
-                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-tight">
-                          {item.label}
-                        </span>
-                        <Badge
-                          variant={item.variant as any}
-                          className="px-2 py-0 rounded-md border text-[9px] font-black uppercase tracking-tighter shadow-none"
-                        >
-                          {item.value}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+      {/* Info Cards Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Contact & Location */}
+        <OutletInfoCard
+          title="Kontak & Lokasi"
+          icon={MapPin}
+          description="Informasi komunikasi dan alamat outlet"
+        >
+          <div className="divide-y divide-border/40">
+            <OutletInfoField
+              icon={Phone}
+              label="Telepon"
+              value={selectedOutlet.phone || "-"}
+            />
+            <OutletInfoField
+              icon={MapPin}
+              label="Alamat"
+              value={selectedOutlet.address || "-"}
+            />
+            {selectedOutlet.latitude ? (
+              <OutletInfoField
+                icon={Globe}
+                label="Koordinat"
+                value={`${selectedOutlet.latitude.toFixed(6)}, ${selectedOutlet.longitude?.toFixed(6)}`}
+                mono
+              />
+            ) : null}
           </div>
-        )}
+        </OutletInfoCard>
+
+        {/* QRIS Payment */}
+        <OutletInfoCard
+          title="Pembayaran QRIS"
+          icon={QrCode}
+          description="QR code untuk pembayaran digital"
+        >
+          {selectedOutlet.manualQrImageUrl ? (
+            <div className="space-y-3">
+              <div className="relative overflow-hidden rounded-lg border border-border/60 bg-card p-3">
+                <img
+                  src={selectedOutlet.manualQrImageUrl}
+                  alt="QRIS"
+                  className="mx-auto aspect-square w-full max-w-[200px] object-contain"
+                />
+                <div className="absolute top-2 right-2">
+                  <Badge
+                    variant="outline"
+                    className="text-[9px] font-bold uppercase tracking-wider text-emerald-600 border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20"
+                  >
+                    Aktif
+                  </Badge>
+                </div>
+              </div>
+              <p className="text-[11px] text-center text-muted-foreground">
+                Scan untuk melakukan pembayaran digital
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground/40">
+              <QrCode className="h-12 w-12 mb-2" />
+              <p className="text-xs font-medium">QRIS belum dikonfigurasi</p>
+            </div>
+          )}
+        </OutletInfoCard>
       </div>
 
+      {/* Status Summary */}
+      <OutletInfoCard
+        title="Ringkasan Status"
+        icon={Zap}
+        description="Status operasional outlet saat ini"
+      >
+        <OutletStatusGrid items={statusItems} />
+      </OutletInfoCard>
+
+      {/* Edit Sheet */}
+      <Sheet open={isEditing} onOpenChange={setIsEditing}>
+        <SheetContent className="w-full sm:max-w-4xl overflow-y-auto p-0">
+          <SheetHeader className="p-6 pb-4 border-b border-border/60">
+            <SheetTitle className="text-lg font-semibold">
+              Edit Profil Outlet
+            </SheetTitle>
+            <SheetDescription className="text-sm text-muted-foreground">
+              Perbarui informasi dasar dan visual outlet Anda.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="p-6">
+            <ReusableForm
+              schema={outletSchema}
+              fields={formFields}
+              defaultValues={{
+                name: selectedOutlet.name,
+                isOpen: selectedOutlet.isOpen ?? false,
+                type: selectedOutlet.type || OutletType.CUSTOM,
+                description: selectedOutlet.description || "",
+                phone: selectedOutlet.phone || "",
+                address: selectedOutlet.address || "",
+                latitude: selectedOutlet.latitude || 0,
+                longitude: selectedOutlet.longitude || 0,
+                image: selectedOutlet.image,
+                manualQrImageUrl: selectedOutlet.manualQrImageUrl,
+                qrisString: (selectedOutlet as any).qrisString || "",
+              }}
+              onSubmit={(v) => submit(v)}
+              isLoading={isSaving}
+              submitText="Simpan Perubahan"
+              errorSummary
+              gridCols={12}
+              useFormData
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Operating Hours Modal */}
       <OperatingHoursModal
         isOpen={isOperatingHoursModalOpen}
         onClose={() => setIsOperatingHoursModalOpen(false)}

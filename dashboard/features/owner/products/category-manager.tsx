@@ -120,11 +120,11 @@ export function CategoryManager({ outletId }: { outletId: string }) {
               </p>
             </div>
             <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(cat)}>
+              <Button variant="ghost" size="icon-sm" onClick={() => openEdit(cat)}>
                 <Pencil className="h-3.5 w-3.5" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteTarget(cat)}>
-                <Trash2 className="h-3.5 w-3.5" />
+              <Button variant="ghost" size="icon-sm" onClick={() => setDeleteTarget(cat)}>
+                <Trash2 className="h-3.5 w-3.5 text-destructive" />
               </Button>
             </div>
           </div>

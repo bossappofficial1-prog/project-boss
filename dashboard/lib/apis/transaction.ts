@@ -47,11 +47,11 @@ export interface Transaction {
     };
     items: Array<{
       id: string;
+      productId: string;
       quantity: number;
       priceAtTimeOfOrder: number;
       product: {
         name: string;
-        price: number;
       };
     }>;
   } | null; // Null for expenses
@@ -75,6 +75,18 @@ export interface CreateManualTransactionPayload {
   customerPhone?: string;
   amount: number;
   items: Array<{
+    productId: string;
+    quantity: number;
+    bookingDate?: string;
+  }>;
+}
+
+export interface UpdateManualTransactionPayload {
+  transactionDate?: string;
+  customerName?: string;
+  customerPhone?: string;
+  amount?: number;
+  items?: Array<{
     productId: string;
     quantity: number;
     bookingDate?: string;
@@ -141,7 +153,9 @@ export const transactionApi = {
    * Mendapatkan detail transaksi berdasarkan ID
    */
   getById: async (id: string) => {
-    const response = await apiClient.get<ApiResponse<Transaction>>(`/transactions/${id}`);
+    const response = await apiClient.get<ApiResponse<Transaction>>(
+      `/transactions/${id}`,
+    );
     return response.data;
   },
 
@@ -149,7 +163,9 @@ export const transactionApi = {
    * Menyetujui pembayaran transaksi
    */
   approve: async (id: string) => {
-    const response = await apiClient.patch<ApiResponse<Transaction>>(`/transactions/${id}/approve`);
+    const response = await apiClient.patch<ApiResponse<Transaction>>(
+      `/transactions/${id}/approve`,
+    );
     return response.data;
   },
 
@@ -157,9 +173,12 @@ export const transactionApi = {
    * Menolak pembayaran transaksi
    */
   reject: async (id: string, reason?: string) => {
-    const response = await apiClient.patch<ApiResponse<Transaction>>(`/transactions/${id}/reject`, {
-      reason,
-    });
+    const response = await apiClient.patch<ApiResponse<Transaction>>(
+      `/transactions/${id}/reject`,
+      {
+        reason,
+      },
+    );
     return response.data;
   },
 
@@ -167,9 +186,12 @@ export const transactionApi = {
    * Update status transaksi
    */
   updateStatus: async (id: string, status: string) => {
-    const response = await apiClient.patch<ApiResponse<Transaction>>(`/transactions/${id}/status`, {
-      status,
-    });
+    const response = await apiClient.patch<ApiResponse<Transaction>>(
+      `/transactions/${id}/status`,
+      {
+        status,
+      },
+    );
     return response.data;
   },
 
@@ -177,7 +199,37 @@ export const transactionApi = {
    * Membuat transaksi manual (owner/manager)
    */
   createManualTransaction: async (payload: CreateManualTransactionPayload) => {
-    const response = await apiClient.post<ApiResponse<{ transaction: Transaction; order: any; calculatedAmount: number }>>("/transactions", payload);
+    const response = await apiClient.post<
+      ApiResponse<{
+        transaction: Transaction;
+        order: any;
+        calculatedAmount: number;
+      }>
+    >("/transactions", payload);
+    return response.data;
+  },
+
+  /**
+   * Update transaksi manual (owner/manager)
+   */
+  updateManualTransaction: async (
+    transactionId: string,
+    payload: UpdateManualTransactionPayload,
+  ) => {
+    const response = await apiClient.patch<ApiResponse<Transaction>>(
+      `/transactions/${transactionId}`,
+      payload,
+    );
+    return response.data;
+  },
+
+  /**
+   * Hapus transaksi manual (owner/manager)
+   */
+  deleteManualTransaction: async (transactionId: string) => {
+    const response = await apiClient.delete<ApiResponse<null>>(
+      `/transactions/${transactionId}`,
+    );
     return response.data;
   },
 };

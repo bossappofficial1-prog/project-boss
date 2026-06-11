@@ -225,7 +225,7 @@ export function IntegrationsCard({ subscriptionPlan }: IntegrationsCardProps) {
                     </div>
                     <div className="ml-4">
                         {!isWhatsAppAllowed ? (
-                            <Button variant="outline" size="sm" disabled className="opacity-50">
+                            <Button variant="outline" size="sm" disabled>
                                 Upgrade Plan
                             </Button>
                         ) : integrations?.whatsapp ? (

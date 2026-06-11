@@ -114,7 +114,11 @@ export default function Header() {
           asChild
           className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl"
         >
-          <Link href="/help?portal=owner" target="_blank" title="Panduan Penggunaan">
+          <Link
+            href="/help?portal=owner"
+            target="_blank"
+            title="Panduan Penggunaan"
+          >
             <HelpCircle className="h-5 w-5" />
             <span className="sr-only">Panduan Penggunaan</span>
           </Link>

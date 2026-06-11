@@ -374,7 +374,7 @@ export function IngredientContent() {
         title="Bahan Baku (Raw Ingredients)"
         description="Kelola persediaan bahan mentah, batch harga pembelian, dan konversi ke resep menu dengan presisi FIFO."
         actions={
-          <Button onClick={handleOpenCreate} className="gap-2 font-bold text-xs bg-linear-to-tr from-primary to-orange-600 hover:opacity-90">
+          <Button onClick={handleOpenCreate}>
             <Plus className="h-4 w-4" />
             Tambah Bahan Baku
           </Button>
@@ -421,7 +421,7 @@ export function IngredientContent() {
                 : "Tambahkan bahan mentah seperti Kopi Bubuk, Susu, Gula untuk dikaitkan dengan menu Anda."}
             </p>
             {!debouncedSearch && (
-              <Button onClick={handleOpenCreate} variant="outline" className="mt-4 gap-2 border-primary/30 text-primary hover:bg-primary/5">
+              <Button onClick={handleOpenCreate} variant="outline" className="mt-4">
                 <Plus className="h-4 w-4" />
                 Tambah Bahan Pertama
               </Button>

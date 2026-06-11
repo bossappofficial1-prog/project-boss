@@ -102,7 +102,7 @@ export function SupplierContent() {
         title="Manajemen Supplier"
         description="Kelola data supplier dan hubungkan dengan produk untuk mempermudah restok."
         actions={
-          <Button onClick={handleAdd} className="gap-2 font-bold text-xs">
+          <Button onClick={handleAdd}>
             <Plus className="h-4 w-4" />
             Tambah Supplier
           </Button>

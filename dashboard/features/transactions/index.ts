@@ -8,5 +8,6 @@ export {
   EStatementDialog,
   ProofPreviewDialog,
   DeleteTransactionDialog,
-  ManualTransactionModal,
+  ManualTransactionFormModal,
+  TransactionDetailSheet,
 } from "./components/owner";

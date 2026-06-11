@@ -1,220 +1,302 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { toast } from 'sonner'
 import { useMutation } from '@tanstack/react-query'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { CreditCard, User } from 'lucide-react'
 import { businessApi } from '@/lib/api'
 import { useDashboardData } from '@/hooks/use-dashboard-data'
+import { z } from 'zod'
+import {
+  ReusableForm,
+  type FormFieldConfig,
+} from '@/components/ui/reuseable-form'
+import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
+
+const bankSchema = z.object({
+  bankName: z.string().min(1, 'Nama bank wajib diisi'),
+  bankAccount: z
+    .string()
+    .min(1, 'Nomor rekening wajib diisi')
+    .regex(/^\d+$/, 'Nomor rekening hanya boleh angka')
+    .min(6, 'Nomor rekening terlalu pendek')
+    .max(20, 'Nomor rekening terlalu panjang'),
+  accountHolder: z.string().min(1, 'Nama pemilik rekening wajib diisi'),
+})
+
+type BankFormValues = z.infer<typeof bankSchema>
 
 type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
   businessId?: string
-  // When creating a new business, we need basic fields from step 1
-  createPayload?: { name: string; description?: string; defaultTransactionFeeBearer: 'CUSTOMER' | 'OWNER' }
+  createPayload?: {
+    name: string
+    description?: string
+    defaultTransactionFeeBearer: 'CUSTOMER' | 'OWNER'
+  }
   onSuccess?: () => void
 }
 
-export default function BankAccountModal({ open, onOpenChange, businessId, createPayload, onSuccess }: Props) {
+export default function BankAccountModal({
+  open,
+  onOpenChange,
+  businessId,
+  createPayload,
+  onSuccess,
+}: Props) {
   const { business } = useDashboardData()
-  const [bankName, setBankName] = useState<string>('')
-  const [bankAccount, setBankAccount] = useState<string>('')
-  const [accountHolder, setAccountHolder] = useState<string>('')
-  const [error, setError] = useState<string | null>(null)
+
   const [showBankSuggestions, setShowBankSuggestions] = useState(false)
-  const [accountError, setAccountError] = useState<string | null>(null)
-  const [highlightIndex, setHighlightIndex] = useState<number>(-1)
-  const BANK_LOGOS: Record<string, string> = require('@/lib/bank-logos.json')
+  const [highlightIndex, setHighlightIndex] = useState(-1)
   const [failedLogos, setFailedLogos] = useState<Record<string, boolean>>({})
 
+  const BANKS: Array<{
+    code: string
+    name: string
+    display: string
+    minLength?: number
+    maxLength?: number
+  }> = require('@/lib/banks.json')
+
+  const BANK_LOGOS: Record<string, string> = require('@/lib/bank-logos.json')
 
   const { mutate, isPending } = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (values: BankFormValues) => {
       if (!businessId) {
-        if (!createPayload) throw new Error('Data profil bisnis tidak lengkap')
+        if (!createPayload)
+          throw new Error('Data profil bisnis tidak lengkap')
         return businessApi.createBusiness({
           name: createPayload.name,
           description: createPayload.description,
-          bankName,
-          bankAccount,
-          accountHolder,
+          bankName: values.bankName,
+          bankAccount: values.bankAccount,
+          accountHolder: values.accountHolder,
         })
       }
-      // Update existing business bank account
-      return businessApi.updateBankAccount(businessId, { bankName, bankAccount, accountHolder })
+      return businessApi.updateBankAccount(businessId, {
+        bankName: values.bankName,
+        bankAccount: values.bankAccount,
+        accountHolder: values.accountHolder,
+      })
     },
     onSuccess: () => {
+      toast.success('Informasi rekening berhasil disimpan')
       onOpenChange(false)
       onSuccess?.()
-      toast.success('Informasi rekening berhasil disimpan')
     },
-    onError: (e: any) => setError(e?.message || 'Gagal menyimpan informasi bank')
+    onError: (e: any) =>
+      toast.error(e?.message || 'Gagal menyimpan informasi bank'),
   })
 
-
-  const BANKS: Array<{ code: string; name: string; display: string; minLength?: number; maxLength?: number }> = require('@/lib/banks.json')
-
-  const normalizedQuery = bankName?.trim().toLowerCase()
-  const POPULAR_COUNT = 5
-  const searchList = normalizedQuery
-    ? BANKS.filter((b) => `${b.display} ${b.name}`.toLowerCase().includes(normalizedQuery))
-    : BANKS.slice(0, POPULAR_COUNT)
-
-  const filteredBanks = searchList
-    // sort: exact/prefix matches first when searching
-    .sort((a, b) => {
-      if (!normalizedQuery) return 0
-      const aStarts = `${a.display} ${a.name}`.toLowerCase().startsWith(normalizedQuery) ? 0 : 1
-      const bStarts = `${b.display} ${b.name}`.toLowerCase().startsWith(normalizedQuery) ? 0 : 1
-      return aStarts - bStarts
-    })
-
-  const validateAccountNumber = (value: string) => {
-    if (!value) return 'Nomor rekening harus diisi'
-    if (!/^\d+$/.test(value)) return 'Nomor rekening hanya boleh berisi angka'
-    if (value.length < 6) return 'Nomor rekening terlalu pendek'
-    if (value.length > 20) return 'Nomor rekening terlalu panjang'
-    return null
+  const defaultValues: BankFormValues = {
+    bankName: business?.bankName || '',
+    bankAccount: business?.bankAccount || '',
+    accountHolder: business?.accountHolder || '',
   }
 
-  useEffect(() => {
-    if (!bankAccount) return;
-    setAccountError(validateAccountNumber(bankAccount))
-  }, [bankAccount])
+  const handleSubmit = (values: BankFormValues) => {
+    mutate(values)
+  }
 
-  // validate bankName against available banks
-  const isBankValid = !!BANKS.find((b) => b.display.toLowerCase() === bankName?.trim().toLowerCase())
+  const BankNameField = useCallback(
+    ({ field }: { field: any }) => {
+      const normalizedQuery = field.value?.trim().toLowerCase() || ''
+      const POPULAR_COUNT = 5
+      const searchList = normalizedQuery
+        ? BANKS.filter((b) =>
+            `${b.display} ${b.name}`
+              .toLowerCase()
+              .includes(normalizedQuery)
+          )
+        : BANKS.slice(0, POPULAR_COUNT)
 
+      const filteredBanks = searchList.sort((a, b) => {
+        if (!normalizedQuery) return 0
+        const aStarts = `${a.display} ${a.name}`
+          .toLowerCase()
+          .startsWith(normalizedQuery)
+          ? 0
+          : 1
+        const bStarts = `${b.display} ${b.name}`
+          .toLowerCase()
+          .startsWith(normalizedQuery)
+          ? 0
+          : 1
+        return aStarts - bStarts
+      })
 
-  useEffect(() => {
-    if (!open || !businessId || !business) return;
+      const isBankValid = !!BANKS.find(
+        (b) =>
+          b.display.toLowerCase() === field.value?.trim().toLowerCase()
+      )
 
-    setBankName(business?.bankName!)
-    setAccountHolder(business?.accountHolder!)
-    setBankAccount(business?.bankAccount!)
-  }, [open, businessId, business])
+      return (
+        <div className="relative">
+          <Input
+            placeholder="BCA / BNI / Mandiri"
+            value={field.value || ''}
+            onFocus={() => setShowBankSuggestions(true)}
+            onBlur={() =>
+              setTimeout(() => {
+                setShowBankSuggestions(false)
+                setHighlightIndex(-1)
+              }, 150)
+            }
+            onChange={(e) => {
+              field.onChange(e.target.value)
+              setHighlightIndex(-1)
+            }}
+            onKeyDown={(e) => {
+              if (!showBankSuggestions) return
+              if (e.key === 'ArrowDown') {
+                e.preventDefault()
+                setHighlightIndex((i) =>
+                  Math.min(i + 1, filteredBanks.length - 1)
+                )
+              } else if (e.key === 'ArrowUp') {
+                e.preventDefault()
+                setHighlightIndex((i) => Math.max(i - 1, 0))
+              } else if (e.key === 'Enter') {
+                e.preventDefault()
+                const sel =
+                  filteredBanks[highlightIndex >= 0 ? highlightIndex : 0]
+                if (sel) {
+                  field.onChange(sel.display)
+                  setShowBankSuggestions(false)
+                  setHighlightIndex(-1)
+                }
+              } else if (e.key === 'Escape') {
+                setShowBankSuggestions(false)
+                setHighlightIndex(-1)
+              }
+            }}
+            autoComplete="off"
+          />
 
-  if (!open) return;
+          {showBankSuggestions && filteredBanks.length > 0 && (
+            <div className="absolute z-50 mt-1 w-full rounded-lg border border-border bg-popover shadow-lg overflow-hidden">
+              {!isBankValid && field.value && (
+                <div className="px-3 pt-2 text-xs text-destructive">
+                  Nama bank tidak valid. Pilih dari daftar.
+                </div>
+              )}
+              <div className="max-h-48 overflow-y-auto">
+                {filteredBanks.map((b, idx) => (
+                  <button
+                    key={b.code}
+                    type="button"
+                    onMouseDown={() => {
+                      field.onChange(b.display)
+                      setShowBankSuggestions(false)
+                      setHighlightIndex(-1)
+                    }}
+                    className={cn(
+                      'w-full text-left px-3 py-2 text-sm flex items-center gap-3 transition-colors',
+                      highlightIndex === idx
+                        ? 'bg-accent'
+                        : 'hover:bg-accent/50'
+                    )}
+                  >
+                    <div className="flex-shrink-0 h-8 w-8 rounded-full overflow-hidden bg-muted flex items-center justify-center">
+                      {!failedLogos[b.code] ? (
+                        <img
+                          src={
+                            BANK_LOGOS[b.code] ||
+                            `https://ui-avatars.com/api/?name=${encodeURIComponent(b.display)}&size=64&background=ffffff&color=111827&rounded=true`
+                          }
+                          alt={b.display}
+                          className="h-8 w-8 object-cover"
+                          loading="lazy"
+                          decoding="async"
+                          onError={() =>
+                            setFailedLogos((p) => ({
+                              ...p,
+                              [b.code]: true,
+                            }))
+                          }
+                        />
+                      ) : (
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
+                          {b.display
+                            .split(' ')
+                            .map((s) => s[0])
+                            .slice(0, 2)
+                            .join('')}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm truncate">
+                        {b.display}
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {b.name}
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {b.code}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )
+    },
+    [BANKS, BANK_LOGOS, showBankSuggestions, highlightIndex, failedLogos]
+  )
+
+  const fields: FormFieldConfig<BankFormValues>[] = useMemo(
+    () => [
+      {
+        name: 'bankName',
+        label: 'Nama Bank',
+        type: 'custom' as const,
+        colSpan: 'full' as const,
+        renderCustom: BankNameField,
+      },
+      {
+        name: 'bankAccount',
+        label: 'Nomor Rekening',
+        type: 'text' as const,
+        placeholder: '1234567890',
+        icon: CreditCard,
+        colSpan: 'full' as const,
+      },
+      {
+        name: 'accountHolder',
+        label: 'Nama Pemilik Rekening',
+        type: 'text' as const,
+        placeholder: 'Nama sesuai buku tabungan',
+        icon: User,
+        colSpan: 'full' as const,
+      },
+    ],
+    [BankNameField]
+  )
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Informasi Pemilik Rekening</DialogTitle>
-          <DialogDescription>
-            {businessId ? 'Perbarui' : 'Lengkapi'} data rekening untuk penarikan dana.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          {error && (
-            <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 px-3 py-2 text-sm">{error}</div>
-          )}
-          <div>
-            <Label htmlFor="bank-name">Nama Bank</Label>
-            <div className="relative">
-              <Input
-                id="bank-name"
-                placeholder="BCA / BNI / Mandiri"
-                value={bankName}
-                onFocus={() => setShowBankSuggestions(true)}
-                onBlur={() => setTimeout(() => { setShowBankSuggestions(false); setHighlightIndex(-1) }, 150)}
-                onChange={(e) => { setBankName(e.target.value); setHighlightIndex(-1) }}
-                onKeyDown={(e) => {
-                  if (!showBankSuggestions) return
-                  if (e.key === 'ArrowDown') {
-                    e.preventDefault()
-                    setHighlightIndex((i) => Math.min(i + 1, filteredBanks.length - 1))
-                  } else if (e.key === 'ArrowUp') {
-                    e.preventDefault()
-                    setHighlightIndex((i) => Math.max(i - 1, 0))
-                  } else if (e.key === 'Enter') {
-                    e.preventDefault()
-                    const sel = filteredBanks[highlightIndex >= 0 ? highlightIndex : 0]
-                    if (sel) { setBankName(sel.display); setShowBankSuggestions(false); setHighlightIndex(-1) }
-                  } else if (e.key === 'Escape') {
-                    setShowBankSuggestions(false); setHighlightIndex(-1)
-                  }
-                }}
-                autoComplete="off"
-              />
-              {/* Selected bank badge */}
-              {bankName && (
-                <div className="absolute -top-3 right-0">
-                  <div className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
-                    <span className="font-medium">{bankName}</span>
-                  </div>
-                </div>
-              )}
-              {showBankSuggestions && filteredBanks.length > 0 && (
-                <div className="absolute z-50 mt-1 w-full rounded-lg border bg-white/95 dark:bg-gray-800/95 shadow-lg overflow-hidden border-gray-200 dark:border-gray-700">
-                  {/* bank validation error moved above list for better visibility */}
-                  {!isBankValid && bankName && (
-                    <div className="px-3 pt-2 text-xs text-red-600 dark:text-red-400">Nama bank tidak valid. Pilih dari daftar yang tersedia.</div>
-                  )}
-                  <div className="max-h-48 overflow-y-auto">{/* compact list */}
-                    {filteredBanks.map((b, idx) => (
-                      <button
-                        key={b.code}
-                        type="button"
-                        onMouseDown={() => { setBankName(b.display); setShowBankSuggestions(false); setHighlightIndex(-1) }}
-                        className={`w-full text-left px-3 py-2 text-sm flex items-center gap-3 transition-colors ${highlightIndex === idx ? 'bg-gray-100 dark:bg-gray-700' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
-                      >
-                        {/* bank logo with lazy loading and onError fallback */}
-                        <div className="flex-shrink-0 h-8 w-8 rounded-full overflow-hidden bg-white dark:bg-gray-700 flex items-center justify-center">
-                          {!failedLogos[b.code] ? (
-                            <img
-                              src={BANK_LOGOS[b.code] || `https://ui-avatars.com/api/?name=${encodeURIComponent(b.display)}&size=64&background=ffffff&color=111827&rounded=true`}
-                              alt={b.display}
-                              className="h-8 w-8 object-cover"
-                              loading="lazy"
-                              decoding="async"
-                              onError={() => setFailedLogos((p) => ({ ...p, [b.code]: true }))}
-                            />
-                          ) : (
-                            <div className="h-8 w-8 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-xs font-semibold text-indigo-700 dark:text-indigo-300">
-                              {b.display.split(' ').map(s => s[0]).slice(0, 2).join('')}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <div className="font-medium text-sm text-gray-900 dark:text-gray-100">{b.display}</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{b.name}</div>
-                        </div>
-                        <div className="text-xs text-gray-400 dark:text-gray-300">{b.code}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-          <div>
-            <Label htmlFor="bank-account">Nomor Rekening</Label>
-            <Input id="bank-account" placeholder="1234567890" value={bankAccount} onChange={(e) => setBankAccount(e.target.value)} className={accountError ? 'border-red-500' : ''} />
-            {accountError && <div className="text-xs text-red-600 mt-1">{accountError}</div>}
-            {/* show bank-specific helper if bank matched */}
-            {bankName && (() => {
-              const matched = BANKS.find((b) => b.display.toLowerCase() === bankName.toLowerCase())
-              if (matched) {
-                return <div className="text-xs text-gray-500 mt-1">Panjang nomor untuk {matched.display}: {matched.minLength ?? '—'}–{matched.maxLength ?? '—'} digit</div>
-              }
-              return null
-            })()}
-          </div>
-          <div>
-            <Label htmlFor="account-holder">Nama Pemilik Rekening</Label>
-            <Input id="account-holder" placeholder="Nama sesuai buku tabungan" value={accountHolder} onChange={(e) => setAccountHolder(e.target.value)} />
-          </div>
-          <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={isPending}>Batal</Button>
-            <Button onClick={() => mutate()} disabled={isPending || !bankName || !!accountError || !accountHolder || !isBankValid}>{isPending ? 'Menyimpan...' : 'Simpan'}</Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <ReusableForm<BankFormValues>
+      schema={bankSchema}
+      fields={fields}
+      defaultValues={defaultValues}
+      onSubmit={handleSubmit}
+      isLoading={isPending}
+      submitText="Simpan"
+      gridCols={1}
+      withDialog
+      isDialogOpen={open}
+      onDialogOpenChange={onOpenChange}
+      dialogTitle="Informasi Pemilik Rekening"
+      dialogDescription={
+        businessId
+          ? 'Perbarui data rekening untuk penarikan dana.'
+          : 'Lengkapi data rekening untuk penarikan dana.'
+      }
+      resetFormOnClose
+    />
   )
 }

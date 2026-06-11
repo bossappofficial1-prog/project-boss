@@ -15,8 +15,8 @@ export function EmptySubscriptionState({ onRefresh }: Props) {
                 <p className="text-sm font-medium text-muted-foreground">
                     Kami tidak menemukan paket langganan untuk bisnis Anda. Hubungi tim dukungan untuk menyalakan akses dashboard.
                 </p>
-                <Button onClick={onRefresh} variant="outline" className="h-10 px-6 font-bold text-xs uppercase tracking-wider rounded-md border-border/60 hover:bg-muted/50 transition-all shadow-none">
-                    <RefreshCw className="mr-2 h-4 w-4" /> Coba Muat Ulang
+                <Button onClick={onRefresh} variant="outline" size="lg">
+                    <RefreshCw className="h-4 w-4" /> Coba Muat Ulang
                 </Button>
             </CardContent>
         </Card>

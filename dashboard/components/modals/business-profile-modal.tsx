@@ -1,20 +1,23 @@
 "use client";
 
-import React, { useState } from "react";
+import { useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Building2, FileText } from "lucide-react";
 import { businessApi } from "@/lib/api";
-import { Textarea } from "../ui/textarea";
 import { AxiosError } from "axios";
+import { toast } from "sonner";
+import { z } from "zod";
+import {
+  ReusableForm,
+  type FormFieldConfig,
+} from "@/components/ui/reuseable-form";
+
+const businessSchema = z.object({
+  name: z.string().min(1, "Nama bisnis wajib diisi"),
+  description: z.string().optional(),
+});
+
+type BusinessFormValues = z.infer<typeof businessSchema>;
 
 type Props = {
   open: boolean;
@@ -26,7 +29,6 @@ type Props = {
     description?: string;
     defaultTransactionFeeBearer: "CUSTOMER" | "OWNER";
   }) => void;
-  // For update mode, allow prefilling values from existing business
   initialName?: string;
   initialDescription?: string;
   initialDefaultTransactionFeeBearer?: "CUSTOMER" | "OWNER";
@@ -42,98 +44,87 @@ export default function BusinessProfileModal({
   initialDescription,
   initialDefaultTransactionFeeBearer,
 }: Props) {
-  const [name, setName] = useState(initialName ?? "");
-  const [description, setDescription] = useState(initialDescription ?? "");
-  const [defaultTransactionFeeBearer, setDefaultTransactionFeeBearer] = useState<
-    "CUSTOMER" | "OWNER"
-  >(initialDefaultTransactionFeeBearer ?? "CUSTOMER");
-  const [error, setError] = useState<string | null>(null);
-
-  // Sync form values when opening in update mode or when initial props change
-  // Ensures edit flow shows current values
-  React.useEffect(() => {
-    if (open) {
-      setName(initialName ?? "");
-      setDescription(initialDescription ?? "");
-      setDefaultTransactionFeeBearer(initialDefaultTransactionFeeBearer ?? "CUSTOMER");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, initialName, initialDescription, initialDefaultTransactionFeeBearer]);
-
   const { mutate, isPending } = useMutation({
-    mutationFn: async () => {
-      // only used for update flow; create flow is delegated to parent
-      // Note: defaultTransactionFeeBearer is only applicable during creation (handled in BankAccountModal)
-      // For update, backend expects basic fields only
-      return businessApi.updateBusiness(businessId!, { name, description });
+    mutationFn: async (values: BusinessFormValues) => {
+      if (!businessId) throw new Error("Business ID tidak tersedia");
+      return businessApi.updateBusiness(businessId, {
+        name: values.name,
+        description: values.description,
+      });
     },
     onSuccess: () => {
+      toast.success("Profil bisnis berhasil diperbarui");
       onOpenChange(false);
       onSuccess?.();
     },
-    onError: (e: AxiosError) =>
-      setError(
-        e.status === 409 ? "Nama bisnis sudah ada" : e.message || "Gagal menyimpan profil bisnis",
-      ),
+    onError: (e: AxiosError) => {
+      const message =
+        e.status === 409
+          ? "Nama bisnis sudah ada"
+          : (e.response?.data as any)?.message ||
+            "Gagal menyimpan profil bisnis";
+      toast.error(message);
+    },
   });
 
-  const handleSubmit = () => {
-    setError(null);
-    if (!name) {
-      setError("Nama bisnis wajib diisi");
-      return;
-    }
+  const handleSubmit = (values: BusinessFormValues) => {
     if (businessId) {
-      mutate();
+      mutate(values);
       return;
     }
-    // Create flow: delegate to parent to continue with bank info step
-    onCreateRequested?.({ name, description, defaultTransactionFeeBearer });
+    onCreateRequested?.({
+      name: values.name,
+      description: values.description,
+      defaultTransactionFeeBearer:
+        initialDefaultTransactionFeeBearer ?? "CUSTOMER",
+    });
     onOpenChange(false);
-    onSuccess?.();
+  };
+
+  const fields: FormFieldConfig<BusinessFormValues>[] = useMemo(
+    () => [
+      {
+        name: "name",
+        label: "Nama Bisnis",
+        type: "text",
+        placeholder: "Contoh: Laundry Bersih Jaya",
+        icon: Building2,
+        colSpan: "full" as const,
+      },
+      {
+        name: "description",
+        label: "Deskripsi",
+        type: "textarea",
+        placeholder: "Deskripsi singkat bisnis Anda",
+        icon: FileText,
+        colSpan: "full" as const,
+      },
+    ],
+    []
+  );
+
+  const defaultValues: BusinessFormValues = {
+    name: initialName || "",
+    description: initialDescription || "",
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-xl max-h-[80vh] overflow-y-auto overflow-x-hidden">
-        <DialogHeader>
-          <DialogTitle>Lengkapi Profil Bisnis</DialogTitle>
-          <DialogDescription>Isi informasi dasar bisnis Anda.</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          {error && (
-            <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 px-3 py-2 text-sm">
-              {error}
-            </div>
-          )}
-          <div>
-            <Label htmlFor="business-name">Nama Bisnis</Label>
-            <Input
-              id="business-name"
-              placeholder="Contoh: Laundry Bersih Jaya"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-          <div>
-            <Label htmlFor="business-desc">Deskripsi</Label>
-            <Textarea
-              id="business-desc"
-              placeholder="Deskripsi singkat bisnis Anda"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-          <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={isPending}>
-              Batal
-            </Button>
-            <Button onClick={handleSubmit} disabled={isPending || !name}>
-              {isPending ? "Menyimpan..." : "Lanjut"}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <ReusableForm<BusinessFormValues>
+      schema={businessSchema}
+      fields={fields}
+      defaultValues={defaultValues}
+      onSubmit={handleSubmit}
+      isLoading={isPending}
+      submitText={businessId ? "Simpan Perubahan" : "Lanjut"}
+      gridCols={1}
+      withDialog
+      isDialogOpen={open}
+      onDialogOpenChange={onOpenChange}
+      dialogTitle={
+        businessId ? "Edit Profil Bisnis" : "Lengkapi Profil Bisnis"
+      }
+      dialogDescription="Isi informasi dasar bisnis Anda."
+      resetFormOnClose
+    />
   );
 }

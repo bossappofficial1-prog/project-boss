@@ -265,11 +265,10 @@ export function LoyaltyMembersTable({ outletId }: { outletId: string }) {
                         </div>
                     </div>
                     <DialogFooter className="p-4 border-t border-border/40 bg-muted/5 gap-2 sm:gap-0">
-                        <Button variant="outline" onClick={() => setEditingMember(null)} className="h-9 font-bold text-xs uppercase tracking-wider border-border/60 shadow-none">Batal</Button>
+                        <Button variant="outline" onClick={() => setEditingMember(null)}>Batal</Button>
                         <Button
                             onClick={handleAdjustPoints}
                             disabled={adjustPoints.isPending}
-                            className="h-9 font-bold text-xs uppercase tracking-wider bg-blue-600 hover:bg-blue-500 shadow-none"
                         >
                             {adjustPoints.isPending ? "Memproses..." : "Simpan Perubahan"}
                         </Button>

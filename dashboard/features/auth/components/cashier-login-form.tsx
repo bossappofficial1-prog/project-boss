@@ -274,7 +274,7 @@ function CashierLoginFormInner() {
               <label className="text-sm font-medium">PIN</label>
               <Input
                 name="pin"
-                type="text"
+                type="password"
                 inputMode="numeric"
                 pattern="[0-9]*"
                 placeholder="Masukkan 6 digit PIN"

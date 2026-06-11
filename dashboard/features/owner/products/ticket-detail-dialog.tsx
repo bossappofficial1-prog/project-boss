@@ -317,10 +317,10 @@ export default function TicketDetailDialog({ product, open, onOpenChange }: Tick
                                         <div className="flex items-center justify-between pt-1">
                                             <p className="text-xs text-muted-foreground">Hal {page}/{totalPages}</p>
                                             <div className="flex gap-1">
-                                                <Button size="sm" variant="outline" className="h-7 w-7 p-0" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+                                                <Button size="icon-sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
                                                     <ChevronLeft className="h-3 w-3" />
                                                 </Button>
-                                                <Button size="sm" variant="outline" className="h-7 w-7 p-0" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+                                                <Button size="icon-sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
                                                     <ChevronRight className="h-3 w-3" />
                                                 </Button>
                                             </div>

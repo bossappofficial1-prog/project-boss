@@ -123,17 +123,17 @@ export default function ExpensesPage() {
 							variant="outline"
 							onClick={() => document.getElementById("scan-receipt-input")?.click()}
 							disabled={scanning || !outletId}
-							className="font-bold text-xs h-10 shadow-none border-primary/20 text-primary hover:bg-primary/5"
+							size="lg"
 						>
 							{scanning ? (
-								<Loader2 className="w-4 h-4 mr-2 animate-spin" />
+								<Loader2 className="w-4 h-4 animate-spin" />
 							) : (
-								<Sparkles className="w-4 h-4 mr-2 text-primary" />
+								<Sparkles className="w-4 h-4" />
 							)}
 							Scan Struk (AI)
 						</Button>
-						<Button onClick={handleAdd} disabled={scanning || !outletId} className="font-bold text-xs h-10 shadow-none">
-							<Plus className="w-4 h-4 mr-2" />
+						<Button onClick={handleAdd} disabled={scanning || !outletId} size="lg">
+							<Plus className="w-4 h-4" />
 							Tambah Pengeluaran
 						</Button>
 					</div>
@@ -173,7 +173,6 @@ export default function ExpensesPage() {
 						variant="ghost"
 						size="icon"
 						onClick={refetch}
-						className="h-9 w-9 rounded-md hover:bg-background/50 transition-all text-muted-foreground"
 					>
 						<Loader2 className={cn("w-4 h-4", loading && "animate-spin")} />
 					</Button>
@@ -184,7 +183,7 @@ export default function ExpensesPage() {
 				<div className="bg-rose-500/10 border border-rose-500/20 rounded-md p-4 flex items-center gap-3 text-rose-600">
 					<Receipt className="w-4 h-4" />
 					<p className="text-xs font-bold">{error}</p>
-					<Button onClick={refetch} variant="ghost" size="sm" className="ml-auto h-7 text-[10px] font-bold hover:bg-rose-500/20 text-rose-600">
+					<Button onClick={refetch} variant="ghost" size="sm">
 						Coba Lagi
 					</Button>
 				</div>
