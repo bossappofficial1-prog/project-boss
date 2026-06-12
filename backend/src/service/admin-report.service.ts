@@ -74,19 +74,20 @@ export class AdminReportService extends BaseService {
           reportData = {};
       }
 
-      const pdfBuffer = await this.generatePDF(type, reportData, startDate, endDate);
+      const pdfBuffer = await this.generatePDF(type, period, reportData, startDate, endDate);
       const pdfFilename = `report-${reportId}-${Date.now()}.pdf`;
       const pdfPath = path.join(process.cwd(), 'uploads', 'reports', pdfFilename);
       await fs.ensureDir(path.dirname(pdfPath));
       await fs.writeFile(pdfPath, pdfBuffer);
 
-      const excelBuffer = await this.generateExcel(type, reportData, startDate, endDate);
+      const excelBuffer = await this.generateExcel(type, period, reportData, startDate, endDate);
       const excelFilename = `report-${reportId}-${Date.now()}.xlsx`;
       const excelPath = path.join(process.cwd(), 'uploads', 'reports', excelFilename);
       await fs.writeFile(excelPath, excelBuffer);
 
       await this.adminReportRepository.updateStatus(reportId, ReportStatus.COMPLETED, {
         fileUrl: `/uploads/reports/${pdfFilename}`,
+        excelUrl: `/uploads/reports/${excelFilename}`,
         fileSize: pdfBuffer.length,
       });
     } catch (error: any) {
@@ -176,9 +177,9 @@ export class AdminReportService extends BaseService {
     }
   }
 
-  private async generatePDF(type: ReportType, data: any, startDate: Date, endDate: Date): Promise<Buffer> {
-    const title = this.generateTitle(type, ReportPeriod.MONTHLY);
-    const periodLabel = this.getPeriodLabel(type === ReportType.SUBSCRIPTION_SUMMARY ? ReportPeriod.MONTHLY : ReportPeriod.MONTHLY, startDate, endDate);
+  private async generatePDF(type: ReportType, period: ReportPeriod, data: any, startDate: Date, endDate: Date): Promise<Buffer> {
+    const title = this.generateTitle(type, period);
+    const periodLabel = this.getPeriodLabel(period, startDate, endDate);
     const generatedAt = new Date().toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     const reportNumber = this.generateReportNumber(type);
 
@@ -243,20 +244,68 @@ export class AdminReportService extends BaseService {
     }
   }
 
-  private async generateExcel(type: ReportType, data: any, startDate: Date, endDate: Date): Promise<Buffer> {
+  private async generateExcel(type: ReportType, period: ReportPeriod, data: any, startDate: Date, endDate: Date): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'BOSS Platform';
     workbook.created = new Date();
 
-    const title = this.generateTitle(type, ReportPeriod.MONTHLY);
+    const title = this.generateTitle(type, period);
     const worksheet = workbook.addWorksheet(title);
 
-    worksheet.addRow([title]);
+    // Header styling
+    const headerRow = worksheet.addRow([title]);
+    headerRow.font = { bold: true, size: 14 };
     worksheet.addRow([`Periode: ${startDate.toLocaleDateString('id-ID')} - ${endDate.toLocaleDateString('id-ID')}`]);
     worksheet.addRow([`Digenerate: ${new Date().toLocaleString('id-ID')}`]);
     worksheet.addRow([]);
 
-    if (type === ReportType.TRANSACTION && data) {
+    if (type === ReportType.REVENUE && data) {
+      // Ringkasan section
+      const summaryHeader = worksheet.addRow(['Ringkasan']);
+      summaryHeader.font = { bold: true, size: 12 };
+      worksheet.addRow(['Total Pendapatan', `Rp ${(data.totalRevenue || 0).toLocaleString('id-ID')}`]);
+      worksheet.addRow(['Total Transaksi', data.totalTransactions || 0]);
+      worksheet.addRow(['Rata-rata/Transaksi', `Rp ${Math.round(data.averagePerTransaction || 0).toLocaleString('id-ID')}`]);
+      worksheet.addRow([]);
+
+      // Breakdown Harian section
+      if (data.dailyBreakdown?.length) {
+        const breakdownHeader = worksheet.addRow(['Breakdown Harian']);
+        breakdownHeader.font = { bold: true, size: 12 };
+        
+        const tableHeader = worksheet.addRow(['Tanggal', 'Pendapatan', 'Jumlah Transaksi']);
+        tableHeader.eachCell((cell) => {
+          cell.font = { bold: true };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
+        });
+
+        data.dailyBreakdown.forEach((item: any) => {
+          worksheet.addRow([
+            item.date,
+            `Rp ${(item.revenue || 0).toLocaleString('id-ID')}`,
+            item.count || 0,
+          ]);
+        });
+      }
+    } else if (type === ReportType.BUSINESS_PERFORMANCE && data) {
+      if (data.businesses?.length) {
+        const tableHeader = worksheet.addRow(['No', 'Nama Bisnis', 'Owner', 'Paket', 'Pendapatan']);
+        tableHeader.eachCell((cell) => {
+          cell.font = { bold: true };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
+        });
+
+        data.businesses.forEach((business: any, index: number) => {
+          worksheet.addRow([
+            index + 1,
+            business.name,
+            business.ownerName,
+            business.plan,
+            `Rp ${(business.revenue || 0).toLocaleString('id-ID')}`,
+          ]);
+        });
+      }
+    } else if (type === ReportType.TRANSACTION && data) {
       worksheet.addRow(['Metrik', 'Nilai']);
       worksheet.addRow(['Total Transaksi', data.total || 0]);
       worksheet.addRow(['Berhasil', data.successful || 0]);
@@ -276,12 +325,20 @@ export class AdminReportService extends BaseService {
         data.planDistribution.forEach((p: any) => worksheet.addRow([p.plan, p.count]));
       }
     } else {
-      worksheet.addRow(['Data']);
-      worksheet.addRow([JSON.stringify(data, null, 2)]);
+      worksheet.addRow(['Data tidak tersedia']);
     }
 
-    worksheet.getRow(1).font = { bold: true, size: 14 };
-    worksheet.columns.forEach((column) => { column.width = 25; });
+    // Auto-fit columns
+    worksheet.columns.forEach((column) => {
+      let maxLength = 15;
+      column.eachCell({ includeEmpty: false }, (cell) => {
+        const cellLength = cell.value?.toString().length || 0;
+        if (cellLength > maxLength) {
+          maxLength = cellLength;
+        }
+      });
+      column.width = Math.min(maxLength + 2, 40);
+    });
 
     return workbook.xlsx.writeBuffer() as Promise<Buffer>;
   }
@@ -302,6 +359,11 @@ export class AdminReportService extends BaseService {
     if (report.fileUrl) {
       const filePath = path.join(process.cwd(), report.fileUrl);
       await fs.remove(filePath).catch(() => {});
+    }
+
+    if (report.excelUrl) {
+      const excelPath = path.join(process.cwd(), report.excelUrl);
+      await fs.remove(excelPath).catch(() => {});
     }
 
     await this.adminReportRepository.delete(id);

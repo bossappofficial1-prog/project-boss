@@ -209,9 +209,18 @@ export function ReportContent() {
     ...(row.status === 'COMPLETED' && row.fileUrl
       ? [
           {
-            label: 'Download',
-            icon: Download,
-            onClick: () => downloadMutation.mutate(row.id),
+            label: 'Download PDF',
+            icon: FileText,
+            onClick: () => downloadMutation.mutate({ reportId: row.id, format: 'pdf' }),
+          },
+        ]
+      : []),
+    ...(row.status === 'COMPLETED' && row.excelUrl
+      ? [
+          {
+            label: 'Download Excel',
+            icon: FileSpreadsheet,
+            onClick: () => downloadMutation.mutate({ reportId: row.id, format: 'xlsx' }),
           },
         ]
       : []),

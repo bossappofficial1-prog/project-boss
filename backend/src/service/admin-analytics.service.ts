@@ -302,7 +302,7 @@ export class AdminAnalyticsService extends BaseService {
       SELECT COALESCE(SUM(bs2."pricePerCycle" - bs1."pricePerCycle"), 0) as amount
       FROM "BusinessSubscription" bs1
       JOIN "BusinessSubscription" bs2 ON bs1."businessId" = bs2."businessId"
-      WHERE bs1.status = 'SUPERSEDED'
+      WHERE bs1.status = 'CANCELLED'
         AND bs2.status = 'ACTIVE'
         AND bs2."pricePerCycle" > bs1."pricePerCycle"
         AND bs2."createdAt" >= ${sixMonthsAgo}
@@ -313,7 +313,7 @@ export class AdminAnalyticsService extends BaseService {
       SELECT COALESCE(SUM(bs1."pricePerCycle" - bs2."pricePerCycle"), 0) as amount
       FROM "BusinessSubscription" bs1
       JOIN "BusinessSubscription" bs2 ON bs1."businessId" = bs2."businessId"
-      WHERE bs1.status = 'SUPERSEDED'
+      WHERE bs1.status = 'CANCELLED'
         AND bs2.status = 'ACTIVE'
         AND bs2."pricePerCycle" < bs1."pricePerCycle"
         AND bs2."createdAt" >= ${sixMonthsAgo}
@@ -415,7 +415,7 @@ export class AdminAnalyticsService extends BaseService {
           DATE_TRUNC('month', "createdAt") as month_date,
           SUM("pricePerCycle") as mrr
         FROM "BusinessSubscription"
-        WHERE status IN ('ACTIVE', 'SUPERSEDED')
+        WHERE status IN ('ACTIVE', 'CANCELLED')
           AND "createdAt" >= ${sixMonthsAgo}
         GROUP BY DATE_TRUNC('month', "createdAt")
       )

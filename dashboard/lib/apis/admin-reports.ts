@@ -11,6 +11,7 @@ export interface Report {
   title: string;
   parameters?: Record<string, any>;
   fileUrl?: string;
+  excelUrl?: string;
   fileSize?: number;
   generatedBy: string;
   generatedByUser: {
@@ -114,15 +115,15 @@ export function useDeleteReport() {
 
 export function useDownloadReport() {
   return useMutation({
-    mutationFn: async (reportId: string) => {
-      const response = await api.get(`/admin/reports/${reportId}/download`, {
+    mutationFn: async ({ reportId, format }: { reportId: string; format: 'pdf' | 'xlsx' }) => {
+      const response = await api.get(`/admin/reports/${reportId}/download?format=${format}`, {
         responseType: "blob",
       });
 
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `report-${reportId}.pdf`);
+      link.setAttribute("download", `report-${reportId}.${format}`);
       document.body.appendChild(link);
       link.click();
       link.remove();

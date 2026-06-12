@@ -132,6 +132,14 @@ export class PlanLimitService {
 
         const planFeatures = this.parsePlanFeatures(context.currentSubscription.plan.features);
 
+        // Load custom business settings (admin overrides)
+        const businessSettings = await this.getBusinessSettings(businessId);
+
+        // Apply custom limits if set, otherwise use plan defaults
+        const effectiveMaxOutlets = businessSettings?.customOutletLimit ?? planFeatures.maxOutlets;
+        const effectiveMaxProducts = businessSettings?.customProductLimit ?? planFeatures.maxProducts;
+        const effectiveMaxStaff = businessSettings?.customStaffLimit ?? planFeatures.maxStaff;
+
         const [outlets, products, staff] = await Promise.all([
             BusinessUsageRepository.countOutletsByBusiness(businessId),
             BusinessUsageRepository.countProductsByBusiness(businessId),
@@ -139,9 +147,9 @@ export class PlanLimitService {
         ]);
 
         const usage: PlanUsageSnapshot = {
-            outlets: this.buildUsageItem(outlets, planFeatures.maxOutlets),
-            products: this.buildUsageItem(products, planFeatures.maxProducts),
-            staff: this.buildUsageItem(staff, planFeatures.maxStaff),
+            outlets: this.buildUsageItem(outlets, effectiveMaxOutlets),
+            products: this.buildUsageItem(products, effectiveMaxProducts),
+            staff: this.buildUsageItem(staff, effectiveMaxStaff),
             subscription: {
                 status: context.subscriptionStatus,
                 endsAt: context.subscriptionEndDate ? new Date(context.subscriptionEndDate).toISOString() : null,
@@ -161,6 +169,17 @@ export class PlanLimitService {
             const label = this.getResourceLabel(resource);
             throw new AppError(`Batas ${label} pada paket langganan Anda sudah tercapai`, HttpStatus.FORBIDDEN);
         }
+    }
+
+    private static async getBusinessSettings(businessId: string) {
+        const setting = await db.platformSetting.findUnique({
+            where: { key: `business_settings_${businessId}` },
+        });
+        return (setting?.value as {
+            customOutletLimit?: number | null;
+            customProductLimit?: number | null;
+            customStaffLimit?: number | null;
+        } | null) ?? null;
     }
 
     private static getResourceLabel(resource: keyof PlanUsageSnapshot) {

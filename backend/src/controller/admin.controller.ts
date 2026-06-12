@@ -324,26 +324,45 @@ export class AdminController extends BaseController {
 
     downloadReport = this.handler(async (req: Request, res: Response) => {
         const { reportId } = req.params;
+        const format = (req.query.format as string) || 'pdf';
 
         // Get report from database
-        const report = await AdminService.getReportById(reportId);
+        const report = await AdminService.getReportById(reportId as string);
         if (!report) {
             return this.error(res, 'Laporan tidak ditemukan', [], HttpStatus.NOT_FOUND);
         }
 
-        if (report.status !== 'COMPLETED' || !report.fileUrl) {
+        if (report.status !== 'COMPLETED') {
             return this.error(res, 'Laporan belum selesai diproses', [], HttpStatus.BAD_REQUEST);
         }
 
-        const filePath = path.join(process.cwd(), report.fileUrl);
+        let filePath: string;
+        let contentType: string;
+        let extension: string;
+
+        if (format === 'xlsx') {
+            if (!report.excelUrl) {
+                return this.error(res, 'File Excel tidak tersedia', [], HttpStatus.NOT_FOUND);
+            }
+            filePath = path.join(process.cwd(), report.excelUrl);
+            contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+            extension = 'xlsx';
+        } else {
+            if (!report.fileUrl) {
+                return this.error(res, 'File PDF tidak tersedia', [], HttpStatus.NOT_FOUND);
+            }
+            filePath = path.join(process.cwd(), report.fileUrl);
+            contentType = 'application/pdf';
+            extension = 'pdf';
+        }
         
         // Check if file exists
         if (!fs.existsSync(filePath)) {
             return this.error(res, 'File laporan tidak ditemukan', [], HttpStatus.NOT_FOUND);
         }
 
-        const filename = `${report.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
-        res.setHeader('Content-Type', 'application/pdf');
+        const filename = `${report.title.replace(/[^a-zA-Z0-9]/g, '_')}.${extension}`;
+        res.setHeader('Content-Type', contentType);
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
         
         const fileBuffer = fs.readFileSync(filePath);

@@ -1541,6 +1541,7 @@ model Report {
   title        String
   parameters   Json?
   fileUrl      String?
+  excelUrl     String?
   fileSize     Int?
   generatedBy  String
   errorMessage String?

@@ -46,12 +46,13 @@ export class AdminReportRepository {
     });
   }
 
-  async updateStatus(id: string, status: ReportStatus, data?: { fileUrl?: string; fileSize?: number; errorMessage?: string }) {
+  async updateStatus(id: string, status: ReportStatus, data?: { fileUrl?: string; excelUrl?: string; fileSize?: number; errorMessage?: string }) {
     return db.report.update({
       where: { id },
       data: {
         status,
         ...(data?.fileUrl && { fileUrl: data.fileUrl }),
+        ...(data?.excelUrl && { excelUrl: data.excelUrl }),
         ...(data?.fileSize && { fileSize: data.fileSize }),
         ...(data?.errorMessage && { errorMessage: data.errorMessage }),
       },
@@ -97,15 +98,52 @@ export class AdminReportRepository {
   }
 
   async getRevenueData(startDate: Date, endDate: Date) {
-    return db.order.groupBy({
-      by: ['createdAt'],
+    const orders = await db.order.findMany({
       where: {
         paymentStatus: 'SUCCESS',
         createdAt: { gte: startDate, lte: endDate },
       },
-      _sum: { totalAmount: true },
-      _count: { id: true },
+      select: {
+        totalAmount: true,
+        createdAt: true,
+      },
     });
+
+    // Group by date (YYYY-MM-DD)
+    const groupedByDate = new Map<string, { revenue: number; count: number }>();
+    
+    for (const order of orders) {
+      const dateKey = order.createdAt.toISOString().split('T')[0];
+      const existing = groupedByDate.get(dateKey) || { revenue: 0, count: 0 };
+      groupedByDate.set(dateKey, {
+        revenue: existing.revenue + (order.totalAmount || 0),
+        count: existing.count + 1,
+      });
+    }
+
+    // Convert to array and sort by date
+    const dailyBreakdown = Array.from(groupedByDate.entries())
+      .map(([date, data]) => ({
+        date: new Date(date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+        revenue: data.revenue,
+        count: data.count,
+      }))
+      .sort((a, b) => {
+        const dateA = new Date(a.date.split(' ').reverse().join(' '));
+        const dateB = new Date(b.date.split(' ').reverse().join(' '));
+        return dateA.getTime() - dateB.getTime();
+      });
+
+    const totalRevenue = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+    const totalTransactions = orders.length;
+    const averagePerTransaction = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
+
+    return {
+      totalRevenue,
+      totalTransactions,
+      averagePerTransaction,
+      dailyBreakdown,
+    };
   }
 
   async getTransactionSummary(startDate: Date, endDate: Date) {
@@ -128,7 +166,7 @@ export class AdminReportRepository {
   }
 
   async getBusinessPerformance(startDate: Date, endDate: Date) {
-    return db.business.findMany({
+    const businesses = await db.business.findMany({
       select: {
         id: true,
         name: true,
@@ -150,6 +188,22 @@ export class AdminReportRepository {
         },
       },
     });
+
+    // Transform to flat structure expected by template
+    return {
+      businesses: businesses.map((business) => {
+        const totalRevenue = business.outlets.reduce(
+          (sum, outlet) => sum + outlet.orders.reduce((orderSum, order) => orderSum + (order.totalAmount || 0), 0),
+          0
+        );
+        return {
+          name: business.name,
+          ownerName: business.owner?.name || '-',
+          plan: business.subscriptionPlan,
+          revenue: totalRevenue,
+        };
+      }),
+    };
   }
 
   async getSubscriptionSummary() {

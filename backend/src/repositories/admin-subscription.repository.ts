@@ -37,13 +37,13 @@ export class AdminSubscriptionRepository {
 
   async changeSubscriptionPlan(businessId: string, planId: string, startDate: Date, endDate: Date) {
     return db.$transaction(async (tx) => {
-      // Mark old subscriptions as superseded
+      // Mark old subscriptions as cancelled
       await tx.businessSubscription.updateMany({
         where: {
           businessId,
           status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE'] },
         },
-        data: { status: 'SUPERSEDED' as any },
+        data: { status: SubscriptionStatus.CANCELLED },
       });
 
       // Get plan details

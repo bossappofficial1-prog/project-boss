@@ -109,7 +109,7 @@ export class SubscriptionInvoiceRepository {
                     id: { not: invoice.subscriptionId },
                     status: { in: ['ACTIVE', 'TRIAL', 'AWAITING_PAYMENT'] },
                 },
-                data: { status: 'SUPERSEDED' },
+                data: { status: SubscriptionStatus.CANCELLED },
             });
 
             await tx.business.update({
