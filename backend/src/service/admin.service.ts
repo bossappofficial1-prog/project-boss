@@ -839,6 +839,13 @@ export class AdminService extends BaseService {
     };
   }
 
+  static async getReportById(reportId: string) {
+    const { db } = await import("../config/prisma");
+    return db.report.findUnique({
+      where: { id: reportId },
+    });
+  }
+
   static async getRevenueReport(options: {
     period?: string;
     startDate?: string;

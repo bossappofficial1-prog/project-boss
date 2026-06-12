@@ -1,4 +1,6 @@
 import { Request, Response } from 'express';
+import path from 'path';
+import fs from 'fs';
 import { BaseController } from './base.controller';
 import { AdminService } from '../service/admin.service';
 import { AdminV2Service } from '../service/adminv2.service';
@@ -323,11 +325,29 @@ export class AdminController extends BaseController {
     downloadReport = this.handler(async (req: Request, res: Response) => {
         const { reportId } = req.params;
 
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="report-${reportId}.pdf"`);
+        // Get report from database
+        const report = await AdminService.getReportById(reportId);
+        if (!report) {
+            return this.error(res, 'Laporan tidak ditemukan', [], HttpStatus.NOT_FOUND);
+        }
 
-        const mockPdfContent = Buffer.from(`Mock PDF Report: ${reportId}\nGenerated at: ${new Date().toISOString()}`);
-        res.status(HttpStatus.OK).send(mockPdfContent);
+        if (report.status !== 'COMPLETED' || !report.fileUrl) {
+            return this.error(res, 'Laporan belum selesai diproses', [], HttpStatus.BAD_REQUEST);
+        }
+
+        const filePath = path.join(process.cwd(), report.fileUrl);
+        
+        // Check if file exists
+        if (!fs.existsSync(filePath)) {
+            return this.error(res, 'File laporan tidak ditemukan', [], HttpStatus.NOT_FOUND);
+        }
+
+        const filename = `${report.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        
+        const fileBuffer = fs.readFileSync(filePath);
+        res.status(HttpStatus.OK).send(fileBuffer);
     });
 
     getMetricsKPIs = this.handler(async (_req: Request, res: Response) => {
