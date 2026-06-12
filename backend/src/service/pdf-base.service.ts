@@ -26,6 +26,10 @@ hbs.registerHelper('rowNumber', (index: number) => {
     return index + 1;
 });
 
+hbs.registerHelper('index_1', (index: number) => {
+    return index + 1;
+});
+
 export interface PdfHeaderFooter {
     /** Teks kiri header (contoh: nomor dokumen) */
     headerLeft?: string;

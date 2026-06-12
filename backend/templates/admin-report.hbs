@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <title>{{title}}</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600;700&display=swap');
 
         * {
             margin: 0;
@@ -32,7 +32,6 @@
 
         .page {
             width: 100%;
-            padding: 0;
         }
 
         /* === HEADER === */
@@ -40,225 +39,318 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 24px;
-            padding-bottom: 20px;
-            border-bottom: 3px solid #2563eb;
+            margin-bottom: 18px;
+            padding-bottom: 16px;
+            border-bottom: 1.5px solid #e2e8f0;
         }
 
         .header-left {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
         }
 
         .logo-box {
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-            border-radius: 12px;
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
         }
 
         .logo-text {
-            color: #ffffff;
-            font-size: 16px;
+            color: #ef4444;
+            font-size: 14px;
             font-weight: 800;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
+        }
+
+        .logo-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 10px;
         }
 
         .header-brand h1 {
-            font-size: 18px;
+            font-size: 17px;
             font-weight: 700;
             color: #0f172a;
+            letter-spacing: -0.3px;
             line-height: 1.2;
         }
 
         .header-brand p {
-            font-size: 10px;
+            font-size: 9.5px;
             color: #64748b;
-            font-weight: 400;
+            margin-top: 3px;
         }
 
         .header-right {
             text-align: right;
         }
 
-        .header-right .doc-type {
-            font-size: 9px;
-            font-weight: 600;
-            color: #2563eb;
+        .doc-type {
+            display: inline-block;
+            background: #fff1f2;
+            border: 1px solid #fecdd3;
+            border-radius: 4px;
+            padding: 3px 9px;
+            font-size: 7.5px;
+            font-weight: 700;
+            color: #ef4444;
             text-transform: uppercase;
-            letter-spacing: 1.5px;
-            margin-bottom: 4px;
+            letter-spacing: 0.8px;
+            margin-bottom: 5px;
         }
 
-        .header-right .doc-number {
-            font-size: 10px;
-            color: #64748b;
-            font-family: 'Courier New', monospace;
+        .doc-number {
+            font-family: 'Fira Code', monospace;
+            font-size: 10.5px;
+            font-weight: 600;
+            color: #0f172a;
+            display: block;
+            margin-bottom: 2px;
         }
 
-        /* === META INFO === */
-        .meta-section {
+        .doc-meta {
+            font-size: 8.5px;
+            color: #94a3b8;
+        }
+
+        /* === META BAR === */
+        .meta-bar {
             display: flex;
-            gap: 24px;
-            margin-bottom: 24px;
-            padding: 16px 20px;
-            background: #f8fafc;
-            border-radius: 10px;
             border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            background: #f8fafc;
         }
 
-        .meta-item {
+        .meta-bar-item {
             flex: 1;
+            padding: 9px 14px;
+            border-right: 1px solid #e2e8f0;
         }
 
-        .meta-label {
-            font-size: 9px;
+        .meta-bar-item:last-child {
+            border-right: none;
+        }
+
+        .meta-bar-label {
+            font-size: 7.5px;
             font-weight: 600;
             color: #94a3b8;
             text-transform: uppercase;
-            letter-spacing: 0.8px;
-            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
         }
 
-        .meta-value {
-            font-size: 12px;
+        .meta-bar-value {
+            font-size: 10px;
             font-weight: 600;
-            color: #0f172a;
+            color: #334155;
         }
 
-        /* === TITLE === */
-        .report-title {
-            margin-bottom: 24px;
-        }
-
-        .report-title h2 {
-            font-size: 22px;
+        /* === SECTION TITLE === */
+        .section-title {
+            font-size: 8.5px;
             font-weight: 700;
             color: #0f172a;
-            margin-bottom: 6px;
-        }
-
-        .report-title .subtitle {
-            font-size: 12px;
-            color: #64748b;
-            font-weight: 400;
-        }
-
-        /* === METRICS GRID === */
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 12px;
-            margin-bottom: 28px;
-        }
-
-        .metric-card {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 16px;
-            text-align: center;
-            transition: all 0.2s;
-        }
-
-        .metric-card.primary {
-            border-color: #2563eb;
-            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-        }
-
-        .metric-card.success {
-            border-color: #16a34a;
-            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-        }
-
-        .metric-card.warning {
-            border-color: #d97706;
-            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-        }
-
-        .metric-card.danger {
-            border-color: #dc2626;
-            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-        }
-
-        .metric-label {
-            font-size: 9px;
-            font-weight: 600;
-            color: #64748b;
             text-transform: uppercase;
-            letter-spacing: 0.8px;
-            margin-bottom: 6px;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
         }
 
-        .metric-value {
-            font-size: 24px;
+        .section-title::before {
+            content: '';
+            display: block;
+            width: 3px;
+            height: 11px;
+            background: #ef4444;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        /* === KPI GRID === */
+        .kpi-grid {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 22px;
+        }
+
+        .kpi-card {
+            flex: 1;
+            border-radius: 10px;
+            padding: 13px 14px;
+            border: 1px solid;
+        }
+
+        .kpi-label {
+            font-size: 7.5px;
             font-weight: 700;
-            color: #0f172a;
-            line-height: 1;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 7px;
         }
 
-        .metric-card.success .metric-value {
+        .kpi-value {
+            font-family: 'Fira Code', monospace;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            line-height: 1;
+            margin-bottom: 5px;
+        }
+
+        .kpi-sub {
+            font-size: 8px;
+        }
+
+        .kpi-revenue {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+
+        .kpi-revenue .kpi-label {
+            color: #15803d;
+        }
+
+        .kpi-revenue .kpi-value {
             color: #16a34a;
         }
 
-        .metric-card.warning .metric-value {
-            color: #d97706;
+        .kpi-revenue .kpi-sub {
+            color: #15803d;
         }
 
-        .metric-card.danger .metric-value {
+        .kpi-expense {
+            background: #fef2f2;
+            border-color: #fecaca;
+        }
+
+        .kpi-expense .kpi-label {
+            color: #b91c1c;
+        }
+
+        .kpi-expense .kpi-value {
             color: #dc2626;
         }
 
-        /* === TABLE === */
-        .table-section {
-            margin-bottom: 28px;
+        .kpi-expense .kpi-sub {
+            color: #b91c1c;
         }
 
-        .table-section h3 {
-            font-size: 14px;
-            font-weight: 600;
+        .kpi-trx {
+            background: #f8fafc;
+            border-color: #e2e8f0;
+        }
+
+        .kpi-trx .kpi-label {
+            color: #475569;
+        }
+
+        .kpi-trx .kpi-value {
             color: #0f172a;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .kpi-trx .kpi-sub {
+            color: #64748b;
+        }
+
+        .kpi-blue {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+        }
+
+        .kpi-blue .kpi-label {
+            color: #1d4ed8;
+        }
+
+        .kpi-blue .kpi-value {
+            color: #2563eb;
+        }
+
+        .kpi-blue .kpi-sub {
+            color: #1d4ed8;
+        }
+
+        .kpi-amber {
+            background: #fffbeb;
+            border-color: #fde68a;
+        }
+
+        .kpi-amber .kpi-label {
+            color: #b45309;
+        }
+
+        .kpi-amber .kpi-value {
+            color: #d97706;
+        }
+
+        .kpi-amber .kpi-sub {
+            color: #b45309;
+        }
+
+        /* === TABLE === */
+        .table-wrap {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 22px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 11px;
-        }
-
-        thead th {
-            background: #f1f5f9;
-            color: #475569;
-            font-weight: 600;
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 12px 16px;
             text-align: left;
-            border-bottom: 2px solid #e2e8f0;
         }
 
-        tbody td {
-            padding: 10px 16px;
-            border-bottom: 1px solid #f1f5f9;
+        thead tr {
+            background: #0f172a;
+        }
+
+        th {
+            color: #ffffff;
+            font-size: 7.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            padding: 9px 12px;
+        }
+
+        td {
+            padding: 10px 12px;
             color: #334155;
+            font-size: 10px;
+            border-bottom: 1px solid #f1f5f9;
         }
 
-        tbody tr:nth-child(even) {
-            background: #f8fafc;
+        tr:last-child td {
+            border-bottom: none;
         }
 
-        tbody tr:hover {
-            background: #f1f5f9;
+        tr:nth-child(even) td {
+            background: #fafafa;
+        }
+
+        tr {
+            page-break-inside: avoid;
+        }
+
+        .tr-total td {
+            background: #f1f5f9 !important;
+            border-top: 1.5px solid #cbd5e1;
+            font-weight: 700;
+            color: #0f172a;
         }
 
         .text-right {
@@ -270,22 +362,16 @@
         }
 
         .font-mono {
-            font-family: 'Courier New', monospace;
+            font-family: 'Fira Code', monospace;
             font-size: 10px;
         }
 
         .text-success {
             color: #16a34a;
-            font-weight: 600;
         }
 
         .text-danger {
             color: #dc2626;
-            font-weight: 600;
-        }
-
-        .text-muted {
-            color: #94a3b8;
         }
 
         /* === BADGE === */
@@ -293,7 +379,7 @@
             display: inline-block;
             padding: 2px 8px;
             border-radius: 4px;
-            font-size: 9px;
+            font-size: 8px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.3px;
@@ -301,55 +387,53 @@
 
         .badge-active {
             background: #dcfce7;
-            color: #16a34a;
+            color: #15803d;
+            border: 1px solid #bbf7d0;
         }
 
         .badge-trial {
             background: #dbeafe;
-            color: #2563eb;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
         }
 
         .badge-expired {
             background: #fee2e2;
-            color: #dc2626;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
         }
 
         .badge-suspended {
             background: #fef3c7;
-            color: #d97706;
+            color: #b45309;
+            border: 1px solid #fde68a;
         }
 
         .badge-cancelled {
             background: #f1f5f9;
-            color: #64748b;
+            color: #475569;
+            border: 1px solid #e2e8f0;
         }
 
         /* === SUMMARY BOX === */
         .summary-box {
-            background: #f8fafc;
             border: 1px solid #e2e8f0;
             border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 28px;
-        }
-
-        .summary-box h3 {
-            font-size: 13px;
-            font-weight: 600;
-            color: #0f172a;
-            margin-bottom: 12px;
+            padding: 16px;
+            margin-bottom: 22px;
+            background: #f8fafc;
         }
 
         .summary-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
+            gap: 6px 24px;
         }
 
         .summary-item {
             display: flex;
             justify-content: space-between;
-            padding: 6px 0;
+            padding: 5px 0;
             border-bottom: 1px dashed #e2e8f0;
         }
 
@@ -359,32 +443,30 @@
 
         .summary-label {
             color: #64748b;
-            font-size: 11px;
+            font-size: 10px;
         }
 
         .summary-value {
             font-weight: 600;
             color: #0f172a;
-            font-size: 11px;
+            font-size: 10px;
+            font-family: 'Fira Code', monospace;
         }
 
         /* === FOOTER === */
         .footer {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 2px solid #e2e8f0;
+            margin-top: 30px;
+            padding-top: 16px;
+            border-top: 1.5px solid #e2e8f0;
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
         }
 
         .footer-left {
-            font-size: 9px;
+            font-size: 8px;
             color: #94a3b8;
-        }
-
-        .footer-left p {
-            margin-bottom: 2px;
+            line-height: 1.8;
         }
 
         .footer-right {
@@ -399,48 +481,35 @@
         }
 
         .footer-name {
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 600;
             color: #0f172a;
         }
 
         .footer-title {
-            font-size: 9px;
+            font-size: 8px;
             color: #64748b;
         }
 
-        /* === PAGE NUMBER === */
-        .page-number {
-            position: fixed;
-            bottom: 10mm;
-            right: 13mm;
-            font-size: 9px;
+        .footer-stamp {
+            font-size: 7px;
             color: #94a3b8;
-        }
-
-        /* === WATERMARK === */
-        .watermark {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(-45deg);
-            font-size: 80px;
-            font-weight: 800;
-            color: rgba(37, 99, 235, 0.03);
-            pointer-events: none;
-            z-index: -1;
+            margin-top: 8px;
         }
     </style>
 </head>
 
 <body>
-    <div class="watermark">BOSS</div>
     <div class="page">
         <!-- HEADER -->
         <div class="header">
             <div class="header-left">
                 <div class="logo-box">
+                    {{#if logoBase64}}
+                    <img src="{{logoBase64}}" class="logo-img" alt="BOSS">
+                    {{else}}
                     <span class="logo-text">B</span>
+                    {{/if}}
                 </div>
                 <div class="header-brand">
                     <h1>BOSS Platform</h1>
@@ -449,69 +518,65 @@
             </div>
             <div class="header-right">
                 <div class="doc-type">Laporan Resmi</div>
-                <div class="doc-number">No: {{reportNumber}}</div>
+                <div class="doc-number">{{reportNumber}}</div>
+                <div class="doc-meta">{{generatedAt}}</div>
             </div>
         </div>
 
-        <!-- META -->
-        <div class="meta-section">
-            <div class="meta-item">
-                <div class="meta-label">Jenis Laporan</div>
-                <div class="meta-value">{{reportType}}</div>
+        <!-- META BAR -->
+        <div class="meta-bar">
+            <div class="meta-bar-item">
+                <div class="meta-bar-label">Jenis Laporan</div>
+                <div class="meta-bar-value">{{reportType}}</div>
             </div>
-            <div class="meta-item">
-                <div class="meta-label">Periode</div>
-                <div class="meta-value">{{periodLabel}}</div>
+            <div class="meta-bar-item">
+                <div class="meta-bar-label">Periode</div>
+                <div class="meta-bar-value">{{periodLabel}}</div>
             </div>
-            <div class="meta-item">
-                <div class="meta-label">Tanggal Generate</div>
-                <div class="meta-value">{{generatedAt}}</div>
-            </div>
-            <div class="meta-item">
-                <div class="meta-label">Status</div>
-                <div class="meta-value text-success">Selesai</div>
+            <div class="meta-bar-item">
+                <div class="meta-bar-label">Dicetak</div>
+                <div class="meta-bar-value">{{generatedAt}}</div>
             </div>
         </div>
 
-        <!-- TITLE -->
-        <div class="report-title">
-            <h2>{{title}}</h2>
-            <p class="subtitle">Ringkasan data dan metrik platform untuk periode {{periodLabel}}</p>
-        </div>
-
-        <!-- CONTENT BY REPORT TYPE -->
         {{#if isSubscriptionSummary}}
         <!-- SUBSCRIPTION SUMMARY -->
-        <div class="metrics-grid">
-            <div class="metric-card success">
-                <div class="metric-label">Active</div>
-                <div class="metric-value">{{data.active}}</div>
+        <div class="section-title">Ringkasan Langganan</div>
+        <div class="kpi-grid">
+            <div class="kpi-card kpi-revenue">
+                <div class="kpi-label">Active</div>
+                <div class="kpi-value">{{data.active}}</div>
+                <div class="kpi-sub">Bisnis aktif</div>
             </div>
-            <div class="metric-card primary">
-                <div class="metric-label">Trial</div>
-                <div class="metric-value">{{data.trial}}</div>
+            <div class="kpi-card kpi-blue">
+                <div class="kpi-label">Trial</div>
+                <div class="kpi-value">{{data.trial}}</div>
+                <div class="kpi-sub">Masa uji coba</div>
             </div>
-            <div class="metric-card danger">
-                <div class="metric-label">Expired</div>
-                <div class="metric-value">{{data.expired}}</div>
+            <div class="kpi-card kpi-expense">
+                <div class="kpi-label">Expired</div>
+                <div class="kpi-value">{{data.expired}}</div>
+                <div class="kpi-sub">Kadaluarsa</div>
             </div>
-            <div class="metric-card warning">
-                <div class="metric-label">Suspended</div>
-                <div class="metric-value">{{data.suspended}}</div>
+            <div class="kpi-card kpi-amber">
+                <div class="kpi-label">Suspended</div>
+                <div class="kpi-value">{{data.suspended}}</div>
+                <div class="kpi-sub">Ditangguhkan</div>
             </div>
-            <div class="metric-card">
-                <div class="metric-label">Cancelled</div>
-                <div class="metric-value">{{data.cancelled}}</div>
+            <div class="kpi-card kpi-trx">
+                <div class="kpi-label">Cancelled</div>
+                <div class="kpi-value">{{data.cancelled}}</div>
+                <div class="kpi-sub">Dibatalkan</div>
             </div>
         </div>
 
         {{#if data.planDistribution.length}}
-        <div class="table-section">
-            <h3>Distribusi Paket Langganan</h3>
+        <div class="section-title">Distribusi Paket Langganan</div>
+        <div class="table-wrap">
             <table>
                 <thead>
                     <tr>
-                        <th>No</th>
+                        <th style="width:40px">No</th>
                         <th>Paket</th>
                         <th class="text-center">Jumlah Bisnis</th>
                         <th class="text-center">Persentase</th>
@@ -520,7 +585,7 @@
                 <tbody>
                     {{#each data.planDistribution}}
                     <tr>
-                        <td class="text-center">{{@index_1}}</td>
+                        <td class="text-center">{{rowNumber @index}}</td>
                         <td><span class="badge badge-active">{{this.plan}}</span></td>
                         <td class="text-center font-mono">{{this.count}}</td>
                         <td class="text-center font-mono">{{this.percentage}}%</td>
@@ -534,47 +599,53 @@
 
         {{#if isTransaction}}
         <!-- TRANSACTION SUMMARY -->
-        <div class="metrics-grid">
-            <div class="metric-card primary">
-                <div class="metric-label">Total Transaksi</div>
-                <div class="metric-value">{{data.total}}</div>
+        <div class="section-title">Ringkasan Transaksi</div>
+        <div class="kpi-grid">
+            <div class="kpi-card kpi-trx">
+                <div class="kpi-label">Total Transaksi</div>
+                <div class="kpi-value">{{data.total}}</div>
+                <div class="kpi-sub">Seluruh transaksi</div>
             </div>
-            <div class="metric-card success">
-                <div class="metric-label">Berhasil</div>
-                <div class="metric-value">{{data.successful}}</div>
+            <div class="kpi-card kpi-revenue">
+                <div class="kpi-label">Berhasil</div>
+                <div class="kpi-value">{{data.successful}}</div>
+                <div class="kpi-sub">Transaksi sukses</div>
             </div>
-            <div class="metric-card danger">
-                <div class="metric-label">Gagal</div>
-                <div class="metric-value">{{data.failed}}</div>
+            <div class="kpi-card kpi-expense">
+                <div class="kpi-label">Gagal</div>
+                <div class="kpi-value">{{data.failed}}</div>
+                <div class="kpi-sub">Transaksi gagal</div>
             </div>
-            <div class="metric-card warning">
-                <div class="metric-label">Refund</div>
-                <div class="metric-value">{{data.refunded}}</div>
+            <div class="kpi-card kpi-amber">
+                <div class="kpi-label">Refund</div>
+                <div class="kpi-value">{{data.refunded}}</div>
+                <div class="kpi-sub">Dana dikembalikan</div>
             </div>
-            <div class="metric-card success">
-                <div class="metric-label">Success Rate</div>
-                <div class="metric-value">{{data.successRate}}%</div>
+            <div class="kpi-card kpi-revenue">
+                <div class="kpi-label">Success Rate</div>
+                <div class="kpi-value">{{data.successRate}}%</div>
+                <div class="kpi-sub">Tingkat keberhasilan</div>
             </div>
         </div>
 
+        <div class="section-title">Detail Metrik</div>
         <div class="summary-box">
-            <h3>Ringkasan Transaksi</h3>
             <div class="summary-grid">
                 <div class="summary-item">
                     <span class="summary-label">Total Transaksi</span>
-                    <span class="summary-value">{{data.total}} transaksi</span>
+                    <span class="summary-value">{{data.total}}</span>
                 </div>
                 <div class="summary-item">
                     <span class="summary-label">Transaksi Berhasil</span>
-                    <span class="summary-value text-success">{{data.successful}} transaksi</span>
+                    <span class="summary-value text-success">{{data.successful}}</span>
                 </div>
                 <div class="summary-item">
                     <span class="summary-label">Transaksi Gagal</span>
-                    <span class="summary-value text-danger">{{data.failed}} transaksi</span>
+                    <span class="summary-value text-danger">{{data.failed}}</span>
                 </div>
                 <div class="summary-item">
                     <span class="summary-label">Transaksi Refund</span>
-                    <span class="summary-value">{{data.refunded}} transaksi</span>
+                    <span class="summary-value">{{data.refunded}}</span>
                 </div>
                 <div class="summary-item">
                     <span class="summary-label">Success Rate</span>
@@ -590,28 +661,32 @@
 
         {{#if isRevenue}}
         <!-- REVENUE REPORT -->
-        <div class="metrics-grid" style="grid-template-columns: repeat(3, 1fr);">
-            <div class="metric-card success">
-                <div class="metric-label">Total Pendapatan</div>
-                <div class="metric-value">{{formatRupiah data.totalRevenue}}</div>
+        <div class="section-title">Ringkasan Pendapatan</div>
+        <div class="kpi-grid">
+            <div class="kpi-card kpi-revenue">
+                <div class="kpi-label">Total Pendapatan</div>
+                <div class="kpi-value">{{formatRupiah data.totalRevenue}}</div>
+                <div class="kpi-sub">Pendapatan kotor</div>
             </div>
-            <div class="metric-card primary">
-                <div class="metric-label">Total Transaksi</div>
-                <div class="metric-value">{{data.totalTransactions}}</div>
+            <div class="kpi-card kpi-trx">
+                <div class="kpi-label">Total Transaksi</div>
+                <div class="kpi-value">{{data.totalTransactions}}</div>
+                <div class="kpi-sub">Jumlah order</div>
             </div>
-            <div class="metric-card">
-                <div class="metric-label">Rata-rata per Transaksi</div>
-                <div class="metric-value">{{formatRupiah data.averagePerTransaction}}</div>
+            <div class="kpi-card kpi-blue">
+                <div class="kpi-label">Rata-rata</div>
+                <div class="kpi-value">{{formatRupiah data.averagePerTransaction}}</div>
+                <div class="kpi-sub">Per transaksi</div>
             </div>
         </div>
 
         {{#if data.dailyBreakdown.length}}
-        <div class="table-section">
-            <h3>Breakdown Harian</h3>
+        <div class="section-title">Breakdown Harian</div>
+        <div class="table-wrap">
             <table>
                 <thead>
                     <tr>
-                        <th>No</th>
+                        <th style="width:40px">No</th>
                         <th>Tanggal</th>
                         <th class="text-right">Pendapatan</th>
                         <th class="text-center">Jumlah Transaksi</th>
@@ -620,7 +695,7 @@
                 <tbody>
                     {{#each data.dailyBreakdown}}
                     <tr>
-                        <td class="text-center">{{@index_1}}</td>
+                        <td class="text-center">{{rowNumber @index}}</td>
                         <td>{{this.date}}</td>
                         <td class="text-right font-mono">{{formatRupiah this.revenue}}</td>
                         <td class="text-center font-mono">{{this.count}}</td>
@@ -634,28 +709,26 @@
 
         {{#if isBusinessPerformance}}
         <!-- BUSINESS PERFORMANCE -->
+        <div class="section-title">Performa Bisnis</div>
         {{#if data.businesses.length}}
-        <div class="table-section">
-            <h3>Performa Bisnis</h3>
+        <div class="table-wrap">
             <table>
                 <thead>
                     <tr>
-                        <th>No</th>
+                        <th style="width:40px">No</th>
                         <th>Nama Bisnis</th>
                         <th>Owner</th>
                         <th class="text-center">Paket</th>
-                        <th class="text-center">Status</th>
-                        <th class="text-right">Total Pendapatan</th>
+                        <th class="text-right">Pendapatan</th>
                     </tr>
                 </thead>
                 <tbody>
                     {{#each data.businesses}}
                     <tr>
-                        <td class="text-center">{{@index_1}}</td>
+                        <td class="text-center">{{rowNumber @index}}</td>
                         <td><strong>{{this.name}}</strong></td>
                         <td>{{this.ownerName}}</td>
                         <td class="text-center"><span class="badge badge-active">{{this.plan}}</span></td>
-                        <td class="text-center"><span class="badge badge-{{this.statusClass}}">{{this.status}}</span></td>
                         <td class="text-right font-mono">{{formatRupiah this.revenue}}</td>
                     </tr>
                     {{/each}}
@@ -667,22 +740,27 @@
 
         {{#if isUserActivity}}
         <!-- USER ACTIVITY -->
-        <div class="metrics-grid" style="grid-template-columns: repeat(4, 1fr);">
-            <div class="metric-card primary">
-                <div class="metric-label">Total Users</div>
-                <div class="metric-value">{{data.totalUsers}}</div>
+        <div class="section-title">Aktivitas Pengguna</div>
+        <div class="kpi-grid">
+            <div class="kpi-card kpi-trx">
+                <div class="kpi-label">Total Users</div>
+                <div class="kpi-value">{{data.totalUsers}}</div>
+                <div class="kpi-sub">Seluruh pengguna</div>
             </div>
-            <div class="metric-card success">
-                <div class="metric-label">Active</div>
-                <div class="metric-value">{{data.activeUsers}}</div>
+            <div class="kpi-card kpi-revenue">
+                <div class="kpi-label">Active</div>
+                <div class="kpi-value">{{data.activeUsers}}</div>
+                <div class="kpi-sub">Pengguna aktif</div>
             </div>
-            <div class="metric-card warning">
-                <div class="metric-label">Suspended</div>
-                <div class="metric-value">{{data.suspendedUsers}}</div>
+            <div class="kpi-card kpi-amber">
+                <div class="kpi-label">Suspended</div>
+                <div class="kpi-value">{{data.suspendedUsers}}</div>
+                <div class="kpi-sub">Ditangguhkan</div>
             </div>
-            <div class="metric-card">
-                <div class="metric-label">New This Month</div>
-                <div class="metric-value">{{data.newUsersThisMonth}}</div>
+            <div class="kpi-card kpi-blue">
+                <div class="kpi-label">New This Month</div>
+                <div class="kpi-value">{{data.newUsersThisMonth}}</div>
+                <div class="kpi-sub">Bulan ini</div>
             </div>
         </div>
         {{/if}}
@@ -690,14 +768,15 @@
         <!-- FOOTER -->
         <div class="footer">
             <div class="footer-left">
-                <p>Dokumen ini digenerate otomatis oleh sistem BOSS Platform</p>
-                <p>Dicetak pada: {{generatedAt}}</p>
-                <p>Dokumen ini sah dan tidak memerlukan tanda tangan basah</p>
+                <div>Dokumen ini digenerate otomatis oleh sistem BOSS Platform</div>
+                <div>Dicetak pada: {{generatedAt}}</div>
+                <div>Dokumen ini sah dan tidak memerlukan tanda tangan basah</div>
             </div>
             <div class="footer-right">
                 <div class="footer-signature"></div>
                 <div class="footer-name">Admin BOSS</div>
                 <div class="footer-title">Platform Administrator</div>
+                <div class="footer-stamp">BOSS Platform &copy; {{currentYear}}</div>
             </div>
         </div>
     </div>

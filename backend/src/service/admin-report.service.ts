@@ -188,6 +188,7 @@ export class AdminReportService extends BaseService {
       reportType: title.split(' - ')[0],
       periodLabel,
       generatedAt,
+      currentYear: new Date().getFullYear(),
       data,
       isSubscriptionSummary: type === ReportType.SUBSCRIPTION_SUMMARY,
       isTransaction: type === ReportType.TRANSACTION,
