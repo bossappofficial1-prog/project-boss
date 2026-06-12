@@ -13,7 +13,6 @@ import {
   Trash2,
   Calendar,
   Phone,
-  Mail,
   Shield,
   Clock,
   XCircle,
@@ -22,13 +21,11 @@ import {
   Heart,
   Bell,
   Settings,
-  Edit,
   Package,
-  TrendingUp,
-  TrendingDown,
-  Minus,
   Send,
   Loader2,
+  TrendingUp,
+  ChevronRight,
 } from 'lucide-react';
 
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -53,7 +50,8 @@ import {
   useExtendSubscription,
   useCancelSubscription,
   useSendNotification,
-  BusinessHealthScore,
+  useBusinessSettings,
+  useUpdateBusinessSettings,
 } from '@/lib/apis/admin-business-management';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -85,10 +83,7 @@ interface Business {
     isOpen?: boolean;
     _count?: { orders: number };
   }>;
-  _count?: {
-    outlets: number;
-    orders: number;
-  };
+  _count?: { outlets: number; orders: number };
 }
 
 interface Props {
@@ -101,31 +96,22 @@ interface Props {
   isDeletePending?: boolean;
 }
 
-export default function BusinessDetailSheet({
-  business,
-  isOpen,
-  onClose,
-  onSuspend,
-  onDelete,
-  isSuspendPending,
-  isDeletePending,
-}: Props) {
+const STATUS_CONFIG: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
+  ACTIVE: { label: 'Aktif', className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20', icon: <CheckCircle2 className="h-3 w-3" /> },
+  SUSPENDED: { label: 'Suspended', className: 'bg-destructive/10 text-destructive border-destructive/20', icon: <XCircle className="h-3 w-3" /> },
+  TRIAL: { label: 'Trial', className: 'bg-primary/10 text-primary border-primary/20', icon: <Clock className="h-3 w-3" /> },
+  EXPIRED: { label: 'Expired', className: 'bg-orange-500/10 text-orange-600 border-orange-500/20', icon: <XCircle className="h-3 w-3" /> },
+  AWAITING_PAYMENT: { label: 'Menunggu Bayar', className: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20', icon: <Clock className="h-3 w-3" /> },
+};
+
+export default function BusinessDetailSheet({ business, isOpen, onClose, onSuspend, onDelete, isSuspendPending, isDeletePending }: Props) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
 
   if (!business) return null;
 
   const isSuspended = business.subscriptionStatus === 'SUSPENDED';
-
-  const statusConfig: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
-    ACTIVE: { label: 'Aktif', className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20', icon: <CheckCircle2 className="h-3 w-3" /> },
-    SUSPENDED: { label: 'Suspended', className: 'bg-red-500/10 text-red-600 border-red-500/20', icon: <XCircle className="h-3 w-3" /> },
-    TRIAL: { label: 'Trial', className: 'bg-blue-500/10 text-blue-600 border-blue-500/20', icon: <Clock className="h-3 w-3" /> },
-    EXPIRED: { label: 'Expired', className: 'bg-orange-500/10 text-orange-600 border-orange-500/20', icon: <XCircle className="h-3 w-3" /> },
-    AWAITING_PAYMENT: { label: 'Menunggu Bayar', className: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20', icon: <Clock className="h-3 w-3" /> },
-  };
-
-  const statusInfo = statusConfig[business.subscriptionStatus] || statusConfig.ACTIVE;
+  const statusInfo = STATUS_CONFIG[business.subscriptionStatus] || STATUS_CONFIG.ACTIVE;
 
   const handleCopy = async (text: string, label: string) => {
     try {
@@ -161,67 +147,56 @@ export default function BusinessDetailSheet({
   return (
     <>
       <Sheet open={isOpen} onOpenChange={onClose}>
-        <SheetContent className="sm:max-w-2xl w-[95vw] overflow-y-auto p-0 gap-0">
+        <SheetContent className="sm:max-w-xl w-[95vw] overflow-y-auto p-0 gap-0">
           {/* Header */}
           <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border">
-            <div className="p-6 pb-4">
-              <SheetHeader className="text-left space-y-0">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-4 min-w-0">
-                    <Avatar className="h-12 w-12 rounded-lg border border-border shrink-0">
-                      <AvatarFallback className="rounded-lg bg-muted">
-                        <Store className="h-5 w-5 text-muted-foreground" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0">
-                      <SheetTitle className="text-lg font-semibold leading-tight truncate">
-                        {business.name}
-                      </SheetTitle>
-                      <SheetDescription className="flex items-center gap-2 mt-1 flex-wrap">
-                        <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded">
-                          {business.id.split('-')[0]}
-                        </span>
-                        <span className="text-muted-foreground">•</span>
-                        <span className="text-xs text-muted-foreground truncate">
-                          {business.owner?.email}
-                        </span>
-                      </SheetDescription>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge variant="outline" className={statusInfo.className}>
-                          {statusInfo.icon}
-                          <span className="ml-1">{statusInfo.label}</span>
-                        </Badge>
-                        {business.subscriptionPlan && (
-                          <Badge variant="secondary" className="text-[10px]">
-                            {business.subscriptionPlan}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
+            <div className="p-6">
+              <SheetHeader className="text-left space-y-3">
+                <div className="flex items-start gap-3">
+                  <Avatar className="h-11 w-11 rounded-lg border border-border shrink-0">
+                    <AvatarFallback className="rounded-lg bg-muted">
+                      <Store className="h-5 w-5 text-muted-foreground" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <SheetTitle className="text-base font-semibold leading-tight truncate">
+                      {business.name}
+                    </SheetTitle>
+                    <SheetDescription className="flex items-center gap-1.5 mt-0.5">
+                      <span className="font-mono text-[10px] text-muted-foreground">
+                        {business.id.split('-')[0]}
+                      </span>
+                      <span className="text-muted-foreground">·</span>
+                      <span className="text-xs text-muted-foreground truncate">
+                        {business.owner?.email}
+                      </span>
+                    </SheetDescription>
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex items-center gap-2 mt-4">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge variant="outline" className={statusInfo.className}>
+                    {statusInfo.icon}
+                    <span className="ml-1">{statusInfo.label}</span>
+                  </Badge>
+                  {business.subscriptionPlan && (
+                    <Badge variant="secondary" className="text-[10px]">
+                      {business.subscriptionPlan}
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
                   <Button
                     variant={isSuspended ? 'default' : 'outline'}
                     size="sm"
-                    className={
-                      isSuspended
-                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5'
-                        : 'text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/20 gap-1.5'
-                    }
+                    className={isSuspended ? 'gap-1.5' : 'text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5'}
                     onClick={handleSuspend}
                     disabled={isSuspendPending}
                   >
                     {isSuspended ? <><CheckCircle2 className="h-3.5 w-3.5" /> Aktifkan</> : <><Ban className="h-3.5 w-3.5" /> Suspend</>}
                   </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="gap-1.5"
-                    onClick={() => setShowDeleteDialog(true)}
-                  >
+                  <Button variant="destructive" size="sm" className="gap-1.5" onClick={() => setShowDeleteDialog(true)}>
                     <Trash2 className="h-3.5 w-3.5" /> Hapus
                   </Button>
                 </div>
@@ -232,71 +207,88 @@ export default function BusinessDetailSheet({
           {/* Content */}
           <div className="p-6">
             <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 mb-6 h-auto flex-wrap">
-                <TabsTrigger value="overview" className="gap-1.5 text-xs py-2">
-                  <Building2 className="h-3.5 w-3.5" /> Profil
+              <TabsList className="w-full mb-6 overflow-x-auto flex-nowrap justify-start">
+                <TabsTrigger value="overview" className="gap-1.5 text-xs shrink-0">
+                  <Building2 className="h-3.5 w-3.5" /> Overview
                 </TabsTrigger>
-                <TabsTrigger value="bank" className="gap-1.5 text-xs py-2">
-                  <CreditCard className="h-3.5 w-3.5" /> Bank
+                <TabsTrigger value="finance" className="gap-1.5 text-xs shrink-0">
+                  <CreditCard className="h-3.5 w-3.5" /> Keuangan
                 </TabsTrigger>
-                <TabsTrigger value="outlets" className="gap-1.5 text-xs py-2">
-                  <MapPin className="h-3.5 w-3.5" /> Outlet
+                <TabsTrigger value="operations" className="gap-1.5 text-xs shrink-0">
+                  <Activity className="h-3.5 w-3.5" /> Operasional
                 </TabsTrigger>
-                <TabsTrigger value="health" className="gap-1.5 text-xs py-2">
+                <TabsTrigger value="health" className="gap-1.5 text-xs shrink-0">
                   <Heart className="h-3.5 w-3.5" /> Health
                 </TabsTrigger>
-                <TabsTrigger value="activity" className="gap-1.5 text-xs py-2">
-                  <Activity className="h-3.5 w-3.5" /> Aktivitas
-                </TabsTrigger>
-                <TabsTrigger value="subscription" className="gap-1.5 text-xs py-2">
-                  <Package className="h-3.5 w-3.5" /> Langganan
-                </TabsTrigger>
-                <TabsTrigger value="notifications" className="gap-1.5 text-xs py-2">
-                  <Bell className="h-3.5 w-3.5" /> Notifikasi
-                </TabsTrigger>
-                <TabsTrigger value="settings" className="gap-1.5 text-xs py-2">
-                  <Settings className="h-3.5 w-3.5" /> Setting
+                <TabsTrigger value="actions" className="gap-1.5 text-xs shrink-0">
+                  <Settings className="h-3.5 w-3.5" /> Aksi
                 </TabsTrigger>
               </TabsList>
 
               {/* TAB: Overview */}
               <TabsContent value="overview" className="space-y-4 mt-0">
-                <OverviewTab business={business} />
+                <div className="grid grid-cols-2 gap-3">
+                  <StatCard label="Outlet" value={business._count?.outlets || 0} icon={<MapPin className="h-4 w-4" />} />
+                  <StatCard label="Transaksi" value={business._count?.orders || 0} icon={<Package className="h-4 w-4" />} />
+                </div>
+
+                <InfoSection title="Informasi Bisnis" icon={<Building2 className="h-4 w-4" />}>
+                  <InfoRow label="Nama" value={business.name} />
+                  <InfoRow label="Deskripsi" value={business.description || '~'} />
+                  <InfoRow label="Terdaftar" value={formatDate(business.createdAt)} />
+                </InfoSection>
+
+                <InfoSection title="Pemilik" icon={<Users className="h-4 w-4" />}>
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-9 w-9 border border-border">
+                      <AvatarFallback className="text-xs bg-muted">
+                        {business.owner?.name?.substring(0, 2).toUpperCase() || '??'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{business.owner?.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{business.owner?.email}</p>
+                    </div>
+                    <VerificationBadge isVerified={business.owner?.isVerified} />
+                  </div>
+                  {business.owner?.phone && (
+                    <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                      <Phone className="h-3.5 w-3.5" />
+                      {business.owner.phone}
+                    </div>
+                  )}
+                </InfoSection>
+
+                <InfoSection title="Langganan" icon={<Package className="h-4 w-4" />}>
+                  <InfoRow label="Paket" value={business.subscriptionPlan || 'TRIAL'} />
+                  <InfoRow label="Status" value={statusInfo.label} />
+                  {business.subscriptionEndDate && (
+                    <InfoRow label="Berakhir" value={formatDate(business.subscriptionEndDate)} />
+                  )}
+                </InfoSection>
               </TabsContent>
 
-              {/* TAB: Bank */}
-              <TabsContent value="bank" className="mt-0">
-                <BankTab business={business} onCopy={handleCopy} copied={copied} />
+              {/* TAB: Keuangan (Bank + Subscription) */}
+              <TabsContent value="finance" className="space-y-4 mt-0">
+                <BankSection business={business} onCopy={handleCopy} copied={copied} />
+                <SubscriptionSection business={business} />
               </TabsContent>
 
-              {/* TAB: Outlets */}
-              <TabsContent value="outlets" className="mt-0">
-                <OutletsTab business={business} />
+              {/* TAB: Operasional (Outlets + Activity) */}
+              <TabsContent value="operations" className="space-y-4 mt-0">
+                <OutletsSection business={business} />
+                <ActivitySection businessId={business.id} />
               </TabsContent>
 
-              {/* TAB: Health Score */}
+              {/* TAB: Health */}
               <TabsContent value="health" className="mt-0">
-                <HealthScoreTab businessId={business.id} />
+                <HealthSection businessId={business.id} />
               </TabsContent>
 
-              {/* TAB: Activity */}
-              <TabsContent value="activity" className="mt-0">
-                <ActivityTab businessId={business.id} />
-              </TabsContent>
-
-              {/* TAB: Subscription */}
-              <TabsContent value="subscription" className="mt-0">
-                <SubscriptionTab business={business} />
-              </TabsContent>
-
-              {/* TAB: Notifications */}
-              <TabsContent value="notifications" className="mt-0">
-                <NotificationTab business={business} />
-              </TabsContent>
-
-              {/* TAB: Settings */}
-              <TabsContent value="settings" className="mt-0">
-                <SettingsTab businessId={business.id} />
+              {/* TAB: Aksi (Notifications + Settings) */}
+              <TabsContent value="actions" className="space-y-4 mt-0">
+                <NotificationSection business={business} />
+                <SettingsSection businessId={business.id} />
               </TabsContent>
             </Tabs>
           </div>
@@ -307,12 +299,7 @@ export default function BusinessDetailSheet({
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
         title="Hapus Bisnis"
-        description={
-          <span>
-            Apakah Anda yakin ingin menghapus bisnis <strong>"{business.name}"</strong>? Tindakan ini
-            permanen dan akan menghapus seluruh data terkait termasuk outlet, produk, dan transaksi.
-          </span>
-        }
+        description={<span>Apakah Anda yakin ingin menghapus bisnis <strong>&quot;{business.name}&quot;</strong>? Tindakan ini permanen.</span>}
         confirmLabel="Hapus Bisnis"
         confirmVariant="destructive"
         onConfirm={handleDelete}
@@ -322,184 +309,305 @@ export default function BusinessDetailSheet({
   );
 }
 
-// ===== Sub-components =====
+// ===== Shared Components =====
 
-function OverviewTab({ business }: { business: Business }) {
+function StatCard({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) {
   return (
-    <>
-      <div className="grid grid-cols-2 gap-3">
-        <Card><CardContent className="p-4 text-center"><div className="text-2xl font-bold">{business._count?.outlets || 0}</div><p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Outlet</p></CardContent></Card>
-        <Card><CardContent className="p-4 text-center"><div className="text-2xl font-bold">{business._count?.orders || 0}</div><p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Transaksi</p></CardContent></Card>
-      </div>
-
-      <Card>
-        <CardHeader className="pb-3"><CardTitle className="text-sm font-medium flex items-center gap-2"><Building2 className="h-4 w-4 text-muted-foreground" /> Informasi Bisnis</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          <InfoRow label="Nama" value={business.name} />
-          <InfoRow label="Deskripsi" value={business.description || '~'} />
-          <InfoRow label="Terdaftar" value={business.createdAt ? new Date(business.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-3"><CardTitle className="text-sm font-medium flex items-center gap-2"><Users className="h-4 w-4 text-muted-foreground" /> Pemilik</CardTitle></CardHeader>
-        <CardContent className="space-y-2">
-          <div className="flex items-center gap-3 p-2 rounded-lg">
-            <Avatar className="h-9 w-9 border border-border"><AvatarFallback className="text-xs bg-muted">{business.owner?.name?.substring(0, 2).toUpperCase() || '??'}</AvatarFallback></Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{business.owner?.name}</p>
-              <p className="text-xs text-muted-foreground truncate">{business.owner?.email}</p>
-            </div>
-            {business.owner?.isVerified ? (
-              <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20 shrink-0"><Shield className="h-3 w-3 mr-1" /> Verified</Badge>
-            ) : (
-              <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-600 border-amber-500/20 shrink-0"><AlertTriangle className="h-3 w-3 mr-1" /> Pending</Badge>
-            )}
-          </div>
-          {business.owner?.phone && (
-            <div className="flex items-center gap-3 p-2 rounded-lg">
-              <div className="h-8 w-8 rounded-md bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 flex items-center justify-center"><Phone className="h-4 w-4" /></div>
-              <span className="text-sm">{business.owner.phone}</span>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </>
-  );
-}
-
-function BankTab({ business, onCopy, copied }: { business: Business; onCopy: (text: string, label: string) => void; copied: string | null }) {
-  return business.bankName ? (
     <Card>
-      <CardHeader className="pb-3"><CardTitle className="text-sm font-medium flex items-center gap-2"><CreditCard className="h-4 w-4 text-muted-foreground" /> Rekening Bank</CardTitle></CardHeader>
-      <CardContent>
-        <div className="rounded-lg border border-border bg-muted/30 p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="h-10 w-10 rounded-md bg-background border border-border flex items-center justify-center"><CreditCard className="h-5 w-5 text-muted-foreground" /></div>
-            <div><p className="font-semibold text-sm">{business.bankName}</p><p className="text-xs text-muted-foreground">Bank Account</p></div>
-          </div>
-          <Separator className="my-3" />
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Nomor Rekening</span>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-sm font-medium">{business.bankAccount}</span>
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onCopy(business.bankAccount!, 'Nomor rekening')}>
-                  {copied === 'Nomor rekening' ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
-                </Button>
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Atas Nama</span>
-              <span className="text-sm font-medium">{business.accountHolder}</span>
-            </div>
-          </div>
+      <CardContent className="p-4 flex items-center gap-3">
+        <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
+          {icon}
+        </div>
+        <div>
+          <div className="text-xl font-bold">{value}</div>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</p>
         </div>
       </CardContent>
     </Card>
-  ) : (
-    <Card><CardContent className="py-8"><div className="text-center text-muted-foreground"><CreditCard className="h-8 w-8 mx-auto mb-2 opacity-50" /><p className="text-sm">Belum ada informasi rekening bank</p></div></CardContent></Card>
   );
 }
 
-function OutletsTab({ business }: { business: Business }) {
+function InfoSection({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h4 className="text-sm font-medium">Daftar Outlet ({business.outlets?.length || 0})</h4>
-      </div>
-      {business.outlets && business.outlets.length > 0 ? business.outlets.map((outlet) => (
-        <Card key={outlet.id} className="overflow-hidden">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <div className="h-9 w-9 rounded-md bg-muted flex items-center justify-center shrink-0"><MapPin className="h-4 w-4 text-muted-foreground" /></div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium truncate">{outlet.name}</p>
-                  {outlet.isOpen !== undefined && (
-                    <Badge variant="outline" className={outlet.isOpen ? 'text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'text-[10px] bg-muted text-muted-foreground'}>
-                      {outlet.isOpen ? 'Buka' : 'Tutup'}
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground truncate mt-0.5">{outlet.address || 'Tidak ada alamat'}</p>
-                {outlet._count?.orders !== undefined && <p className="text-xs text-primary font-medium mt-1">{outlet._count.orders} Orders</p>}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )) : (
-        <Card><CardContent className="py-6"><div className="text-center text-muted-foreground"><MapPin className="h-6 w-6 mx-auto mb-2 opacity-50" /><p className="text-xs">Belum ada outlet</p></div></CardContent></Card>
-      )}
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+          {icon} {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2.5">
+        {children}
+      </CardContent>
+    </Card>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-xs text-muted-foreground shrink-0">{label}</span>
+      <span className="text-sm font-medium text-right truncate">{value}</span>
     </div>
   );
 }
 
-function HealthScoreTab({ businessId }: { businessId: string }) {
+function VerificationBadge({ isVerified }: { isVerified?: boolean }) {
+  return isVerified ? (
+    <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20 shrink-0">
+      <Shield className="h-3 w-3 mr-1" /> Verified
+    </Badge>
+  ) : (
+    <Badge variant="outline" className="text-[10px] bg-muted text-muted-foreground shrink-0">
+      <AlertTriangle className="h-3 w-3 mr-1" /> Unverified
+    </Badge>
+  );
+}
+
+function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+// ===== Bank Section =====
+
+function BankSection({ business, onCopy, copied }: { business: Business; onCopy: (t: string, l: string) => void; copied: string | null }) {
+  if (!business.bankName) {
+    return (
+      <Card>
+        <CardContent className="py-6 text-center text-muted-foreground">
+          <CreditCard className="h-6 w-6 mx-auto mb-2 opacity-50" />
+          <p className="text-sm">Belum ada rekening bank</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <InfoSection title="Rekening Bank" icon={<CreditCard className="h-4 w-4" />}>
+      <div className="rounded-lg border border-border bg-muted/30 p-3">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="h-8 w-8 rounded bg-background border border-border flex items-center justify-center">
+            <CreditCard className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <span className="font-semibold text-sm">{business.bankName}</span>
+        </div>
+        <Separator className="my-2" />
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">No. Rekening</span>
+          <div className="flex items-center gap-1.5">
+            <span className="font-mono text-xs">{business.bankAccount}</span>
+            <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => onCopy(business.bankAccount!, 'Nomor rekening')}>
+              {copied === 'Nomor rekening' ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3 text-muted-foreground" />}
+            </Button>
+          </div>
+        </div>
+        <div className="flex items-center justify-between mt-1">
+          <span className="text-xs text-muted-foreground">Atas Nama</span>
+          <span className="text-xs font-medium">{business.accountHolder}</span>
+        </div>
+      </div>
+    </InfoSection>
+  );
+}
+
+// ===== Subscription Section =====
+
+function SubscriptionSection({ business }: { business: Business }) {
+  const { data: plans } = useSubscriptionPlans();
+  const { data: subscription, isLoading } = useBusinessSubscription(business.id);
+  const changePlan = useChangeSubscriptionPlan();
+  const extendSub = useExtendSubscription();
+  const [extendDays, setExtendDays] = useState('30');
+
+  return (
+    <InfoSection title="Kelola Langganan" icon={<Package className="h-4 w-4" />}>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">Plan Saat Ini</span>
+          <Badge variant="secondary" className="font-semibold text-[10px]">{business.subscriptionPlan || 'TRIAL'}</Badge>
+        </div>
+
+        {business.subscriptionEndDate && (
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Berakhir</span>
+            <span className="text-xs font-medium flex items-center gap-1">
+              <Calendar className="h-3 w-3 text-muted-foreground" />
+              {formatDate(business.subscriptionEndDate)}
+            </span>
+          </div>
+        )}
+
+        <Separator />
+
+        <div className="space-y-2">
+          <Label className="text-xs">Ubah Plan</Label>
+          <Select onValueChange={(planId) => changePlan.mutate({ businessId: business.id, planId })}>
+            <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Pilih plan baru" /></SelectTrigger>
+            <SelectContent>
+              {plans?.map((plan: any) => (
+                <SelectItem key={plan.id} value={plan.id}>{plan.name} - {formatCurrency(plan.price)}/bln</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs">Perpanjang (hari)</Label>
+          <div className="flex gap-2">
+            <Input type="number" value={extendDays} onChange={(e) => setExtendDays(e.target.value)} className="h-9 text-xs" min="1" max="365" />
+            <Button size="sm" onClick={() => extendSub.mutate({ businessId: business.id, days: parseInt(extendDays) })} disabled={extendSub.isPending}>
+              {extendSub.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Perpanjang'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </InfoSection>
+  );
+}
+
+// ===== Outlets Section =====
+
+function OutletsSection({ business }: { business: Business }) {
+  if (!business.outlets?.length) {
+    return (
+      <Card>
+        <CardContent className="py-6 text-center text-muted-foreground">
+          <MapPin className="h-6 w-6 mx-auto mb-2 opacity-50" />
+          <p className="text-sm">Belum ada outlet</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <InfoSection title={`Daftar Outlet (${business.outlets.length})`} icon={<MapPin className="h-4 w-4" />}>
+      <div className="space-y-2">
+        {business.outlets.map((outlet) => (
+          <div key={outlet.id} className="flex items-center gap-3 p-2.5 rounded-lg border border-border hover:bg-muted/50">
+            <div className="h-8 w-8 rounded bg-muted flex items-center justify-center shrink-0">
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium truncate">{outlet.name}</p>
+                {outlet.isOpen !== undefined && (
+                  <Badge variant="outline" className={outlet.isOpen ? 'text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'text-[10px] bg-muted text-muted-foreground'}>
+                    {outlet.isOpen ? 'Buka' : 'Tutup'}
+                  </Badge>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground truncate">{outlet.address || 'Tidak ada alamat'}</p>
+            </div>
+            {outlet._count?.orders !== undefined && (
+              <span className="text-[10px] text-muted-foreground shrink-0">{outlet._count.orders} order</span>
+            )}
+          </div>
+        ))}
+      </div>
+    </InfoSection>
+  );
+}
+
+// ===== Activity Section =====
+
+function ActivitySection({ businessId }: { businessId: string }) {
+  const { data: activities, isLoading } = useBusinessActivity(businessId, 15);
+
+  if (isLoading) return <div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
+
+  if (!activities?.length) {
+    return (
+      <Card>
+        <CardContent className="py-6 text-center text-muted-foreground">
+          <Activity className="h-6 w-6 mx-auto mb-2 opacity-50" />
+          <p className="text-sm">Belum ada aktivitas</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <InfoSection title="Aktivitas Terbaru" icon={<Activity className="h-4 w-4" />}>
+      <div className="space-y-1.5">
+        {activities.map((act, i) => (
+          <div key={i} className="flex items-center gap-2.5 py-1.5">
+            <div className={`h-7 w-7 rounded flex items-center justify-center shrink-0 ${act.type === 'order' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+              {act.type === 'order' ? <Package className="h-3.5 w-3.5" /> : <CreditCard className="h-3.5 w-3.5" />}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium truncate">
+                {act.type === 'order' ? `Order #${act.data.id?.slice(0, 8)}` : `Invoice #${act.data.invoiceNumber}`}
+              </p>
+              <p className="text-[10px] text-muted-foreground truncate">
+                {act.type === 'order' ? `${act.data.outlet?.name || 'Outlet'} · ${formatCurrency(act.data.totalAmount)}` : `${formatCurrency(act.data.amount)} · ${act.data.status}`}
+              </p>
+            </div>
+            <span className="text-[10px] text-muted-foreground shrink-0">
+              {new Date(act.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
+            </span>
+          </div>
+        ))}
+      </div>
+    </InfoSection>
+  );
+}
+
+// ===== Health Section =====
+
+function HealthSection({ businessId }: { businessId: string }) {
   const { data: health, isLoading } = useBusinessHealthScore(businessId);
 
   if (isLoading) return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   if (!health) return <Card><CardContent className="py-8 text-center text-muted-foreground">Gagal memuat health score</CardContent></Card>;
 
-  const levelColors: Record<string, { bg: string; text: string; border: string }> = {
-    excellent: { bg: 'bg-emerald-500/10', text: 'text-emerald-600', border: 'border-emerald-500/20' },
-    good: { bg: 'bg-blue-500/10', text: 'text-blue-600', border: 'border-blue-500/20' },
-    fair: { bg: 'bg-yellow-500/10', text: 'text-yellow-600', border: 'border-yellow-500/20' },
-    poor: { bg: 'bg-orange-500/10', text: 'text-orange-600', border: 'border-orange-500/20' },
-    critical: { bg: 'bg-red-500/10', text: 'text-red-600', border: 'border-red-500/20' },
+  const LEVEL_COLORS: Record<string, string> = {
+    excellent: 'bg-emerald-500',
+    good: 'bg-primary',
+    fair: 'bg-yellow-500',
+    poor: 'bg-orange-500',
+    critical: 'bg-destructive',
   };
 
-  const levelLabels: Record<string, string> = {
-    excellent: 'Excellent',
-    good: 'Good',
-    fair: 'Fair',
-    poor: 'Poor',
-    critical: 'Critical',
+  const LEVEL_LABELS: Record<string, string> = {
+    excellent: 'Excellent', good: 'Good', fair: 'Fair', poor: 'Poor', critical: 'Critical',
   };
 
-  const colors = levelColors[health.level];
+  const LABEL_MAP: Record<string, string> = {
+    subscription: 'Langganan', activity: 'Aktivitas', revenue: 'Pendapatan', outlets: 'Outlet & Setup',
+  };
 
   return (
     <div className="space-y-4">
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-sm text-muted-foreground">Health Score</p>
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-bold">{health.score}</span>
-                <span className="text-lg text-muted-foreground">/100</span>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Health Score</p>
+              <div className="flex items-baseline gap-1.5 mt-1">
+                <span className="text-3xl font-bold">{health.score}</span>
+                <span className="text-sm text-muted-foreground">/100</span>
               </div>
             </div>
-            <Badge variant="outline" className={`${colors.bg} ${colors.text} ${colors.border} text-sm px-3 py-1`}>
-              {levelLabels[health.level]}
+            <Badge variant="outline" className="text-xs px-3 py-1">
+              {LEVEL_LABELS[health.level]}
             </Badge>
           </div>
-          <div className="w-full bg-muted rounded-full h-3">
-            <div
-              className={`h-3 rounded-full transition-all ${
-                health.level === 'excellent' ? 'bg-emerald-500' :
-                health.level === 'good' ? 'bg-blue-500' :
-                health.level === 'fair' ? 'bg-yellow-500' :
-                health.level === 'poor' ? 'bg-orange-500' : 'bg-red-500'
-              }`}
-              style={{ width: `${health.score}%` }}
-            />
+          <div className="w-full bg-muted rounded-full h-2.5">
+            <div className={`h-2.5 rounded-full ${LEVEL_COLORS[health.level]}`} style={{ width: `${health.score}%` }} />
           </div>
         </CardContent>
       </Card>
 
-      {Object.entries(health.breakdown).map(([key, value]) => (
+      {Object.entries(health.breakdown).map(([key, val]) => (
         <Card key={key}>
           <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium capitalize">{key === 'subscription' ? 'Langganan' : key === 'activity' ? 'Aktivitas' : key === 'revenue' ? 'Pendapatan' : 'Outlet & Setup'}</span>
-              <span className="text-sm font-mono font-semibold">{value.score}/{value.max}</span>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-medium">{LABEL_MAP[key] || key}</span>
+              <span className="text-xs font-mono text-muted-foreground">{val.score}/{val.max}</span>
             </div>
-            <div className="w-full bg-muted rounded-full h-2 mb-2">
-              <div className="h-2 rounded-full bg-primary" style={{ width: `${(value.score / value.max) * 100}%` }} />
+            <div className="w-full bg-muted rounded-full h-1.5 mb-1.5">
+              <div className="h-1.5 rounded-full bg-primary" style={{ width: `${(val.score / val.max) * 100}%` }} />
             </div>
-            <p className="text-xs text-muted-foreground">{value.detail}</p>
+            <p className="text-[11px] text-muted-foreground">{val.detail}</p>
           </CardContent>
         </Card>
       ))}
@@ -507,131 +615,9 @@ function HealthScoreTab({ businessId }: { businessId: string }) {
   );
 }
 
-function ActivityTab({ businessId }: { businessId: string }) {
-  const { data: activities, isLoading } = useBusinessActivity(businessId, 30);
+// ===== Notification Section =====
 
-  if (isLoading) return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
-
-  return (
-    <div className="space-y-3">
-      {activities && activities.length > 0 ? activities.map((activity, i) => (
-        <Card key={i}>
-          <CardContent className="p-3">
-            <div className="flex items-center gap-3">
-              <div className={`h-8 w-8 rounded-md flex items-center justify-center ${activity.type === 'order' ? 'bg-blue-500/10 text-blue-600' : 'bg-purple-500/10 text-purple-600'}`}>
-                {activity.type === 'order' ? <Package className="h-4 w-4" /> : <CreditCard className="h-4 w-4" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">
-                  {activity.type === 'order' ? `Order #${activity.data.id?.slice(0, 8)}` : `Invoice #${activity.data.invoiceNumber}`}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {activity.type === 'order'
-                    ? `${activity.data.outlet?.name || 'Outlet'} • ${formatCurrency(activity.data.totalAmount)}`
-                    : `${formatCurrency(activity.data.amount)} • ${activity.data.status}`}
-                </p>
-              </div>
-              <span className="text-[10px] text-muted-foreground shrink-0">
-                {new Date(activity.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-      )) : (
-        <Card><CardContent className="py-8"><div className="text-center text-muted-foreground"><Activity className="h-6 w-6 mx-auto mb-2 opacity-50" /><p className="text-xs">Belum ada aktivitas</p></div></CardContent></Card>
-      )}
-    </div>
-  );
-}
-
-function SubscriptionTab({ business }: { business: Business }) {
-  const [showExtendDialog, setShowExtendDialog] = useState(false);
-  const [extendDays, setExtendDays] = useState('30');
-  const { data: subscription, isLoading } = useBusinessSubscription(business.id);
-  const { data: plans } = useSubscriptionPlans();
-  const changePlan = useChangeSubscriptionPlan();
-  const extendSub = useExtendSubscription();
-  const cancelSub = useCancelSubscription();
-
-  if (isLoading) return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
-
-  return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader className="pb-3"><CardTitle className="text-sm font-medium flex items-center gap-2"><Package className="h-4 w-4 text-muted-foreground" /> Langganan Saat Ini</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Paket</span>
-            <Badge variant="secondary" className="font-semibold">{business.subscriptionPlan || 'TRIAL'}</Badge>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Status</span>
-            <Badge variant="outline" className={
-              business.subscriptionStatus === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
-              business.subscriptionStatus === 'SUSPENDED' ? 'bg-red-500/10 text-red-600 border-red-500/20' :
-              'bg-muted text-muted-foreground'
-            }>{business.subscriptionStatus}</Badge>
-          </div>
-          {business.subscriptionEndDate && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Berakhir</span>
-              <span className="text-sm font-medium flex items-center gap-1.5">
-                <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                {new Date(business.subscriptionEndDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-              </span>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-3"><CardTitle className="text-sm font-medium">Ubah Plan</CardTitle></CardHeader>
-        <CardContent>
-          <Select onValueChange={(planId) => changePlan.mutate({ businessId: business.id, planId })}>
-            <SelectTrigger><SelectValue placeholder="Pilih plan baru" /></SelectTrigger>
-            <SelectContent>
-              {plans?.map((plan: any) => (
-                <SelectItem key={plan.id} value={plan.id}>{plan.name} - {formatCurrency(plan.price)}/bulan</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {changePlan.isPending && <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Mengubah plan...</p>}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-3"><CardTitle className="text-sm font-medium">Perpanjang Langganan</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex gap-2">
-            <Input type="number" value={extendDays} onChange={(e) => setExtendDays(e.target.value)} placeholder="Jumlah hari" min="1" max="365" />
-            <Button onClick={() => extendSub.mutate({ businessId: business.id, days: parseInt(extendDays) })} disabled={extendSub.isPending}>
-              {extendSub.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Perpanjang'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-3"><CardTitle className="text-sm font-medium text-destructive">Batalkan Langganan</CardTitle></CardHeader>
-        <CardContent>
-          <p className="text-xs text-muted-foreground mb-3">Pembatalan akan menonaktifkan akses bisnis ke platform.</p>
-          <ConfirmDialog
-            trigger={<Button variant="destructive" size="sm" className="w-full">Batalkan Langganan</Button>}
-            title="Batalkan Langganan"
-            description={`Apakah Anda yakin ingin membatalkan langganan "${business.name}"?`}
-            confirmLabel="Ya, Batalkan"
-            confirmVariant="destructive"
-            showInput
-            inputPlaceholder="Alasan pembatalan..."
-            onConfirm={(reason) => cancelSub.mutate({ businessId: business.id, reason: reason || 'Dibatalkan oleh admin' })}
-          />
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function NotificationTab({ business }: { business: Business }) {
+function NotificationSection({ business }: { business: Business }) {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [type, setType] = useState('info');
@@ -643,135 +629,115 @@ function NotificationTab({ business }: { business: Business }) {
       toast.error('Subject dan pesan wajib diisi');
       return;
     }
-    sendNotification.mutate({
-      businessId: business.id,
-      subject,
-      message,
-      type,
-      channels,
-    }, {
-      onSuccess: () => {
-        setSubject('');
-        setMessage('');
-      },
-    });
+    sendNotification.mutate(
+      { businessId: business.id, subject, message, type, channels },
+      { onSuccess: () => { setSubject(''); setMessage(''); } },
+    );
   };
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader className="pb-3"><CardTitle className="text-sm font-medium flex items-center gap-2"><Bell className="h-4 w-4 text-muted-foreground" /> Kirim Notifikasi</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label className="text-xs">Subject</Label>
-            <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Judul notifikasi" />
+    <InfoSection title="Kirim Notifikasi" icon={<Bell className="h-4 w-4" />}>
+      <div className="space-y-3">
+        <div className="space-y-1.5">
+          <Label className="text-xs">Subject</Label>
+          <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Judul notifikasi" className="h-9 text-xs" />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Pesan</Label>
+          <Textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Isi pesan" rows={3} className="text-xs" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Tipe</Label>
+            <Select value={type} onValueChange={setType}>
+              <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="info">Info</SelectItem>
+                <SelectItem value="warning">Peringatan</SelectItem>
+                <SelectItem value="success">Sukses</SelectItem>
+                <SelectItem value="error">Error</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <div className="space-y-2">
-            <Label className="text-xs">Pesan</Label>
-            <Textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Isi pesan notifikasi" rows={4} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-xs">Tipe</Label>
-              <Select value={type} onValueChange={setType}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="info">Info</SelectItem>
-                  <SelectItem value="warning">Peringatan</SelectItem>
-                  <SelectItem value="success">Sukses</SelectItem>
-                  <SelectItem value="error">Error</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs">Channel</Label>
-              <div className="flex gap-2">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Channel</Label>
+            <div className="flex gap-1.5">
+              {['in_app', 'email'].map((ch) => (
                 <Button
-                  variant={channels.includes('in_app') ? 'default' : 'outline'}
+                  key={ch}
+                  variant={channels.includes(ch) ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setChannels(prev => prev.includes('in_app') ? prev.filter(c => c !== 'in_app') : [...prev, 'in_app'])}
-                  className="flex-1"
+                  className="flex-1 h-9 text-[11px]"
+                  onClick={() => setChannels((p) => p.includes(ch) ? p.filter((c) => c !== ch) : [...p, ch])}
                 >
-                  In-App
+                  {ch === 'in_app' ? 'In-App' : 'Email'}
                 </Button>
-                <Button
-                  variant={channels.includes('email') ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setChannels(prev => prev.includes('email') ? prev.filter(c => c !== 'email') : [...prev, 'email'])}
-                  className="flex-1"
-                >
-                  Email
-                </Button>
-              </div>
+              ))}
             </div>
           </div>
-          <Button onClick={handleSend} disabled={sendNotification.isPending} className="w-full gap-2">
-            {sendNotification.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            Kirim Notifikasi
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+        <Button onClick={handleSend} disabled={sendNotification.isPending} size="sm" className="w-full gap-1.5">
+          {sendNotification.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+          Kirim
+        </Button>
+      </div>
+    </InfoSection>
   );
 }
 
-function SettingsTab({ businessId }: { businessId: string }) {
+// ===== Settings Section =====
+
+function SettingsSection({ businessId }: { businessId: string }) {
   const { data: settings, isLoading } = useBusinessSettings(businessId);
   const updateSettings = useUpdateBusinessSettings();
-  const [localSettings, setLocalSettings] = useState<any>(null);
+  const [local, setLocal] = useState<any>(null);
 
-  React.useEffect(() => {
-    if (settings) setLocalSettings(settings);
-  }, [settings]);
+  React.useEffect(() => { if (settings) setLocal(settings); }, [settings]);
 
-  if (isLoading || !localSettings) return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
-
-  const handleSave = () => {
-    updateSettings.mutate({ businessId, settings: localSettings });
-  };
+  if (isLoading || !local) return <div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader className="pb-3"><CardTitle className="text-sm font-medium flex items-center gap-2"><Settings className="h-4 w-4 text-muted-foreground" /> Custom Limits</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-xs text-muted-foreground">Override batasan default plan untuk bisnis ini. Kosongkan untuk menggunakan batasan plan.</p>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-2">
-              <Label className="text-xs">Max Outlet</Label>
-              <Input type="number" value={localSettings.customOutletLimit || ''} onChange={(e) => setLocalSettings({ ...localSettings, customOutletLimit: e.target.value ? parseInt(e.target.value) : null })} placeholder="Default" />
+    <InfoSection title="Pengaturan Bisnis" icon={<Settings className="h-4 w-4" />}>
+      <div className="space-y-3">
+        <p className="text-[11px] text-muted-foreground">Override batasan default plan. Kosongkan = gunakan default.</p>
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { key: 'customOutletLimit', label: 'Max Outlet' },
+            { key: 'customProductLimit', label: 'Max Produk' },
+            { key: 'customStaffLimit', label: 'Max Staff' },
+          ].map((field) => (
+            <div key={field.key} className="space-y-1.5">
+              <Label className="text-[10px]">{field.label}</Label>
+              <Input
+                type="number"
+                value={local[field.key] || ''}
+                onChange={(e) => setLocal({ ...local, [field.key]: e.target.value ? parseInt(e.target.value) : null })}
+                placeholder="Default"
+                className="h-8 text-xs"
+              />
             </div>
-            <div className="space-y-2">
-              <Label className="text-xs">Max Produk</Label>
-              <Input type="number" value={localSettings.customProductLimit || ''} onChange={(e) => setLocalSettings({ ...localSettings, customProductLimit: e.target.value ? parseInt(e.target.value) : null })} placeholder="Default" />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs">Max Staff</Label>
-              <Input type="number" value={localSettings.customStaffLimit || ''} onChange={(e) => setLocalSettings({ ...localSettings, customStaffLimit: e.target.value ? parseInt(e.target.value) : null })} placeholder="Default" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-3"><CardTitle className="text-sm font-medium">Catatan Admin</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          <Textarea value={localSettings.notes || ''} onChange={(e) => setLocalSettings({ ...localSettings, notes: e.target.value })} placeholder="Catatan internal tentang bisnis ini" rows={3} />
-          <Button onClick={handleSave} disabled={updateSettings.isPending} className="w-full gap-2">
-            {updateSettings.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            Simpan Pengaturan
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-start justify-between gap-4">
-      <span className="text-xs text-muted-foreground shrink-0">{label}</span>
-      <span className="text-sm font-medium text-right">{value}</span>
-    </div>
+          ))}
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Catatan Admin</Label>
+          <Textarea
+            value={local.notes || ''}
+            onChange={(e) => setLocal({ ...local, notes: e.target.value })}
+            placeholder="Catatan internal"
+            rows={2}
+            className="text-xs"
+          />
+        </div>
+        <Button
+          size="sm"
+          className="w-full"
+          onClick={() => updateSettings.mutate({ businessId, settings: local })}
+          disabled={updateSettings.isPending}
+        >
+          {updateSettings.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : null}
+          Simpan Pengaturan
+        </Button>
+      </div>
+    </InfoSection>
   );
 }
