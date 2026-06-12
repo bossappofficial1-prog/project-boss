@@ -61,7 +61,7 @@ export function SetupScreen({ prefillOutletId, onDone }: SetupScreenProps) {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-4">
-        <Card className="rounded-xl py-0 border border-border shadow-sm">
+        <Card className="rounded-xl py-4 border border-border shadow-sm">
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-lg bg-primary/10">
@@ -82,7 +82,7 @@ export function SetupScreen({ prefillOutletId, onDone }: SetupScreenProps) {
                 Outlet ID <span className="text-destructive">*</span>
               </label>
               <Input
-                placeholder="Contoh: OUT-XXXXXXXXXXXXXXXX"
+                placeholder="Contoh: 550e8400-e29b-41d4-a716-446655440000"
                 value={outletId}
                 onChange={(e) => {
                   setOutletId(e.target.value);
@@ -124,7 +124,7 @@ export function SetupScreen({ prefillOutletId, onDone }: SetupScreenProps) {
                 <>
                   Klik tombol{" "}
                   <span className="font-semibold text-foreground">
-                    "Buka Portal Absensi"
+                    &quot;Buka Portal Absensi&quot;
                   </span>{" "}
                   link yang terbuka sudah berisi Outlet ID otomatis
                 </>,

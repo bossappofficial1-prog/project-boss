@@ -6,6 +6,7 @@ import {
   clockInSchema,
   clockOutSchema,
   portalClockSchema,
+  verifyPinSchema,
 } from "../schemas/attendance.schema";
 import { StaffRole } from "@prisma/client";
 import { authorizeOwnerOrManagerPrivilege } from "../middleware/privilege.middleware";
@@ -13,7 +14,13 @@ import { StaffPrivilegeType } from "@prisma/client";
 
 const attendanceRouter = Router();
 
-// Public kiosk portal clocking endpoint (authenticated via PIN)
+// Public kiosk portal endpoints (authenticated via PIN)
+attendanceRouter.post(
+  "/portal/verify-pin",
+  validateSchema(verifyPinSchema),
+  attendanceController.verifyPin,
+);
+
 attendanceRouter.post(
   "/portal/clock",
   validateSchema(portalClockSchema),

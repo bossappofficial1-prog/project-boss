@@ -93,6 +93,25 @@ export class StaffRepository {
     });
   }
 
+  /**
+   * Public endpoint for portal - returns only safe fields
+   * Excludes: pin, phone, email, privileges, and other sensitive data
+   */
+  static async findPublicByOutletId(outletId: string) {
+    return db.staff.findMany({
+      where: { outletId },
+      select: {
+        id: true,
+        name: true,
+        role: true,
+        status: true,
+        faceImageUrl: true,
+        faceDescriptor: true,
+      },
+      orderBy: { name: "asc" },
+    });
+  }
+
   static async update(
     id: string,
     data: UpdateStaffSchemaValues,

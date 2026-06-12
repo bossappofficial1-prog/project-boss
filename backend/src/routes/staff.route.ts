@@ -6,6 +6,7 @@ import {
   deleteStaffController,
   getStaffByIdController,
   getStaffByOutletController,
+  getStaffPublicByOutletController,
   updateStaffController,
   downloadStaffImportTemplateController,
   importStaffController,
@@ -17,7 +18,11 @@ import staffPrivilegeRouter from "./staff-privilege.route";
 
 const staffRouter = Router();
 
-staffRouter.get("/outlet/:outletId", getStaffByOutletController);
+// Public endpoint for portal - returns only safe fields (no auth required)
+staffRouter.get("/outlet/:outletId/public", getStaffPublicByOutletController);
+
+// Protected endpoint - returns all fields (auth required)
+staffRouter.get("/outlet/:outletId", protect, getStaffByOutletController);
 
 // Semua rute di bawah ini dilindungi dan hanya untuk Owner/Manager
 staffRouter.use(protect, authorize(UserRole.OWNER, "MANAGER"));

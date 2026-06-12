@@ -38,7 +38,7 @@ export function StaffListScreen({
   const handleLoad = useCallback(() => {
     setLoading(true);
     staffApi
-      .listByOutlet(config.outletId)
+      .listPublicByOutlet(config.outletId)
       .then((d) => setStaffList(d.filter((s) => s.status === "ACTIVE")))
       .catch(() => toast.error("Gagal memuat daftar staf. Periksa koneksi."))
       .finally(() => setLoading(false));

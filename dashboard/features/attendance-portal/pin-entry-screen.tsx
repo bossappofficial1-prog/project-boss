@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowLeft, LogIn, LogOut, Delete } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ArrowLeft, LogIn, LogOut, Delete, Loader2, AlertTriangle } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { attendanceApi } from "@/lib/apis/attendance";
 
 import { StaffAvatar } from "./staff-avatar";
 import type { PinEntryScreenProps } from "./types";
@@ -12,27 +13,67 @@ import type { PinEntryScreenProps } from "./types";
 export function PinEntryScreen({
   staff,
   clockType,
+  outletId,
   onConfirm,
   onBack,
 }: PinEntryScreenProps) {
   const [pin, setPin] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [error, setError] = useState("");
   const [shaking, setShaking] = useState(false);
+  const submittedRef = useRef(false);
+
+  const handleVerify = useCallback(async (pinToVerify: string) => {
+    if (submittedRef.current) return;
+    submittedRef.current = true;
+    setVerifying(true);
+    setError("");
+
+    try {
+      await attendanceApi.verifyPin({
+        staffId: staff.id,
+        pin: pinToVerify,
+        outletId,
+      });
+      onConfirm(pinToVerify);
+    } catch (err: any) {
+      const message = err?.response?.data?.message || "PIN tidak valid";
+      setError(message);
+      setPin("");
+      setShaking(true);
+      setTimeout(() => setShaking(false), 500);
+      submittedRef.current = false;
+    } finally {
+      setVerifying(false);
+    }
+  }, [staff.id, outletId, onConfirm]);
+
+  useEffect(() => {
+    if (pin.length === 6 && !verifying && !submittedRef.current) {
+      handleVerify(pin);
+    }
+  }, [pin, verifying, handleVerify]);
 
   const handleDigit = (d: string) => {
-    if (pin.length >= 6) return;
-    const next = pin + d;
-    setPin(next);
-    if (next.length === 6) setTimeout(() => onConfirm(next), 150);
+    if (pin.length >= 6 || verifying) return;
+    setError("");
+    submittedRef.current = false;
+    setPin((p) => p + d);
   };
 
-  const handleBackspace = () => setPin((p) => p.slice(0, -1));
+  const handleBackspace = () => {
+    if (verifying) return;
+    setPin((p) => p.slice(0, -1));
+    setError("");
+    submittedRef.current = false;
+  };
 
   const numpad = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "⌫"];
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <div className="border-b border-border px-6 py-4 flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={onBack}>
+        <Button variant="ghost" size="icon" onClick={onBack} disabled={verifying}>
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <span className="text-sm text-muted-foreground">
@@ -62,7 +103,7 @@ export function PinEntryScreen({
 
           <div>
             <p className="text-center text-sm text-muted-foreground mb-4">
-              Masukkan PIN 6 digit Anda
+              {verifying ? "Memverifikasi PIN..." : "Masukkan PIN 6 digit Anda"}
             </p>
             <div
               className={`flex justify-center gap-3 ${shaking ? "animate-[shake_0.5s_ease-in-out]" : ""}`}
@@ -78,36 +119,52 @@ export function PinEntryScreen({
                 />
               ))}
             </div>
+            {verifying && (
+              <div className="flex justify-center mt-4">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            )}
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            {numpad.map((d, idx) => {
-              if (d === "") return <div key={idx} />;
-              if (d === "⌫")
+          {error && (
+            <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/8 border border-destructive/20 rounded-lg px-3 py-2.5">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              {error}
+            </div>
+          )}
+
+          {!verifying && (
+            <div className="grid grid-cols-3 gap-3">
+              {numpad.map((d, idx) => {
+                if (d === "") return <div key={idx} />;
+                if (d === "⌫")
+                  return (
+                    <button
+                      key={idx}
+                      onClick={handleBackspace}
+                      className="h-14 rounded-lg border border-border bg-card hover:bg-muted flex items-center justify-center transition-colors active:scale-95"
+                    >
+                      <Delete className="w-5 h-5 text-muted-foreground" />
+                    </button>
+                  );
                 return (
                   <button
                     key={idx}
-                    onClick={handleBackspace}
-                    className="h-14 rounded-lg border border-border bg-card hover:bg-muted flex items-center justify-center transition-colors active:scale-95"
+                    onClick={() => handleDigit(d)}
+                    className="h-14 rounded-lg border border-border bg-card hover:bg-muted text-foreground font-semibold text-lg transition-colors active:scale-95"
                   >
-                    <Delete className="w-5 h-5 text-muted-foreground" />
+                    {d}
                   </button>
                 );
-              return (
-                <button
-                  key={idx}
-                  onClick={() => handleDigit(d)}
-                  className="h-14 rounded-lg border border-border bg-card hover:bg-muted text-foreground font-semibold text-lg transition-colors active:scale-95"
-                >
-                  {d}
-                </button>
-              );
-            })}
-          </div>
+              })}
+            </div>
+          )}
 
-          <p className="text-center text-xs text-muted-foreground">
-            PIN akan otomatis dikonfirmasi setelah 6 digit dimasukkan
-          </p>
+          {!verifying && (
+            <p className="text-center text-xs text-muted-foreground">
+              PIN akan otomatis diverifikasi setelah 6 digit dimasukkan
+            </p>
+          )}
         </div>
       </div>
 

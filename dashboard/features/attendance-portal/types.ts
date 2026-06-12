@@ -32,6 +32,7 @@ export interface StaffListScreenProps {
 export interface PinEntryScreenProps {
   staff: StaffMember;
   clockType: ClockType;
+  outletId: string;
   onConfirm: (pin: string) => void;
   onBack: () => void;
 }

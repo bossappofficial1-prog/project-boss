@@ -1504,7 +1504,7 @@ enum IntegrationStatus {
 }
 
 model AuditLog {
-  id          String         @id @default(uuid())
+  id          String          @id @default(uuid())
   action      AuditAction
   entityType  AuditEntityType
   entityId    String
@@ -1512,7 +1512,7 @@ model AuditLog {
   details     Json?
   ipAddress   String?
   performedBy String
-  createdAt   DateTime       @default(now())
+  createdAt   DateTime        @default(now())
 
   performedByUser User @relation("AuditPerformedBy", fields: [performedBy], references: [id])
 

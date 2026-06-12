@@ -5,8 +5,11 @@ import { OutletRepository } from "../repositories/outlet.repository";
 import { ImageService } from "./image.service";
 import { db } from "../config/prisma";
 import { BcryptUtil } from "../utils";
+import { redis } from "../config/redis";
 
 const MAX_DISTANCE_METERS = 100;
+const PIN_MAX_ATTEMPTS = 3;
+const PIN_LOCKOUT_SECONDS = 300; // 5 minutes
 
 function haversineDistance(
   lat1: number,
@@ -415,6 +418,70 @@ export class AttendanceService extends BaseService {
     });
   }
 
+  /**
+   * Verify PIN only - does not create attendance record
+   * Used for early validation before face verification
+   */
+  static async verifyPin(staffId: string, pin: string, outletId: string) {
+    const staff = await StaffRepository.findById(staffId);
+    if (!staff) this.notFound("Staff tidak ditemukan.");
+    if (staff.outletId !== outletId) {
+      this.forbidden("Staff tidak terdaftar pada outlet ini.");
+    }
+    if (staff.status !== "ACTIVE") {
+      this.forbidden("Staff tidak aktif.");
+    }
+
+    if (!staff.pin) {
+      this.forbidden(
+        "Staff belum memiliki PIN. Silakan hubungi manager untuk mendaftarkan PIN.",
+      );
+    }
+
+    // Rate limiting for PIN attempts
+    const pinAttemptsKey = `pin_attempts:${staffId}`;
+    const lockoutKey = `pin_lockout:${staffId}`;
+
+    // Check if staff is locked out
+    const isLockedOut = await redis.get(lockoutKey);
+    if (isLockedOut) {
+      const ttl = await redis.ttl(lockoutKey);
+      this.forbidden(
+        `Terlalu banyak percobaan PIN gagal. Coba lagi dalam ${Math.ceil(ttl / 60)} menit.`,
+      );
+    }
+
+    const isPinValid = await BcryptUtil.compare(pin, staff.pin);
+    if (!isPinValid) {
+      // Increment failed attempts
+      const attempts = await redis.incr(pinAttemptsKey);
+      await redis.expire(pinAttemptsKey, PIN_LOCKOUT_SECONDS);
+
+      // Lock out if max attempts reached
+      if (attempts >= PIN_MAX_ATTEMPTS) {
+        await redis.set(lockoutKey, "1", "EX", PIN_LOCKOUT_SECONDS);
+        await redis.del(pinAttemptsKey);
+        this.forbidden(
+          `Terlalu banyak percobaan PIN gagal. Akun dikunci selama ${PIN_LOCKOUT_SECONDS / 60} menit.`,
+        );
+      }
+
+      this.forbidden(
+        `PIN yang Anda masukkan salah. Sisa percobaan: ${PIN_MAX_ATTEMPTS - attempts}`,
+      );
+    }
+
+    // PIN valid - reset attempts
+    await redis.del(pinAttemptsKey);
+
+    return {
+      valid: true,
+      staffId: staff.id,
+      staffName: staff.name,
+      message: "PIN valid",
+    };
+  }
+
   static async portalClock(params: {
     staffId: string;
     pin: string;
@@ -452,10 +519,42 @@ export class AttendanceService extends BaseService {
         "Staff belum memiliki PIN. Silakan hubungi manager untuk mendaftarkan PIN.",
       );
     }
+
+    // Rate limiting for PIN attempts
+    const pinAttemptsKey = `pin_attempts:${staffId}`;
+    const lockoutKey = `pin_lockout:${staffId}`;
+
+    // Check if staff is locked out
+    const isLockedOut = await redis.get(lockoutKey);
+    if (isLockedOut) {
+      const ttl = await redis.ttl(lockoutKey);
+      this.forbidden(
+        `Terlalu banyak percobaan PIN gagal. Coba lagi dalam ${Math.ceil(ttl / 60)} menit.`,
+      );
+    }
+
     const isPinValid = await BcryptUtil.compare(pin, staff.pin);
     if (!isPinValid) {
-      this.forbidden("PIN yang Anda masukkan salah.");
+      // Increment failed attempts
+      const attempts = await redis.incr(pinAttemptsKey);
+      await redis.expire(pinAttemptsKey, PIN_LOCKOUT_SECONDS);
+
+      // Lock out if max attempts reached
+      if (attempts >= PIN_MAX_ATTEMPTS) {
+        await redis.set(lockoutKey, "1", "EX", PIN_LOCKOUT_SECONDS);
+        await redis.del(pinAttemptsKey);
+        this.forbidden(
+          `Terlalu banyak percobaan PIN gagal. Akun dikunci selama ${PIN_LOCKOUT_SECONDS / 60} menit.`,
+        );
+      }
+
+      this.forbidden(
+        `PIN yang Anda masukkan salah. Sisa percobaan: ${PIN_MAX_ATTEMPTS - attempts}`,
+      );
     }
+
+    // PIN valid - reset attempts
+    await redis.del(pinAttemptsKey);
 
     if (type === "in") {
       if (latitude !== undefined && longitude !== undefined) {

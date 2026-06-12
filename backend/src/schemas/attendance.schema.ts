@@ -36,8 +36,15 @@ export const portalClockSchema = z.object({
   registerFaceDescriptor: z.string().optional(),
 });
 
+export const verifyPinSchema = z.object({
+  staffId: z.string().min(1, "staffId wajib diisi"),
+  pin: z.string().min(6, "PIN harus 6 digit").max(6, "PIN harus 6 digit"),
+  outletId: z.string().min(1, "outletId wajib diisi"),
+});
+
 export type ClockInInput = z.infer<typeof clockInSchema>;
 export type ClockOutInput = z.infer<typeof clockOutSchema>;
 export type QueryAttendanceInput = z.infer<typeof queryAttendanceSchema>;
 export type PortalClockInput = z.infer<typeof portalClockSchema>;
+export type VerifyPinInput = z.infer<typeof verifyPinSchema>;
 

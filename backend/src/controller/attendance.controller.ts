@@ -198,6 +198,13 @@ class AttendanceController extends BaseController {
     return this.success(res, null, HttpStatus.OK, "Absensi staf berhasil dihapus");
   });
 
+  verifyPin = this.handler(async (req: Request, res: Response) => {
+    const { staffId, pin, outletId } = req.body;
+
+    const result = await AttendanceService.verifyPin(staffId, pin, outletId);
+    return this.success(res, result, HttpStatus.OK, "PIN valid");
+  });
+
   portalClock = this.handler(async (req: Request, res: Response) => {
     const { staffId, pin, outletId, type, latitude, longitude, notes, faceImageUrl, registerFaceDescriptor } = req.body;
 

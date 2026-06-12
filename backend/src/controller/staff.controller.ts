@@ -10,6 +10,7 @@ import {
 } from "../schemas/staff.schema";
 import { getOutletByIdService } from "../service/outlet.service";
 import { PlanLimitService } from "../service/plan-limit.service";
+import { ImageService } from "../service/image.service";
 import {
   importStaffFromCSV,
   generateStaffImportTemplate,
@@ -64,6 +65,18 @@ export const getStaffByOutletController = asyncHandler(
   },
 );
 
+/**
+ * Public endpoint for portal - returns only safe fields
+ * Excludes: pin, phone, email, privileges
+ */
+export const getStaffPublicByOutletController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { outletId } = req.params;
+    const staff = await StaffRepository.findPublicByOutletId(outletId as string);
+    return ResponseUtil.success(res, staff);
+  },
+);
+
 export const updateStaffController = asyncHandler(
   async (req: Request, res: Response) => {
     const { id } = req.params;
@@ -74,7 +87,20 @@ export const updateStaffController = asyncHandler(
       throw new AppError("Staff tidak ditemukan", HttpStatus.NOT_FOUND);
     }
 
+    // Store old face image URL before update
+    const oldFaceImageUrl = staff.faceImageUrl;
+
     const updatedStaff = await StaffRepository.update(id as string, payload);
+
+    // Delete old face image if a new one was set
+    if (payload.faceImageUrl && oldFaceImageUrl && payload.faceImageUrl !== oldFaceImageUrl) {
+      try {
+        await ImageService.deleteImageByUrl(oldFaceImageUrl);
+      } catch (error) {
+        console.error("Failed to delete old staff face image:", error);
+      }
+    }
+
     return ResponseUtil.success(res, updatedStaff);
   },
 );
@@ -104,7 +130,20 @@ export const deleteStaffController = asyncHandler(
       );
     }
 
+    // Store face image URL before deletion
+    const faceImageUrl = staff.faceImageUrl;
+
     await StaffRepository.delete(id as string);
+
+    // Clean up face image file
+    if (faceImageUrl) {
+      try {
+        await ImageService.deleteImageByUrl(faceImageUrl);
+      } catch (error) {
+        console.error("Failed to delete staff face image:", error);
+      }
+    }
+
     await PlanLimitService.invalidateUsageCache(businessId);
     return ResponseUtil.success(res, { message: "Staff berhasil dihapus" });
   },

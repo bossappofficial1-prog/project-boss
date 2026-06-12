@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import type { StaffMember } from "@/types/staff";
@@ -12,6 +12,8 @@ import { FaceVerifyScreen } from "./face-verify-screen";
 import { DoneScreen } from "./done-screen";
 import type { PortalStep, KioskConfig, ClockType, ClockResult } from "./types";
 
+const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+
 export function PortalInner() {
   const searchParams = useSearchParams();
   const urlOutletId = searchParams.get("outletId") ?? undefined;
@@ -22,6 +24,37 @@ export function PortalInner() {
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
   const [confirmedPin, setConfirmedPin] = useState("");
   const [result, setResult] = useState<ClockResult | null>(null);
+
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const resetToStaffList = useCallback(() => {
+    setSelectedStaff(null);
+    setConfirmedPin("");
+    setResult(null);
+    setStep("staff-list");
+  }, []);
+
+  const resetInactivityTimer = useCallback(() => {
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
+    inactivityTimerRef.current = setTimeout(() => {
+      // Auto-reset to staff list after inactivity
+      resetToStaffList();
+    }, INACTIVITY_TIMEOUT_MS);
+  }, [resetToStaffList]);
+
+  // Reset timer on any activity
+  useEffect(() => {
+    if (step !== "setup" && config) {
+      resetInactivityTimer();
+    }
+    return () => {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+    };
+  }, [step, config, resetInactivityTimer]);
 
   useEffect(() => {
     // Jika ada URL param, langsung setup; jika tidak, cek localStorage
@@ -54,10 +87,7 @@ export function PortalInner() {
     setStep("done");
   };
   const handleReset = () => {
-    setSelectedStaff(null);
-    setConfirmedPin("");
-    setResult(null);
-    setStep("staff-list");
+    resetToStaffList();
   };
 
   // Jika URL param ada, mulai dari setup (akan auto-verify)
@@ -77,10 +107,11 @@ export function PortalInner() {
           onOpenSetup={() => setStep("setup")}
         />
       )}
-      {step === "pin-entry" && selectedStaff && (
+      {step === "pin-entry" && selectedStaff && config && (
         <PinEntryScreen
           staff={selectedStaff}
           clockType={clockType}
+          outletId={config.outletId}
           onConfirm={handlePinConfirm}
           onBack={handleReset}
         />

@@ -66,7 +66,7 @@ export async function getFaceDescriptorFromBase64(base64Image: string): Promise<
   });
 }
 
-export function compareFaceDescriptors(desc1: number[] | Float32Array, desc2: number[] | Float32Array, threshold = 0.55): { match: boolean; distance: number } {
+export function compareFaceDescriptors(desc1: number[] | Float32Array, desc2: number[] | Float32Array, threshold = 0.45): { match: boolean; distance: number } {
   const arr1 = desc1 instanceof Float32Array ? Array.from(desc1) : desc1;
   const arr2 = desc2 instanceof Float32Array ? Array.from(desc2) : desc2;
 

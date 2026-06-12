@@ -36,6 +36,14 @@ export const staffApi = {
         return apiCall<StaffMember[]>(`/staff/outlet/${outletId}`);
     },
 
+    /**
+     * Public endpoint for portal - returns only safe fields
+     * No auth required
+     */
+    async listPublicByOutlet(outletId: string): Promise<StaffMember[]> {
+        return apiCall<StaffMember[]>(`/staff/outlet/${outletId}/public`);
+    },
+
     async getById(id: string): Promise<StaffMember> {
         return apiCall<StaffMember>(`/staff/${id}`);
     },

@@ -8,6 +8,7 @@ import {
   Camera,
   Loader2,
   AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 
 import { attendanceApi } from "@/lib/apis/attendance";
@@ -52,12 +53,19 @@ export function FaceVerifyScreen({
     });
   }, []);
 
+  const [locationError, setLocationError] = useState(false);
+
   useEffect(() => {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      setLocationError(true);
+      return;
+    }
     navigator.geolocation.getCurrentPosition(
       (pos) =>
         setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => {},
+      () => {
+        setLocationError(true);
+      },
       { enableHighAccuracy: true, timeout: 5000 },
     );
   }, []);
@@ -240,17 +248,21 @@ export function FaceVerifyScreen({
     submitAttendance(faceImageUrl, registerFaceDescriptor);
   }, [capturedBase64, capturedDescriptor, uploadPhoto, submitAttendance]);
 
-  const handleDeclineRegister = useCallback(async () => {
-    if (!capturedBase64) return;
-    setPhase("uploading");
-    const faceImageUrl = await uploadPhoto(capturedBase64);
-    submitAttendance(faceImageUrl);
-  }, [capturedBase64, uploadPhoto, submitAttendance]);
-
-  const handleSkip = () => {
-    stream?.getTracks().forEach((t) => t.stop());
-    submitAttendance();
-  };
+  const handleRetake = useCallback(async () => {
+    setCapturedBase64(null);
+    setCapturedDescriptor(null);
+    setError("");
+    setPhase("ready");
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: 640, height: 480 },
+      });
+      setStream(s);
+      if (videoRef.current) videoRef.current.srcObject = s;
+    } catch {
+      setError("Kamera tidak dapat diakses. Periksa izin browser.");
+    }
+  }, []);
 
   const isBusy =
     (phase !== "ready" && phase !== "confirm-register") ||
@@ -304,14 +316,19 @@ export function FaceVerifyScreen({
 
               <div className="flex gap-3">
                 <Button
+                  variant="outline"
+                  onClick={handleRetake}
+                  className="gap-2"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Ambil Ulang
+                </Button>
+                <Button
                   onClick={handleConfirmRegister}
                   className="flex-1 gap-2"
                 >
                   <Camera className="w-4 h-4" />
                   Simpan & Absen
-                </Button>
-                <Button variant="outline" onClick={handleDeclineRegister}>
-                  Lewati
                 </Button>
               </div>
             </>
@@ -360,17 +377,22 @@ export function FaceVerifyScreen({
                 </div>
               )}
 
+              {locationError && !error && (
+                <div className="flex items-start gap-2 text-sm text-yellow-600 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2.5">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>
+                    Lokasi tidak tersedia. Aktifkan GPS untuk verifikasi kehadiran.
+                    Absensi tetap dapat dilakukan tanpa lokasi.
+                  </span>
+                </div>
+              )}
+
               {!isBusy && !loadingModels && (
                 <div className="flex gap-3">
                   <Button onClick={handleCapture} className="flex-1 gap-2">
                     <Camera className="w-4 h-4" />
                     Ambil Foto & Absen
                   </Button>
-                  {!staff.faceDescriptor && (
-                    <Button variant="outline" onClick={handleSkip}>
-                      Lewati
-                    </Button>
-                  )}
                 </div>
               )}
             </>

@@ -94,6 +94,15 @@ export const attendanceApi = {
     return res.data.data;
   },
 
+  async verifyPin(data: {
+    staffId: string;
+    pin: string;
+    outletId: string;
+  }) {
+    const res = await apiClient.post("/attendance/portal/verify-pin", data);
+    return res.data.data;
+  },
+
   async portalClock(data: {
     staffId: string;
     pin: string;
