@@ -1,325 +1,757 @@
-import { BaseService } from './base.service';
-import { ReportRepository, CreateReportInput, ReportFilters } from '../repositories/report.repository';
-import { AuditLogService } from './audit-log.service';
-import { PdfBaseService } from './pdf-base.service';
-import { ReportType, ReportPeriod, ReportStatus, AuditAction, AuditEntityType } from '@prisma/client';
-import ExcelJS from 'exceljs';
-import path from 'path';
-import fs from 'fs-extra';
+import * as ExcelJS from "exceljs";
+import {
+  getOutletByIdService,
+  getOutletsByBusinessIdService,
+} from "./outlet.service";
+import { getBusinessByOwnerIdService } from "./business.service";
+import { ReportRepository } from "../repositories/report.repository";
+import {
+  eachDayOfInterval,
+  endOfDay,
+  endOfMonth,
+  endOfWeek,
+  format,
+  isSameDay,
+  startOfDay,
+  startOfMonth,
+  startOfWeek,
+  subDays,
+  startOfYear,
+  endOfYear,
+} from "date-fns";
+import { RedisUtils } from "../utils/redis.utils";
 
-export class ReportService extends BaseService {
-  constructor(
-    private reportRepository: ReportRepository,
-    private auditLogService: AuditLogService,
-  ) {
-    super();
+interface OutletReport {
+  label: string;
+  jumlahTransaksi: number;
+  totalPendapatan: number;
+  totalPajak: number;
+  totalPembelian: any;
+  totalPengeluaran: any;
+  gajiStaf: number;
+  totalHpp: number;
+  totalFees: number;
+  labaBersih: number;
+  trend: number[];
+}
+
+interface StaffReport {
+  staffId: string;
+  name: string;
+  role: string;
+  transactionCount: number;
+  revenue: number;
+  commission: number;
+  type: string;
+}
+
+export class ReportService {
+  static async getFinancialSummary(outletId: string, startDate: Date, endDate: Date) {
+    const outlet = await getOutletByIdService(outletId);
+
+    // Pastikan rentang waktu disertakan dalam cache key untuk keunikan
+    const cachedkey = `report:summary:${outletId}:${startDate.toISOString()}:${endDate.toISOString()}`;
+
+    const cached = await RedisUtils.get(cachedkey);
+    if (cached) return cached;
+
+    // Pastikan range mencakup awal hari pertama hingga akhir detik di hari terakhir
+    const start = startOfDay(startDate);
+    const end = endOfDay(endDate);
+
+    const revenueData = await ReportRepository.getRevenueAggregate(outletId, start, end);
+    const expenseData = await ReportRepository.getExpenseAggregate(outletId, start, end);
+
+    const totalRevenue = revenueData._sum.totalAmount || 0;
+    const totalExpense = expenseData._sum.amount || 0;
+    const netProfit = totalRevenue - totalExpense;
+
+    const completedOrders = await ReportRepository.getCompletedOrdersWithProducts(outletId, start, end);
+
+    const productSales = completedOrders
+      .flatMap((order: any) => order.items)
+      .reduce(
+        (acc: any, item: any) => {
+          const existing = acc[item.productId];
+          if (existing) {
+            existing.quantitySold += item.quantity;
+            existing.totalRevenue += item.priceAtTimeOfOrder * item.quantity;
+          } else {
+            acc[item.productId] = {
+              productId: item.productId,
+              name: item.product.name,
+              quantitySold: item.quantity,
+              totalRevenue: item.priceAtTimeOfOrder * item.quantity,
+            };
+          }
+          return acc;
+        },
+        {} as Record<
+          string,
+          { productId: string; name: string; quantitySold: number; totalRevenue: number }
+        >,
+      );
+
+    const topSellingProducts = Object.values(productSales)
+      .sort((a: any, b: any) => b.quantitySold - a.quantitySold)
+      .slice(0, 5);
+
+    const data = {
+      outletName: outlet.name,
+      period: { start: start.toISOString(), end: end.toISOString() },
+      incomeStatement: {
+        totalRevenue: { amount: totalRevenue, transactionCount: revenueData._count.id },
+        totalExpense: { amount: totalExpense, transactionCount: expenseData._count.id },
+        netProfit,
+      },
+      salesSummary: {
+        totalProductsSold: topSellingProducts.reduce((sum: number, p: any) => sum + p.quantitySold, 0),
+        topSellingProducts,
+      },
+    };
+
+    // TTL 15 menit = 15 * 60 detik
+    await RedisUtils.set(cachedkey, data, 15 * 60);
+    return data;
   }
 
-  async generateReport(
-    type: ReportType,
-    period: ReportPeriod,
-    generatedBy: string,
-    customDateRange?: { startDate: string; endDate: string },
-  ) {
-    const title = this.generateTitle(type, period);
-    
-    const report = await this.reportRepository.create({
+  private static async resolveOutletIds(outletId: string, ownerId: string): Promise<string[]> {
+    if (outletId === "all") {
+      const business = await getBusinessByOwnerIdService(ownerId);
+      const { outlets } = await getOutletsByBusinessIdService(business.id, undefined, 1000);
+      return outlets.map((o) => o.id);
+    }
+    return [outletId];
+  }
+
+  static async getOutletReport(
+    outletId: string,
+    date: string,
+    type: "daily" | "weekly" | "monthly",
+    ownerId: string
+  ): Promise<OutletReport[]> {
+    const cachedkey = `report:outlet:${outletId}:${date}:${type}:${ownerId}`;
+    const cached = await RedisUtils.get(cachedkey);
+    if (cached) return cached as OutletReport[];
+
+    const refDate = date ? new Date(date as string) : new Date();
+    let start: Date, end: Date;
+
+    if (type === "monthly") {
+      start = startOfYear(refDate);
+      end = endOfYear(refDate);
+    } else if (type === "weekly") {
+      start = startOfMonth(refDate);
+      end = endOfMonth(refDate);
+    } else {
+      end = endOfDay(refDate);
+      start = subDays(startOfDay(refDate), 9);
+    }
+
+    const targetOutletIds = await this.resolveOutletIds(outletId, ownerId);
+
+    const { expenses, orders, stockLogs } = await ReportRepository.getOutletReport(
+      targetOutletIds,
+      date,
+      start,
+      end,
       type,
-      period,
-      title,
-      parameters: customDateRange,
-      generatedBy,
-    });
-
-    // Process report in background
-    this.processReport(report.id, type, period, customDateRange).catch(console.error);
-
-    await this.auditLogService.logAdminAction(
-      generatedBy,
-      AuditAction.REPORT_GENERATED,
-      AuditEntityType.REPORT,
-      report.id,
-      title,
-      { type, period },
     );
 
-    return report;
-  }
+    let finalReport = [];
 
-  private async processReport(
-    reportId: string,
-    type: ReportType,
-    period: ReportPeriod,
-    customDateRange?: { startDate: string; endDate: string },
-  ) {
-    try {
-      await this.reportRepository.updateStatus(reportId, ReportStatus.PROCESSING);
+    if (type === "monthly") {
+      for (let i = 0; i < 12; i++) {
+        const monthStart = new Date(start);
+        monthStart.setMonth(start.getMonth() + i);
+        const monthEnd = endOfMonth(monthStart);
 
-      const { startDate, endDate } = this.getDateRange(period, customDateRange);
-      let reportData: any;
+        const mOrders = orders.filter((o: any) => o.createdAt >= monthStart && o.createdAt <= monthEnd);
+        const mExpenses = expenses.filter((e: any) => e.date >= monthStart && e.date <= monthEnd);
+        const mLogs = stockLogs.filter((l: any) => l.createdAt >= monthStart && l.createdAt <= monthEnd);
 
-      switch (type) {
-        case ReportType.REVENUE:
-          reportData = await this.reportRepository.getRevenueData(startDate, endDate);
-          break;
-        case ReportType.TRANSACTION:
-          reportData = await this.reportRepository.getTransactionSummary(startDate, endDate);
-          break;
-        case ReportType.BUSINESS_PERFORMANCE:
-          reportData = await this.reportRepository.getBusinessPerformance(startDate, endDate);
-          break;
-        case ReportType.SUBSCRIPTION_SUMMARY:
-          reportData = await this.reportRepository.getSubscriptionSummary();
-          break;
-        default:
-          reportData = {};
+        const stats = this.calculateStats(mOrders, mExpenses, mLogs);
+
+        finalReport.push({
+          label: format(monthStart, "MMMM yyyy"),
+          jumlahTransaksi: stats.count,
+          totalPendapatan: stats.revenue,
+          totalPajak: stats.totalPajak,
+          totalPembelian: stats.pembelian,
+          totalPengeluaran: stats.pengeluaran,
+          gajiStaf: stats.gaji,
+          totalHpp: stats.totalHpp,
+          totalFees: stats.totalFees,
+          labaBersih: stats.labaBersih,
+          trend: [0, 0, 0, 0],
+        });
       }
+    } else if (type === "weekly") {
+      let weekIdx = 1;
+      let iterDate = new Date(start);
 
-      // Generate PDF
-      const pdfBuffer = await this.generatePDF(type, title, reportData, startDate, endDate);
-      const pdfFilename = `report-${reportId}-${Date.now()}.pdf`;
-      const pdfPath = path.join(process.cwd(), 'uploads', 'reports', pdfFilename);
-      await fs.ensureDir(path.dirname(pdfPath));
-      await fs.writeFile(pdfPath, pdfBuffer);
+      while (iterDate <= end) {
+        const wStart = new Date(iterDate);
+        let wEnd = endOfWeek(wStart, { weekStartsOn: 1 });
+        if (wEnd > end) wEnd = new Date(end);
 
-      // Generate Excel
-      const excelBuffer = await this.generateExcel(type, title, reportData, startDate, endDate);
-      const excelFilename = `report-${reportId}-${Date.now()}.xlsx`;
-      const excelPath = path.join(process.cwd(), 'uploads', 'reports', excelFilename);
-      await fs.writeFile(excelPath, excelBuffer);
+        const wOrders = orders.filter((o: any) => o.createdAt >= wStart && o.createdAt <= wEnd);
+        const wExpenses = expenses.filter((e: any) => e.date >= wStart && e.date <= wEnd);
+        const wLogs = stockLogs.filter((l: any) => l.createdAt >= wStart && l.createdAt <= wEnd);
 
-      await this.reportRepository.updateStatus(reportId, ReportStatus.COMPLETED, {
-        fileUrl: `/uploads/reports/${pdfFilename}`,
-        fileSize: pdfBuffer.length,
+        const stats = this.calculateStats(wOrders, wExpenses, wLogs);
+
+        const trend = Array.from({ length: 7 }).map((_, dIdx) => {
+          const day = new Date(wStart);
+          day.setDate(wStart.getDate() + dIdx);
+          if (day > wEnd) return 0;
+          return wOrders
+            .filter((o: any) => isSameDay(o.createdAt, day))
+            .reduce((sum: number, curr: any) => sum + curr.totalAmount, 0);
+        });
+
+        finalReport.push({
+          label: `Minggu ${weekIdx++} (${format(wStart, "dd/MM")})`,
+          jumlahTransaksi: stats.count,
+          totalPendapatan: stats.revenue,
+          totalPajak: stats.totalPajak,
+          totalPembelian: stats.pembelian,
+          totalPengeluaran: stats.pengeluaran,
+          gajiStaf: stats.gaji,
+          totalHpp: stats.totalHpp,
+          totalFees: stats.totalFees,
+          labaBersih: stats.labaBersih,
+          trend: [0, 0, 0, 0],
+        });
+
+        iterDate = new Date(wEnd);
+        iterDate.setDate(iterDate.getDate() + 1);
+        iterDate = startOfDay(iterDate);
+      }
+    } else {
+      const days = eachDayOfInterval({ start, end });
+
+      finalReport = days.map((day) => {
+        const dayStr = format(day, "yyyy-MM-dd");
+        const dOrders = orders.filter((o: any) => format(o.createdAt, "yyyy-MM-dd") === dayStr);
+        const dExpenses = expenses.filter((e: any) => format(e.date, "yyyy-MM-dd") === dayStr);
+        const dLogs = stockLogs.filter((l: any) => format(l.createdAt, "yyyy-MM-dd") === dayStr);
+
+        const stats = this.calculateStats(dOrders, dExpenses, dLogs);
+
+        const trend = dOrders.length > 0
+          ? Array.from({ length: 8 }).map((_, h) => {
+            const hourOrders = dOrders.filter(
+              (o: any) => o.createdAt.getHours() >= h * 3 && o.createdAt.getHours() < (h + 1) * 3,
+            );
+            return hourOrders.reduce((sum: number, curr: any) => sum + curr.totalAmount, 0);
+          })
+          : [0, 0, 0, 0, 0, 0, 0, 0];
+
+        return {
+          label: format(day, "dd MMM yyyy"),
+          jumlahTransaksi: stats.count,
+          totalPendapatan: stats.revenue,
+          totalPajak: stats.totalPajak,
+          totalPembelian: stats.pembelian,
+          totalPengeluaran: stats.pengeluaran,
+          gajiStaf: stats.gaji,
+          totalHpp: stats.totalHpp,
+          totalFees: stats.totalFees,
+          labaBersih: stats.labaBersih,
+          trend,
+        };
       });
-    } catch (error: any) {
-      console.error('Report generation failed:', error);
-      await this.reportRepository.updateStatus(reportId, ReportStatus.FAILED, {
-        errorMessage: error.message,
-      });
+
+      finalReport.reverse();
     }
+
+    // Set TTL 15 menit (15 * 60 detik)
+    await RedisUtils.set(cachedkey, finalReport, 15 * 60);
+    return finalReport;
   }
 
-  private get title(): string {
-    return 'Report';
-  }
+  static async getCompareOutletsReport(
+    date: string,
+    type: "daily" | "monthly" | "yearly",
+    ownerId: string,
+  ): Promise<OutletReport[]> {
+    const cachedkey = `report:compare:${ownerId}:${date}:${type}`;
+    const cached = await RedisUtils.get(cachedkey);
+    if (cached) return cached as OutletReport[];
 
-  private generateTitle(type: ReportType, period: ReportPeriod): string {
-    const typeLabels: Record<ReportType, string> = {
-      [ReportType.REVENUE]: 'Laporan Pendapatan',
-      [ReportType.TRANSACTION]: 'Laporan Transaksi',
-      [ReportType.BUSINESS_PERFORMANCE]: 'Laporan Performa Bisnis',
-      [ReportType.USER_ACTIVITY]: 'Laporan Aktivitas User',
-      [ReportType.SUBSCRIPTION_SUMMARY]: 'Laporan Ringkasan Langganan',
-    };
-    const periodLabels: Record<ReportPeriod, string> = {
-      [ReportPeriod.DAILY]: 'Harian',
-      [ReportPeriod.WEEKLY]: 'Mingguan',
-      [ReportPeriod.MONTHLY]: 'Bulanan',
-      [ReportPeriod.QUARTERLY]: 'Quarterly',
-      [ReportPeriod.YEARLY]: 'Tahunan',
-      [ReportPeriod.CUSTOM]: 'Custom',
-    };
-    return `${typeLabels[type]} - ${periodLabels[period]}`;
-  }
+    const refDate = date ? new Date(date as string) : new Date();
+    let start: Date, end: Date;
 
-  private getDateRange(period: ReportPeriod, custom?: { startDate: string; endDate: string }) {
-    const now = new Date();
-    let startDate: Date;
-    let endDate: Date = now;
+    if (type === "yearly") {
+      start = startOfYear(refDate);
+      end = endOfYear(refDate);
+    } else if (type === "monthly") {
+      start = startOfMonth(refDate);
+      end = endOfMonth(refDate);
+    } else {
+      start = startOfDay(refDate);
+      end = endOfDay(refDate);
+    }
 
-    if (period === ReportPeriod.CUSTOM && custom) {
+    const business = await getBusinessByOwnerIdService(ownerId);
+    const { outlets } = await getOutletsByBusinessIdService(business.id, undefined, 1000);
+
+    const reportDataPromises = outlets.map((outlet) =>
+      ReportRepository.getOutletReport([outlet.id], date, start, end, type as any).then((data) => ({
+        outlet,
+        data,
+      })),
+    );
+
+    const results = await Promise.all(reportDataPromises);
+
+    const finalReport = results.map(({ outlet, data }) => {
+      const { orders, expenses, stockLogs } = data;
+      const stats = this.calculateStats(orders, expenses, stockLogs);
+
       return {
-        startDate: new Date(custom.startDate),
-        endDate: new Date(custom.endDate),
+        label: outlet.name,
+        outletId: outlet.id,
+        jumlahTransaksi: stats.count,
+        totalPendapatan: stats.revenue,
+        totalPajak: stats.totalPajak,
+        totalPembelian: stats.pembelian,
+        totalPengeluaran: stats.pengeluaran,
+        gajiStaf: stats.gaji,
+        totalHpp: stats.totalHpp,
+        totalFees: stats.totalFees,
+        labaBersih: stats.labaBersih,
+        trend: [0, 0, 0, 0],
       };
-    }
+    });
 
-    switch (period) {
-      case ReportPeriod.DAILY:
-        startDate = new Date(now.setHours(0, 0, 0, 0));
-        break;
-      case ReportPeriod.WEEKLY:
-        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-      case ReportPeriod.MONTHLY:
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        break;
-      case ReportPeriod.QUARTERLY:
-        startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-        break;
-      case ReportPeriod.YEARLY:
-        startDate = new Date(now.getFullYear(), 0, 1);
-        break;
-      default:
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    }
-
-    return { startDate, endDate };
+    // Sesuaikan TTL ke 15 Menit (15 * 60 detik)
+    await RedisUtils.set(cachedkey, finalReport, 15 * 60);
+    return finalReport;
   }
 
-  private async generatePDF(type: ReportType, title: string, data: any, startDate: Date, endDate: Date): Promise<Buffer> {
-    const templateName = this.getTemplateName(type);
-    
-    try {
-      return await PdfBaseService.generate({
-        templateName,
-        data: {
-          title,
-          data,
-          startDate: startDate.toISOString(),
-          endDate: endDate.toISOString(),
-          generatedAt: new Date().toISOString(),
-        },
-        landscape: true,
-        format: 'A4',
-        headerFooter: {
-          headerLeft: 'BOSS Platform',
-          headerRight: title,
-          footerLeft: 'Laporan ini digenerate otomatis oleh sistem',
-        },
+  private static calculateStats(
+    filteredOrders: any[],
+    filteredExpenses: any[],
+    filteredLogs: any[],
+  ) {
+    let revenue = 0;
+    let totalPajak = 0;
+    let gaji = 0;
+    let totalHpp = 0;
+    let totalFees = 0;
+
+    const pembelian = filteredLogs.reduce(
+      (acc, log) => acc + (log.hppPerUnit || 0) * log.quantity,
+      0,
+    );
+    const pengeluaran = filteredExpenses.reduce((acc, e) => acc + e.amount, 0);
+
+    filteredOrders.forEach((order) => {
+      revenue += order.totalAmount;
+      totalPajak += order.taxAmount ?? 0;
+      totalFees += (order.midtransFee || 0) + (order.appFee || 0);
+
+      order.items.forEach((item: any) => {
+        totalHpp += (item.hppAtTimeOfOrder || 0);
+        gaji += (item.commissionAtTimeOfOrder || 0) * item.quantity;
       });
-    } catch (error) {
-      console.warn('PDF template not found, using fallback:', error);
-      return this.generateFallbackPDF(title, data, startDate, endDate);
-    }
-  }
+    });
 
-  private getTemplateName(type: ReportType): string {
-    const templateMap: Record<ReportType, string> = {
-      [ReportType.REVENUE]: 'admin-revenue-report.hbs',
-      [ReportType.TRANSACTION]: 'admin-transaction-report.hbs',
-      [ReportType.BUSINESS_PERFORMANCE]: 'admin-business-report.hbs',
-      [ReportType.USER_ACTIVITY]: 'admin-user-report.hbs',
-      [ReportType.SUBSCRIPTION_SUMMARY]: 'admin-subscription-report.hbs',
+    return {
+      revenue,
+      totalPajak,
+      pembelian,
+      pengeluaran,
+      gaji,
+      totalHpp,
+      totalFees,
+      labaBersih: revenue - totalHpp - pengeluaran - gaji - totalFees,
+      count: filteredOrders.length,
     };
-    return templateMap[type];
   }
 
-  private async generateFallbackPDF(title: string, data: any, startDate: Date, endDate: Date): Promise<Buffer> {
-    // Simple fallback using basic HTML
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          body { font-family: Arial, sans-serif; padding: 40px; }
-          h1 { color: #1e293b; font-size: 24px; }
-          .meta { color: #64748b; font-size: 12px; margin-bottom: 30px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-          th, td { border: 1px solid #e2e8f0; padding: 8px 12px; text-align: left; font-size: 12px; }
-          th { background: #f8fafc; font-weight: 600; }
-          .summary { background: #f0f9ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-        </style>
-      </head>
-      <body>
-        <h1>${title}</h1>
-        <div class="meta">
-          <p>Periode: ${startDate.toLocaleDateString('id-ID')} - ${endDate.toLocaleDateString('id-ID')}</p>
-          <p>Digenerate: ${new Date().toLocaleString('id-ID')}</p>
-        </div>
-        <div class="summary">
-          <pre>${JSON.stringify(data, null, 2)}</pre>
-        </div>
-      </body>
-      </html>
-    `;
+  static async getStaffReport(
+    outletId: string,
+    date: string,
+    type: "daily" | "weekly" | "monthly",
+    ownerId: string
+  ): Promise<StaffReport[]> {
+    const cachedkey = `report:staff:${outletId}:${date}:${type}:${ownerId}`;
+    const cached = await RedisUtils.get(cachedkey);
+    if (cached) return cached as StaffReport[];
 
-    // Use PdfBaseService with inline HTML
-    const hbs = await import('handlebars');
-    const template = hbs.compile(html);
-    const compiledHtml = template({});
+    const refDate = date ? new Date(date as string) : new Date();
+    let start: Date, end: Date;
 
-    // For fallback, return a simple buffer
-    return Buffer.from(compiledHtml, 'utf-8');
+    if (type === "monthly") {
+      start = startOfMonth(refDate);
+      end = endOfMonth(refDate);
+    } else if (type === "weekly") {
+      start = startOfWeek(refDate, { weekStartsOn: 1 });
+      end = endOfWeek(refDate, { weekStartsOn: 1 });
+    } else {
+      start = startOfDay(refDate);
+      end = endOfDay(refDate);
+    }
+
+    const targetOutletIds = await this.resolveOutletIds(outletId, ownerId);
+
+    // Kueri database dipindah ke repository
+    const orders = await ReportRepository.getOrdersForStaffReport(targetOutletIds, start, end);
+
+    const cashierMap = new Map<string, { name: string; transactions: number; revenue: number }>();
+
+    orders.forEach((order: any) => {
+      const staffId = order.handledByStaff?.id || "owner";
+      const staffName = order.handledByStaff?.name || "Owner (Pemilik)";
+
+      const entry = cashierMap.get(staffId) || {
+        name: staffName,
+        transactions: 0,
+        revenue: 0,
+      };
+      entry.transactions += 1;
+      entry.revenue += order.totalAmount;
+      cashierMap.set(staffId, entry);
+    });
+
+    const cashierList = Array.from(cashierMap.values()).map((c) => ({
+      staffId: `C-${c.name}`,
+      name: c.name,
+      role: "Kasir",
+      transactionCount: c.transactions,
+      revenue: c.revenue,
+      commission: 0,
+      type: "CASHIER",
+    }));
+
+    const serviceMap = new Map<
+      string,
+      { name: string; transactions: number; commission: number }
+    >();
+
+    orders.forEach((order: any) => {
+      order.items.forEach((item: any) => {
+        if (item.product.service) {
+          const service = item.product.service;
+          const providerName = service.providerName;
+
+          if (providerName) {
+            const entry = serviceMap.get(providerName) || {
+              name: providerName,
+              transactions: 0,
+              commission: 0,
+            };
+
+            entry.transactions += 1;
+
+            let itemCommission = 0;
+            if (service.commissionType === "PERCENTAGE") {
+              itemCommission = item.priceAtTimeOfOrder * (service.commissionValue / 100);
+            } else {
+              itemCommission = service.commissionValue;
+            }
+
+            itemCommission *= item.quantity;
+            entry.commission += itemCommission;
+            serviceMap.set(providerName, entry);
+          }
+        }
+      });
+    });
+
+    const serviceList = Array.from(serviceMap.values()).map((s) => ({
+      staffId: `S-${s.name}`,
+      name: s.name,
+      role: "Staff Layanan",
+      transactionCount: s.transactions,
+      revenue: 0,
+      commission: s.commission,
+      type: "SERVICE",
+    }));
+
+    const finalData = [...cashierList, ...serviceList];
+
+    // Set TTL 15 menit (15 * 60 detik)
+    await RedisUtils.set(cachedkey, finalData, 15 * 60);
+    return finalData;
   }
 
-  private async generateExcel(type: ReportType, title: string, data: any, startDate: Date, endDate: Date): Promise<Buffer> {
+  // ─── Excel Export ───
+
+  private static excelHeaderStyle: Partial<ExcelJS.Style> = {
+    font: { bold: true, color: { argb: "FFFFFFFF" }, size: 11 },
+    fill: { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } },
+    alignment: { vertical: "middle", horizontal: "center", wrapText: true },
+    border: {
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" },
+    },
+  };
+
+  private static cellBorder: Partial<ExcelJS.Borders> = {
+    top: { style: "thin" },
+    left: { style: "thin" },
+    bottom: { style: "thin" },
+    right: { style: "thin" },
+  };
+
+  private static applyHeaderStyle(sheet: ExcelJS.Worksheet) {
+    sheet.getRow(1).eachCell((cell) => {
+      Object.assign(cell, { style: ReportService.excelHeaderStyle });
+    });
+    sheet.getRow(1).height = 24;
+  }
+
+  private static applyRowBorder(row: ExcelJS.Row) {
+    row.eachCell((cell) => {
+      cell.border = ReportService.cellBorder;
+    });
+  }
+
+  private static setCurrencyFormat(row: ExcelJS.Row, colNumbers: number[]) {
+    colNumbers.forEach((n) => {
+      const cell = row.getCell(n);
+      if (typeof cell.value === "number") cell.numFmt = "#,##0";
+    });
+  }
+
+  static async exportOutletReportToExcel(
+    outletId: string,
+    date: string,
+    type: "daily" | "weekly" | "monthly",
+    viewMode: "time" | "compare",
+    ownerId: string,
+  ): Promise<ExcelJS.Workbook> {
+    let data: any[];
+    let outletName = "Semua Outlet";
+
+    if (viewMode === "compare" && ownerId) {
+      data = await this.getCompareOutletsReport(date, type as any, ownerId);
+    } else {
+      data = await this.getOutletReport(outletId, date, type, ownerId);
+      if (outletId !== "all") {
+        try {
+          const outlet = await getOutletByIdService(outletId);
+          outletName = outlet.name;
+        } catch {
+          // keep default
+        }
+      }
+    }
+
     const workbook = new ExcelJS.Workbook();
-    workbook.creator = 'BOSS Platform';
+    workbook.creator = "BOSS App";
     workbook.created = new Date();
 
-    const worksheet = workbook.addWorksheet(title);
+    const typeLabel =
+      viewMode === "compare"
+        ? "Perbandingan Outlet"
+        : type === "daily"
+          ? "Harian"
+          : type === "weekly"
+            ? "Mingguan"
+            : "Bulanan";
 
-    // Add header
-    worksheet.addRow([title]);
-    worksheet.addRow([`Periode: ${startDate.toLocaleDateString('id-ID')} - ${endDate.toLocaleDateString('id-ID')}`]);
-    worksheet.addRow([]);
+    const sheet = workbook.addWorksheet(`Laporan ${typeLabel}`);
+    sheet.columns = [
+      { header: "No", key: "no", width: 6 },
+      { header: viewMode === "compare" ? "Outlet" : "Periode", key: "label", width: 28 },
+      { header: "Jml Transaksi", key: "trx", width: 15 },
+      { header: "(+) Pendapatan", key: "pendapatan", width: 20 },
+      { header: "(+) PPN", key: "ppn", width: 18 },
+      { header: "(-) Pengeluaran", key: "pengeluaran", width: 18 },
+      { header: "(-) Gaji/Komisi", key: "gaji", width: 18 },
+      { header: "= Laba Bersih", key: "laba", width: 20 },
+      { header: "Pembelian Stok (Aset)", key: "pembelian", width: 22 },
+    ];
+    this.applyHeaderStyle(sheet);
 
-    // Add data based on type
-    if (type === ReportType.REVENUE && Array.isArray(data)) {
-      worksheet.addRow(['Tanggal', 'Total Pendapatan', 'Jumlah Transaksi']);
-      data.forEach((item: any) => {
-        worksheet.addRow([
-          new Date(item.createdAt).toLocaleDateString('id-ID'),
-          item._sum?.totalAmount || 0,
-          item._count?.id || 0,
-        ]);
+    const currCols = [4, 5, 6, 7, 8, 9];
+    const totals = { trx: 0, pendapatan: 0, ppn: 0, pengeluaran: 0, gaji: 0, laba: 0, pembelian: 0 };
+
+    data.forEach((item: any, i: number) => {
+      const row = sheet.addRow({
+        no: i + 1,
+        label: item.label,
+        trx: item.jumlahTransaksi,
+        pendapatan: item.totalPendapatan,
+        ppn: item.totalPajak,
+        pengeluaran: item.totalPengeluaran,
+        gaji: item.gajiStaf,
+        laba: item.labaBersih,
+        pembelian: item.totalPembelian,
       });
-    } else if (type === ReportType.TRANSACTION) {
-      worksheet.addRow(['Metrik', 'Nilai']);
-      worksheet.addRow(['Total Transaksi', data?.total || 0]);
-      worksheet.addRow(['Berhasil', data?.successful || 0]);
-      worksheet.addRow(['Gagal', data?.failed || 0]);
-      worksheet.addRow(['Refund', data?.refunded || 0]);
-      worksheet.addRow(['Success Rate', data?.total ? `${((data.successful / data.total) * 100).toFixed(1)}%` : '0%']);
-    } else if (type === ReportType.SUBSCRIPTION_SUMMARY) {
-      worksheet.addRow(['Status', 'Jumlah']);
-      worksheet.addRow(['Active', data?.active || 0]);
-      worksheet.addRow(['Trial', data?.trial || 0]);
-      worksheet.addRow(['Expired', data?.expired || 0]);
-      worksheet.addRow(['Suspended', data?.suspended || 0]);
-      worksheet.addRow(['Cancelled', data?.cancelled || 0]);
-      worksheet.addRow([]);
-      worksheet.addRow(['Plan', 'Jumlah Bisnis']);
-      data?.planDistribution?.forEach((item: any) => {
-        worksheet.addRow([item.plan, item.count]);
-      });
-    } else {
-      worksheet.addRow(['Data']);
-      worksheet.addRow([JSON.stringify(data, null, 2)]);
-    }
+      this.applyRowBorder(row);
+      this.setCurrencyFormat(row, currCols);
 
-    // Style header
-    worksheet.getRow(1).font = { bold: true, size: 14 };
-    worksheet.getRow(2).font = { size: 10, color: { argb: '64748b' } };
-    worksheet.columns.forEach((column) => {
-      column.width = 20;
+      const labaCell = row.getCell(8);
+      if (typeof labaCell.value === "number") {
+        labaCell.font =
+          labaCell.value >= 0
+            ? { color: { argb: "FF16A34A" }, bold: true }
+            : { color: { argb: "FFDC2626" }, bold: true };
+      }
+
+      const ppnCell = row.getCell(5);
+      if (typeof ppnCell.value === "number" && ppnCell.value > 0) {
+        ppnCell.font = { color: { argb: "FF2563EB" } };
+      }
+
+      const pembelianCell = row.getCell(9);
+      if (typeof pembelianCell.value === "number") {
+        pembelianCell.font = { color: { argb: "FFD97706" } };
+      }
+
+      totals.trx += item.jumlahTransaksi;
+      totals.pendapatan += item.totalPendapatan;
+      totals.ppn += item.totalPajak;
+      totals.pengeluaran += item.totalPengeluaran;
+      totals.gaji += item.gajiStaf;
+      totals.laba += item.labaBersih;
+      totals.pembelian += item.totalPembelian;
     });
 
-    return workbook.xlsx.writeBuffer() as Promise<Buffer>;
+    const totalRow = sheet.addRow({ no: "", label: "TOTAL", ...totals });
+    totalRow.eachCell((cell) => {
+      cell.font = { bold: true };
+      cell.border = ReportService.cellBorder;
+    });
+    this.setCurrencyFormat(totalRow, currCols);
+
+    const info = workbook.addWorksheet("Info");
+    info.getColumn(1).width = 20;
+    info.getColumn(2).width = 40;
+    [
+      ["Laporan", `Laporan Outlet - ${typeLabel}`],
+      ["Outlet", outletName],
+      [
+        "Tanggal Export",
+        new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" }),
+      ],
+      ["Periode", date || new Date().toISOString().split("T")[0]],
+    ].forEach((r) => info.addRow(r));
+
+    return workbook;
   }
 
-  async getAll(filters: ReportFilters) {
-    return this.reportRepository.findAll(filters);
-  }
+  static async exportStaffReportToExcel(
+    outletId: string,
+    date: string,
+    type: "daily" | "weekly" | "monthly",
+    ownerId: string
+  ): Promise<ExcelJS.Workbook> {
+    const data = await this.getStaffReport(outletId, date, type, ownerId);
 
-  async getById(id: string) {
-    const report = await this.reportRepository.findById(id);
-    if (!report) this.notFound('Laporan tidak ditemukan');
-    return report;
-  }
-
-  async delete(id: string, performedBy: string) {
-    const report = await this.getById(id);
-    
-    // Delete file if exists
-    if (report.fileUrl) {
-      const filePath = path.join(process.cwd(), report.fileUrl);
-      await fs.remove(filePath).catch(() => {});
+    let outletName = "Semua Outlet";
+    if (outletId !== "all") {
+      try {
+        const outlet = await getOutletByIdService(outletId);
+        outletName = outlet.name;
+      } catch {
+        // keep default
+      }
     }
 
-    await this.reportRepository.delete(id);
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = "BOSS App";
+    workbook.created = new Date();
 
-    await this.auditLogService.logAdminAction(
-      performedBy,
-      AuditAction.REPORT_GENERATED,
-      AuditEntityType.REPORT,
-      id,
-      report.title,
-      { action: 'delete' },
-    );
+    const typeLabel = type === "daily" ? "Harian" : type === "weekly" ? "Mingguan" : "Bulanan";
+    const cashiers = data.filter((d: any) => d.type === "CASHIER");
+    const services = data.filter((d: any) => d.type === "SERVICE");
 
-    return { message: 'Laporan berhasil dihapus' };
+    const cs = workbook.addWorksheet("Kinerja Kasir");
+    cs.columns = [
+      { header: "No", key: "no", width: 6 },
+      { header: "Nama Kasir", key: "name", width: 25 },
+      { header: "Jumlah Transaksi", key: "trx", width: 18 },
+      { header: "Total Penjualan", key: "revenue", width: 22 },
+    ];
+    this.applyHeaderStyle(cs);
+
+    let totalCashierTrx = 0,
+      totalCashierRevenue = 0;
+    cashiers.forEach((c: any, i: number) => {
+      const row = cs.addRow({
+        no: i + 1,
+        name: c.name,
+        trx: c.transactionCount,
+        revenue: c.revenue,
+      });
+      this.applyRowBorder(row);
+      this.setCurrencyFormat(row, [4]);
+      totalCashierTrx += c.transactionCount;
+      totalCashierRevenue += c.revenue;
+    });
+
+    const cashierTotal = cs.addRow({
+      no: "",
+      name: "TOTAL",
+      trx: totalCashierTrx,
+      revenue: totalCashierRevenue,
+    });
+    cashierTotal.eachCell((cell) => {
+      cell.font = { bold: true };
+      cell.border = ReportService.cellBorder;
+    });
+    this.setCurrencyFormat(cashierTotal, [4]);
+
+    const ss = workbook.addWorksheet("Kinerja Staff Layanan");
+    ss.columns = [
+      { header: "No", key: "no", width: 6 },
+      { header: "Nama Provider", key: "name", width: 25 },
+      { header: "Jumlah Layanan", key: "trx", width: 18 },
+      { header: "Total Komisi", key: "commission", width: 22 },
+    ];
+    this.applyHeaderStyle(ss);
+
+    let totalServiceTrx = 0,
+      totalServiceComm = 0;
+    services.forEach((s: any, i: number) => {
+      const row = ss.addRow({
+        no: i + 1,
+        name: s.name,
+        trx: s.transactionCount,
+        commission: s.commission,
+      });
+      this.applyRowBorder(row);
+      this.setCurrencyFormat(row, [4]);
+      totalServiceTrx += s.transactionCount;
+      totalServiceComm += s.commission;
+    });
+
+    const serviceTotal = ss.addRow({
+      no: "",
+      name: "TOTAL",
+      trx: totalServiceTrx,
+      commission: totalServiceComm,
+    });
+    serviceTotal.eachCell((cell) => {
+      cell.font = { bold: true };
+      cell.border = ReportService.cellBorder;
+    });
+    this.setCurrencyFormat(serviceTotal, [4]);
+
+    const info = workbook.addWorksheet("Info");
+    info.getColumn(1).width = 20;
+    info.getColumn(2).width = 40;
+    [
+      ["Laporan", `Kinerja Staff - ${typeLabel}`],
+      ["Outlet", outletName],
+      [
+        "Tanggal Export",
+        new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" }),
+      ],
+      ["Periode", date || new Date().toISOString().split("T")[0]],
+      ["Total Kasir", String(cashiers.length)],
+      ["Total Staff Layanan", String(services.length)],
+    ].forEach((r) => info.addRow(r));
+
+    return workbook;
   }
 }

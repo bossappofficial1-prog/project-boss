@@ -1,152 +1,144 @@
-import { db } from '../config/prisma';
-import { ReportType, ReportPeriod, ReportStatus, Prisma } from '@prisma/client';
-
-export interface CreateReportInput {
-  type: ReportType;
-  period: ReportPeriod;
-  title: string;
-  parameters?: Record<string, any>;
-  generatedBy: string;
-}
-
-export interface ReportFilters {
-  type?: ReportType;
-  status?: ReportStatus;
-  page?: number;
-  limit?: number;
-}
+import { Prisma } from "@prisma/client";
+import { db } from "../config/prisma";
 
 export class ReportRepository {
-  async create(input: CreateReportInput) {
-    return db.report.create({
-      data: {
-        type: input.type,
-        period: input.period,
-        title: input.title,
-        parameters: input.parameters as Prisma.InputJsonValue,
-        generatedBy: input.generatedBy,
-        status: ReportStatus.PENDING,
-      },
-      include: {
-        generatedByUser: {
-          select: { id: true, name: true, email: true },
-        },
-      },
-    });
-  }
-
-  async findById(id: string) {
-    return db.report.findUnique({
-      where: { id },
-      include: {
-        generatedByUser: {
-          select: { id: true, name: true, email: true },
-        },
-      },
-    });
-  }
-
-  async updateStatus(id: string, status: ReportStatus, data?: { fileUrl?: string; fileSize?: number; errorMessage?: string }) {
-    return db.report.update({
-      where: { id },
-      data: {
-        status,
-        ...(data?.fileUrl && { fileUrl: data.fileUrl }),
-        ...(data?.fileSize && { fileSize: data.fileSize }),
-        ...(data?.errorMessage && { errorMessage: data.errorMessage }),
-      },
-    });
-  }
-
-  async findAll(filters: ReportFilters) {
-    const { type, status, page = 1, limit = 20 } = filters;
-    const take = Math.min(Math.max(limit, 1), 100);
-    const skip = (Math.max(page, 1) - 1) * take;
-
-    const where: Prisma.ReportWhereInput = {
-      ...(type && { type }),
-      ...(status && { status }),
-    };
-
-    const [total, data] = await Promise.all([
-      db.report.count({ where }),
-      db.report.findMany({
-        where,
-        include: {
-          generatedByUser: {
-            select: { id: true, name: true, email: true },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take,
-      }),
-    ]);
+  /**
+   * 1. Agregasi Pendapatan
+   * RAW QUERY: Lebih cepat karena SUM dan COUNT dihitung langsung oleh Database C-Engine.
+   */
+  static async getRevenueAggregate(outletId: string, start: Date, end: Date) {
+    const result = await db.$queryRaw<any[]>`
+      SELECT 
+        SUM("totalAmount") as "totalAmount", 
+        COUNT(id) as "count"
+      FROM "Order"
+      WHERE "outletId" = ${outletId}
+        AND "orderStatus" = 'COMPLETED'::"OrderStatus"
+        AND "createdAt" >= ${start}
+        AND "createdAt" <= ${end}
+    `;
 
     return {
-      data,
-      total,
-      page: Math.max(page, 1),
-      limit: take,
-      totalPages: Math.ceil(total / take) || 1,
+      _sum: { totalAmount: result[0]?.totalAmount ? Number(result[0].totalAmount) : 0 },
+      _count: { id: result[0]?.count ? Number(result[0].count) : 0 },
     };
   }
 
-  async delete(id: string) {
-    return db.report.delete({ where: { id } });
+  /**
+   * 2. Agregasi Pengeluaran
+   * RAW QUERY
+   * Menyesuaikan dengan schema @@map("expenses")
+   */
+  static async getExpenseAggregate(outletId: string, start: Date, end: Date) {
+    const result = await db.$queryRaw<any[]>`
+      SELECT 
+        SUM("amount") as "totalAmount", 
+        COUNT(id) as "count"
+      FROM "expenses"
+      WHERE "outletId" = ${outletId}
+        AND "date" >= ${start}
+        AND "date" <= ${end}
+    `;
+
+    return {
+      _sum: { amount: result[0]?.totalAmount ? Number(result[0].totalAmount) : 0 },
+      _count: { id: result[0]?.count ? Number(result[0].count) : 0 },
+    };
   }
 
-  async getRevenueData(startDate: Date, endDate: Date) {
-    const orders = await db.order.groupBy({
-      by: ['createdAt'],
+  /**
+   * 3. Penarikan Data Laporan Outlet
+   * RAW QUERY: Menggunakan JSON Aggregation bawaan PostgreSQL (json_agg)
+   */
+  static async getOutletReport(
+    outletIds: string[],
+    date: string,
+    startDate: Date,
+    endDate: Date,
+    type: "daily" | "weekly" | "monthly"
+  ) {
+    if (!outletIds || outletIds.length === 0) {
+      return { orders: [], expenses: [], stockLogs: [] };
+    }
+
+    const joinedOutletIds = Prisma.join(outletIds);
+
+    // a. Tarik Orders + relasi Items
+    const orders = await db.$queryRaw<any[]>`
+      SELECT 
+        o.id, 
+        o."createdAt", 
+        o."totalAmount", 
+        o."taxAmount", 
+        o."midtransFee", 
+        o."appFee",
+        COALESCE(
+          (
+            SELECT json_agg(
+              json_build_object(
+                'quantity', oi.quantity,
+                'hppAtTimeOfOrder', oi."hppAtTimeOfOrder",
+                'commissionAtTimeOfOrder', oi."commissionAtTimeOfOrder"
+              )
+            )
+            FROM "OrderItem" oi
+            WHERE oi."orderId" = o.id
+          ), '[]'::json
+        ) as items
+      FROM "Order" o
+      WHERE o."outletId" IN (${joinedOutletIds})
+        AND o."orderStatus" NOT IN ('AWAITING_PAYMENT'::"OrderStatus", 'CANCELLED'::"OrderStatus")
+        AND o."createdAt" >= ${startDate}
+        AND o."createdAt" <= ${endDate}
+    `;
+
+    // b. Tarik Expenses (Dari tabel mapped "expenses")
+    const expenses = await db.$queryRaw<any[]>`
+      SELECT id, amount, date, "outletId"
+      FROM "expenses"
+      WHERE "outletId" IN (${joinedOutletIds})
+        AND "date" >= ${startDate}
+        AND "date" <= ${endDate}
+    `;
+
+    // c. Tarik Stock Logs (HPP Masuk)
+    const stockLogs = await db.$queryRaw<any[]>`
+      SELECT 
+        sl.id, 
+        sl."createdAt", 
+        sl.quantity, 
+        sl."hppPerUnit"
+      FROM "StockLog" sl
+      JOIN "ProductGoods" pg ON sl."productGoodsId" = pg.id
+      JOIN "Product" p ON pg."productId" = p.id
+      WHERE p."outletId" IN (${joinedOutletIds})
+        AND sl."type" = 'IN'::"StockMovementType"
+        AND sl."createdAt" >= ${startDate}
+        AND sl."createdAt" <= ${endDate}
+    `;
+
+    return { orders, expenses, stockLogs };
+  }
+
+  /**
+   * 4. List Order dengan Produk (Untuk Sales Summary)
+   * PRISMA QUERY: Tetap pakai Prisma
+   */
+  static async getCompletedOrdersWithProducts(outletId: string, start: Date, end: Date) {
+    return await db.order.findMany({
       where: {
-        paymentStatus: 'SUCCESS',
-        createdAt: { gte: startDate, lte: endDate },
+        outletId: outletId,
+        orderStatus: "COMPLETED",
+        createdAt: { gte: start, lte: end },
       },
-      _sum: { totalAmount: true },
-      _count: { id: true },
-    });
-
-    return orders;
-  }
-
-  async getTransactionSummary(startDate: Date, endDate: Date) {
-    const [total, successful, failed, refunded] = await Promise.all([
-      db.order.count({
-        where: { createdAt: { gte: startDate, lte: endDate } },
-      }),
-      db.order.count({
-        where: { paymentStatus: 'SUCCESS', createdAt: { gte: startDate, lte: endDate } },
-      }),
-      db.order.count({
-        where: { paymentStatus: 'FAILED', createdAt: { gte: startDate, lte: endDate } },
-      }),
-      db.order.count({
-        where: { paymentStatus: 'REFUNDED', createdAt: { gte: startDate, lte: endDate } },
-      }),
-    ]);
-
-    return { total, successful, failed, refunded };
-  }
-
-  async getBusinessPerformance(startDate: Date, endDate: Date) {
-    return db.business.findMany({
       select: {
-        id: true,
-        name: true,
-        subscriptionPlan: true,
-        subscriptionStatus: true,
-        owner: { select: { name: true, email: true } },
-        outlets: {
+        items: {
           select: {
-            id: true,
-            name: true,
-            orders: {
-              where: {
-                paymentStatus: 'SUCCESS',
-                createdAt: { gte: startDate, lte: endDate },
-              },
-              select: { totalAmount: true },
+            productId: true,
+            quantity: true,
+            priceAtTimeOfOrder: true,
+            product: {
+              select: { name: true },
             },
           },
         },
@@ -154,30 +146,40 @@ export class ReportRepository {
     });
   }
 
-  async getSubscriptionSummary() {
-    const [active, trial, expired, suspended, cancelled] = await Promise.all([
-      db.business.count({ where: { subscriptionStatus: 'ACTIVE' } }),
-      db.business.count({ where: { subscriptionStatus: 'TRIAL' } }),
-      db.business.count({ where: { subscriptionStatus: 'EXPIRED' } }),
-      db.business.count({ where: { subscriptionStatus: 'SUSPENDED' } }),
-      db.business.count({ where: { subscriptionStatus: 'CANCELLED' } }),
-    ]);
-
-    const planDistribution = await db.business.groupBy({
-      by: ['subscriptionPlan'],
-      _count: { id: true },
+  /**
+   * 5. List Order untuk Staff / Kasir Laporan
+   * PRISMA QUERY: Tetap pakai Prisma karena relasinya sangat dalam
+   */
+  static async getOrdersForStaffReport(outletIds: string[], start: Date, end: Date) {
+    return await db.order.findMany({
+      where: {
+        outletId: { in: outletIds },
+        orderStatus: "COMPLETED",
+        createdAt: { gte: start, lte: end },
+      },
+      select: {
+        totalAmount: true,
+        handledByStaff: {
+          select: { id: true, name: true },
+        },
+        items: {
+          select: {
+            quantity: true,
+            priceAtTimeOfOrder: true,
+            product: {
+              select: {
+                service: {
+                  select: {
+                    providerName: true,
+                    commissionType: true,
+                    commissionValue: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     });
-
-    return {
-      active,
-      trial,
-      expired,
-      suspended,
-      cancelled,
-      planDistribution: planDistribution.map((item) => ({
-        plan: item.subscriptionPlan,
-        count: item._count.id,
-      })),
-    };
   }
 }
