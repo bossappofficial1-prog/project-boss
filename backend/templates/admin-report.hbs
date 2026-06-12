@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <title>{{title}}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', -apple-system, sans-serif;
+            background: #ffffff;
+            color: #0f172a;
+            font-size: 11px;
+            line-height: 1.6;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 14mm 13mm;
+            }
+        }
+
+        .page {
+            width: 100%;
+            padding: 0;
+        }
+
+        /* === HEADER === */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #2563eb;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .logo-box {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .logo-text {
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+
+        .header-brand h1 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.2;
+        }
+
+        .header-brand p {
+            font-size: 10px;
+            color: #64748b;
+            font-weight: 400;
+        }
+
+        .header-right {
+            text-align: right;
+        }
+
+        .header-right .doc-type {
+            font-size: 9px;
+            font-weight: 600;
+            color: #2563eb;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 4px;
+        }
+
+        .header-right .doc-number {
+            font-size: 10px;
+            color: #64748b;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* === META INFO === */
+        .meta-section {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 24px;
+            padding: 16px 20px;
+            background: #f8fafc;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .meta-item {
+            flex: 1;
+        }
+
+        .meta-label {
+            font-size: 9px;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 4px;
+        }
+
+        .meta-value {
+            font-size: 12px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        /* === TITLE === */
+        .report-title {
+            margin-bottom: 24px;
+        }
+
+        .report-title h2 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 6px;
+        }
+
+        .report-title .subtitle {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 400;
+        }
+
+        /* === METRICS GRID === */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+
+        .metric-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .metric-card.primary {
+            border-color: #2563eb;
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        }
+
+        .metric-card.success {
+            border-color: #16a34a;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        }
+
+        .metric-card.warning {
+            border-color: #d97706;
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        }
+
+        .metric-card.danger {
+            border-color: #dc2626;
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        }
+
+        .metric-label {
+            font-size: 9px;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 6px;
+        }
+
+        .metric-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1;
+        }
+
+        .metric-card.success .metric-value {
+            color: #16a34a;
+        }
+
+        .metric-card.warning .metric-value {
+            color: #d97706;
+        }
+
+        .metric-card.danger .metric-value {
+            color: #dc2626;
+        }
+
+        /* === TABLE === */
+        .table-section {
+            margin-bottom: 28px;
+        }
+
+        .table-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+
+        thead th {
+            background: #f1f5f9;
+            color: #475569;
+            font-weight: 600;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        tbody td {
+            padding: 10px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #334155;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        tbody tr:hover {
+            background: #f1f5f9;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .font-mono {
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+        }
+
+        .text-success {
+            color: #16a34a;
+            font-weight: 600;
+        }
+
+        .text-danger {
+            color: #dc2626;
+            font-weight: 600;
+        }
+
+        .text-muted {
+            color: #94a3b8;
+        }
+
+        /* === BADGE === */
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .badge-active {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .badge-trial {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .badge-expired {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .badge-suspended {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .badge-cancelled {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        /* === SUMMARY BOX === */
+        .summary-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 28px;
+        }
+
+        .summary-box h3 {
+            font-size: 13px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 12px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+
+        .summary-item:last-child {
+            border-bottom: none;
+        }
+
+        .summary-label {
+            color: #64748b;
+            font-size: 11px;
+        }
+
+        .summary-value {
+            font-weight: 600;
+            color: #0f172a;
+            font-size: 11px;
+        }
+
+        /* === FOOTER === */
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .footer-left {
+            font-size: 9px;
+            color: #94a3b8;
+        }
+
+        .footer-left p {
+            margin-bottom: 2px;
+        }
+
+        .footer-right {
+            text-align: right;
+        }
+
+        .footer-signature {
+            width: 120px;
+            border-bottom: 1px solid #0f172a;
+            margin-bottom: 4px;
+            height: 40px;
+        }
+
+        .footer-name {
+            font-size: 10px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .footer-title {
+            font-size: 9px;
+            color: #64748b;
+        }
+
+        /* === PAGE NUMBER === */
+        .page-number {
+            position: fixed;
+            bottom: 10mm;
+            right: 13mm;
+            font-size: 9px;
+            color: #94a3b8;
+        }
+
+        /* === WATERMARK === */
+        .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 80px;
+            font-weight: 800;
+            color: rgba(37, 99, 235, 0.03);
+            pointer-events: none;
+            z-index: -1;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="watermark">BOSS</div>
+    <div class="page">
+        <!-- HEADER -->
+        <div class="header">
+            <div class="header-left">
+                <div class="logo-box">
+                    <span class="logo-text">B</span>
+                </div>
+                <div class="header-brand">
+                    <h1>BOSS Platform</h1>
+                    <p>Business Operating Support System</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="doc-type">Laporan Resmi</div>
+                <div class="doc-number">No: {{reportNumber}}</div>
+            </div>
+        </div>
+
+        <!-- META -->
+        <div class="meta-section">
+            <div class="meta-item">
+                <div class="meta-label">Jenis Laporan</div>
+                <div class="meta-value">{{reportType}}</div>
+            </div>
+            <div class="meta-item">
+                <div class="meta-label">Periode</div>
+                <div class="meta-value">{{periodLabel}}</div>
+            </div>
+            <div class="meta-item">
+                <div class="meta-label">Tanggal Generate</div>
+                <div class="meta-value">{{generatedAt}}</div>
+            </div>
+            <div class="meta-item">
+                <div class="meta-label">Status</div>
+                <div class="meta-value text-success">Selesai</div>
+            </div>
+        </div>
+
+        <!-- TITLE -->
+        <div class="report-title">
+            <h2>{{title}}</h2>
+            <p class="subtitle">Ringkasan data dan metrik platform untuk periode {{periodLabel}}</p>
+        </div>
+
+        <!-- CONTENT BY REPORT TYPE -->
+        {{#if isSubscriptionSummary}}
+        <!-- SUBSCRIPTION SUMMARY -->
+        <div class="metrics-grid">
+            <div class="metric-card success">
+                <div class="metric-label">Active</div>
+                <div class="metric-value">{{data.active}}</div>
+            </div>
+            <div class="metric-card primary">
+                <div class="metric-label">Trial</div>
+                <div class="metric-value">{{data.trial}}</div>
+            </div>
+            <div class="metric-card danger">
+                <div class="metric-label">Expired</div>
+                <div class="metric-value">{{data.expired}}</div>
+            </div>
+            <div class="metric-card warning">
+                <div class="metric-label">Suspended</div>
+                <div class="metric-value">{{data.suspended}}</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Cancelled</div>
+                <div class="metric-value">{{data.cancelled}}</div>
+            </div>
+        </div>
+
+        {{#if data.planDistribution.length}}
+        <div class="table-section">
+            <h3>Distribusi Paket Langganan</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Paket</th>
+                        <th class="text-center">Jumlah Bisnis</th>
+                        <th class="text-center">Persentase</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each data.planDistribution}}
+                    <tr>
+                        <td class="text-center">{{@index_1}}</td>
+                        <td><span class="badge badge-active">{{this.plan}}</span></td>
+                        <td class="text-center font-mono">{{this.count}}</td>
+                        <td class="text-center font-mono">{{this.percentage}}%</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+        {{/if}}
+        {{/if}}
+
+        {{#if isTransaction}}
+        <!-- TRANSACTION SUMMARY -->
+        <div class="metrics-grid">
+            <div class="metric-card primary">
+                <div class="metric-label">Total Transaksi</div>
+                <div class="metric-value">{{data.total}}</div>
+            </div>
+            <div class="metric-card success">
+                <div class="metric-label">Berhasil</div>
+                <div class="metric-value">{{data.successful}}</div>
+            </div>
+            <div class="metric-card danger">
+                <div class="metric-label">Gagal</div>
+                <div class="metric-value">{{data.failed}}</div>
+            </div>
+            <div class="metric-card warning">
+                <div class="metric-label">Refund</div>
+                <div class="metric-value">{{data.refunded}}</div>
+            </div>
+            <div class="metric-card success">
+                <div class="metric-label">Success Rate</div>
+                <div class="metric-value">{{data.successRate}}%</div>
+            </div>
+        </div>
+
+        <div class="summary-box">
+            <h3>Ringkasan Transaksi</h3>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <span class="summary-label">Total Transaksi</span>
+                    <span class="summary-value">{{data.total}} transaksi</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Transaksi Berhasil</span>
+                    <span class="summary-value text-success">{{data.successful}} transaksi</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Transaksi Gagal</span>
+                    <span class="summary-value text-danger">{{data.failed}} transaksi</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Transaksi Refund</span>
+                    <span class="summary-value">{{data.refunded}} transaksi</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Success Rate</span>
+                    <span class="summary-value text-success">{{data.successRate}}%</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Failure Rate</span>
+                    <span class="summary-value text-danger">{{data.failureRate}}%</span>
+                </div>
+            </div>
+        </div>
+        {{/if}}
+
+        {{#if isRevenue}}
+        <!-- REVENUE REPORT -->
+        <div class="metrics-grid" style="grid-template-columns: repeat(3, 1fr);">
+            <div class="metric-card success">
+                <div class="metric-label">Total Pendapatan</div>
+                <div class="metric-value">{{formatRupiah data.totalRevenue}}</div>
+            </div>
+            <div class="metric-card primary">
+                <div class="metric-label">Total Transaksi</div>
+                <div class="metric-value">{{data.totalTransactions}}</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Rata-rata per Transaksi</div>
+                <div class="metric-value">{{formatRupiah data.averagePerTransaction}}</div>
+            </div>
+        </div>
+
+        {{#if data.dailyBreakdown.length}}
+        <div class="table-section">
+            <h3>Breakdown Harian</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Tanggal</th>
+                        <th class="text-right">Pendapatan</th>
+                        <th class="text-center">Jumlah Transaksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each data.dailyBreakdown}}
+                    <tr>
+                        <td class="text-center">{{@index_1}}</td>
+                        <td>{{this.date}}</td>
+                        <td class="text-right font-mono">{{formatRupiah this.revenue}}</td>
+                        <td class="text-center font-mono">{{this.count}}</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+        {{/if}}
+        {{/if}}
+
+        {{#if isBusinessPerformance}}
+        <!-- BUSINESS PERFORMANCE -->
+        {{#if data.businesses.length}}
+        <div class="table-section">
+            <h3>Performa Bisnis</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Nama Bisnis</th>
+                        <th>Owner</th>
+                        <th class="text-center">Paket</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-right">Total Pendapatan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each data.businesses}}
+                    <tr>
+                        <td class="text-center">{{@index_1}}</td>
+                        <td><strong>{{this.name}}</strong></td>
+                        <td>{{this.ownerName}}</td>
+                        <td class="text-center"><span class="badge badge-active">{{this.plan}}</span></td>
+                        <td class="text-center"><span class="badge badge-{{this.statusClass}}">{{this.status}}</span></td>
+                        <td class="text-right font-mono">{{formatRupiah this.revenue}}</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+        {{/if}}
+        {{/if}}
+
+        {{#if isUserActivity}}
+        <!-- USER ACTIVITY -->
+        <div class="metrics-grid" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="metric-card primary">
+                <div class="metric-label">Total Users</div>
+                <div class="metric-value">{{data.totalUsers}}</div>
+            </div>
+            <div class="metric-card success">
+                <div class="metric-label">Active</div>
+                <div class="metric-value">{{data.activeUsers}}</div>
+            </div>
+            <div class="metric-card warning">
+                <div class="metric-label">Suspended</div>
+                <div class="metric-value">{{data.suspendedUsers}}</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">New This Month</div>
+                <div class="metric-value">{{data.newUsersThisMonth}}</div>
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- FOOTER -->
+        <div class="footer">
+            <div class="footer-left">
+                <p>Dokumen ini digenerate otomatis oleh sistem BOSS Platform</p>
+                <p>Dicetak pada: {{generatedAt}}</p>
+                <p>Dokumen ini sah dan tidak memerlukan tanda tangan basah</p>
+            </div>
+            <div class="footer-right">
+                <div class="footer-signature"></div>
+                <div class="footer-name">Admin BOSS</div>
+                <div class="footer-title">Platform Administrator</div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

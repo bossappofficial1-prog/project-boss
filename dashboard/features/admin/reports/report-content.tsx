@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useReports, useGenerateReport, useDeleteReport, useDownloadReport, Report } from '@/lib/apis/admin-reports';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { FileText, Download, Trash2, Plus, RefreshCw, FileSpreadsheet, File } from 'lucide-react';
+import { FileText, Download, Trash2, Plus, RefreshCw, FileSpreadsheet, File, Loader2, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { z } from 'zod';
 
 const REPORT_TYPE_LABELS: Record<string, string> = {
@@ -106,6 +106,10 @@ export function ReportContent() {
   const deleteMutation = useDeleteReport();
   const downloadMutation = useDownloadReport();
 
+  const processingCount = data?.data?.filter(
+    (r: Report) => r.status === 'PENDING' || r.status === 'PROCESSING'
+  ).length || 0;
+
   const handleGenerate = (values: GenerateFormValues) => {
     generateMutation.mutate(values, {
       onSuccess: () => setShowGenerateDialog(false),
@@ -142,14 +146,23 @@ export function ReportContent() {
       {
         accessorKey: 'status',
         header: 'Status',
-        cell: ({ row }) => (
-          <Badge
-            variant="outline"
-            className={REPORT_STATUS_COLORS[row.original.status]}
-          >
-            {REPORT_STATUS_LABELS[row.original.status]}
-          </Badge>
-        ),
+        cell: ({ row }) => {
+          const status = row.original.status;
+          return (
+            <div className="flex items-center gap-2">
+              {status === 'PENDING' && <Clock className="h-3.5 w-3.5 text-yellow-500" />}
+              {status === 'PROCESSING' && <Loader2 className="h-3.5 w-3.5 text-blue-500 animate-spin" />}
+              {status === 'COMPLETED' && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />}
+              {status === 'FAILED' && <XCircle className="h-3.5 w-3.5 text-red-500" />}
+              <Badge
+                variant="outline"
+                className={REPORT_STATUS_COLORS[status]}
+              >
+                {REPORT_STATUS_LABELS[status]}
+              </Badge>
+            </div>
+          );
+        },
       },
       {
         accessorKey: 'period',
@@ -260,6 +273,31 @@ export function ReportContent() {
           </Dialog>
         </div>
       </div>
+
+      {/* Processing Notification */}
+      {processingCount > 0 && (
+        <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+          <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-blue-700 dark:text-blue-400">
+              {processingCount} laporan sedang diproses
+            </p>
+            <p className="text-xs text-blue-600/70 dark:text-blue-400/70">
+              Status akan diperbarui otomatis setiap 3 detik
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isRefetching}
+            className="gap-2 border-blue-500/30 text-blue-600 hover:bg-blue-500/10"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isRefetching ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">

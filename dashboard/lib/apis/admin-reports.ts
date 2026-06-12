@@ -45,6 +45,15 @@ export function useReports(filters: ReportFilters = {}) {
       const { data } = await api.get("/admin/reports", { params: filters });
       return data;
     },
+    // Poll every 3 seconds if there are reports in PENDING or PROCESSING status
+    refetchInterval: (query) => {
+      const reports = query?.state?.data?.data as Report[] | undefined;
+      if (!reports) return false;
+      const hasProcessing = reports.some(
+        (r) => r.status === "PENDING" || r.status === "PROCESSING"
+      );
+      return hasProcessing ? 3000 : false;
+    },
   });
 }
 
@@ -56,6 +65,14 @@ export function useReport(id: string) {
       return data.data as Report;
     },
     enabled: !!id,
+    // Poll every 2 seconds if report is still processing
+    refetchInterval: (query) => {
+      const report = query?.state?.data as Report | undefined;
+      if (!report) return false;
+      return report.status === "PENDING" || report.status === "PROCESSING"
+        ? 2000
+        : false;
+    },
   });
 }
 
