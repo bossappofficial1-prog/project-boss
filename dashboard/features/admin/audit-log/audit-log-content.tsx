@@ -83,7 +83,7 @@ export function AuditLogContent() {
   const [actionFilter, setActionFilter] = useState<string>("all");
   const [entityTypeFilter, setEntityTypeFilter] = useState<string>("all");
   const [dateRange, setDateRange] = useState<
-    { from: Date; to: Date } | undefined
+    { from?: Date; to?: Date } | undefined
   >();
 
   const filters = {
@@ -146,7 +146,7 @@ export function AuditLogContent() {
         accessorKey: "entityName",
         header: "Entity",
         cell: ({ row }) => (
-          <div className="max-w-[200px] truncate font-medium">
+          <div className="max-w-50 truncate font-medium">
             {row.original.entityName || row.original.entityId}
           </div>
         ),
@@ -300,7 +300,20 @@ export function AuditLogContent() {
                 ))}
               </SelectContent>
             </Select>
-            <DatePickerWithRange value={dateRange} onChange={setDateRange} />
+            <DatePickerWithRange
+              date={{ from: dateRange?.from || new Date() }}
+              onDateChange={setDateRange!}
+            />
+            {dateRange && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setDateRange(undefined)}
+                className="h-9 px-2"
+              >
+                Reset
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>

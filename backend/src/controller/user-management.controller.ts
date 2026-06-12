@@ -40,7 +40,7 @@ export class UserManagementController extends BaseController {
   suspend = this.handler(async (req: Request, res: Response) => {
     const userId = req.params.userId as string;
     const { reason } = req.body;
-    const performedBy = (req as any).user?.id;
+    const performedBy = (req as any).storedUser?.id;
     const ipAddress = req.ip;
 
     const result = await this.userManagementService.suspendUser(userId, performedBy, reason, ipAddress);
@@ -50,7 +50,7 @@ export class UserManagementController extends BaseController {
 
   reactivate = this.handler(async (req: Request, res: Response) => {
     const userId = req.params.userId as string;
-    const performedBy = (req as any).user?.id;
+    const performedBy = (req as any).storedUser?.id;
     const ipAddress = req.ip;
 
     const result = await this.userManagementService.reactivateUser(userId, performedBy, ipAddress);
@@ -60,7 +60,7 @@ export class UserManagementController extends BaseController {
 
   delete = this.handler(async (req: Request, res: Response) => {
     const userId = req.params.userId as string;
-    const performedBy = (req as any).user?.id;
+    const performedBy = (req as any).storedUser?.id;
     const ipAddress = req.ip;
 
     const result = await this.userManagementService.deleteUser(userId, performedBy, ipAddress);
@@ -70,7 +70,7 @@ export class UserManagementController extends BaseController {
 
   bulkSuspend = this.handler(async (req: Request, res: Response) => {
     const { userIds, reason } = req.body;
-    const performedBy = (req as any).user?.id;
+    const performedBy = (req as any).storedUser?.id;
     const ipAddress = req.ip;
 
     const result = await this.userManagementService.bulkSuspend(userIds, performedBy, reason, ipAddress);
@@ -80,7 +80,7 @@ export class UserManagementController extends BaseController {
 
   bulkReactivate = this.handler(async (req: Request, res: Response) => {
     const { userIds } = req.body;
-    const performedBy = (req as any).user?.id;
+    const performedBy = (req as any).storedUser?.id;
     const ipAddress = req.ip;
 
     const result = await this.userManagementService.bulkReactivate(userIds, performedBy, ipAddress);

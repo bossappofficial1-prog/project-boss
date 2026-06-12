@@ -1,13 +1,13 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '@/lib/axios';
-import { toast } from 'sonner';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiClient as api } from "./base";
+import { toast } from "sonner";
 
 // Types
 export interface Report {
   id: string;
   type: string;
   period: string;
-  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
   title: string;
   parameters?: Record<string, any>;
   fileUrl?: string;
@@ -40,9 +40,9 @@ export interface GenerateReportInput {
 // Hooks
 export function useReports(filters: ReportFilters = {}) {
   return useQuery({
-    queryKey: ['admin-reports', filters],
+    queryKey: ["admin-reports", filters],
     queryFn: async () => {
-      const { data } = await api.get('/admin/reports', { params: filters });
+      const { data } = await api.get("/admin/reports", { params: filters });
       return data;
     },
   });
@@ -50,7 +50,7 @@ export function useReports(filters: ReportFilters = {}) {
 
 export function useReport(id: string) {
   return useQuery({
-    queryKey: ['admin-reports', id],
+    queryKey: ["admin-reports", id],
     queryFn: async () => {
       const { data } = await api.get(`/admin/reports/${id}`);
       return data.data as Report;
@@ -64,15 +64,15 @@ export function useGenerateReport() {
 
   return useMutation({
     mutationFn: async (input: GenerateReportInput) => {
-      const { data } = await api.post('/admin/reports/generate', input);
+      const { data } = await api.post("/admin/reports/generate", input);
       return data;
     },
     onSuccess: (data) => {
-      toast.success(data.message || 'Laporan sedang diproses');
-      queryClient.invalidateQueries({ queryKey: ['admin-reports'] });
+      toast.success(data.message || "Laporan sedang diproses");
+      queryClient.invalidateQueries({ queryKey: ["admin-reports"] });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Gagal generate laporan');
+      toast.error(error.response?.data?.message || "Gagal generate laporan");
     },
   });
 }
@@ -86,11 +86,11 @@ export function useDeleteReport() {
       return data;
     },
     onSuccess: (data) => {
-      toast.success(data.message || 'Laporan berhasil dihapus');
-      queryClient.invalidateQueries({ queryKey: ['admin-reports'] });
+      toast.success(data.message || "Laporan berhasil dihapus");
+      queryClient.invalidateQueries({ queryKey: ["admin-reports"] });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Gagal menghapus laporan');
+      toast.error(error.response?.data?.message || "Gagal menghapus laporan");
     },
   });
 }
@@ -99,25 +99,25 @@ export function useDownloadReport() {
   return useMutation({
     mutationFn: async (reportId: string) => {
       const response = await api.get(`/admin/reports/${reportId}/download`, {
-        responseType: 'blob',
+        responseType: "blob",
       });
-      
+
       const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.setAttribute('download', `report-${reportId}.pdf`);
+      link.setAttribute("download", `report-${reportId}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      
+
       return response.data;
     },
     onSuccess: () => {
-      toast.success('Download berhasil');
+      toast.success("Download berhasil");
     },
     onError: (error: any) => {
-      toast.error('Gagal download laporan');
+      toast.error("Gagal download laporan");
     },
   });
 }

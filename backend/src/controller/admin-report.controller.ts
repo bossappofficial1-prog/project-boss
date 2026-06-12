@@ -10,7 +10,11 @@ export class AdminReportController extends BaseController {
 
   generate = this.handler(async (req: Request, res: Response) => {
     const { type, period, startDate, endDate } = req.body;
-    const performedBy = (req as any).user?.id;
+    const performedBy = (req as any).storedUser?.id;
+
+    if (!performedBy) {
+      return this.error(res, "User not authenticated", [], HttpStatus.UNAUTHORIZED);
+    }
 
     const report = await this.adminReportService.generateReport(
       type,
@@ -57,7 +61,11 @@ export class AdminReportController extends BaseController {
 
   delete = this.handler(async (req: Request, res: Response) => {
     const reportId = req.params.reportId as string;
-    const performedBy = (req as any).user?.id;
+    const performedBy = (req as any).storedUser?.id;
+
+    if (!performedBy) {
+      return this.error(res, "User not authenticated", [], HttpStatus.UNAUTHORIZED);
+    }
 
     const result = await this.adminReportService.delete(
       reportId,

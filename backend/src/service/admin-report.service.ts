@@ -1,12 +1,10 @@
 import { BaseService } from './base.service';
 import { AdminReportRepository, CreateAdminReportInput, AdminReportFilters } from '../repositories/admin-report.repository';
 import { AuditLogService } from './audit-log.service';
-import { PdfBaseService } from './pdf-base.service';
 import { ReportType, ReportPeriod, ReportStatus, AuditAction, AuditEntityType } from '@prisma/client';
 import ExcelJS from 'exceljs';
 import path from 'path';
 import fs from 'fs-extra';
-
 export class AdminReportService extends BaseService {
   constructor(
     private adminReportRepository: AdminReportRepository,
@@ -152,36 +150,90 @@ export class AdminReportService extends BaseService {
   }
 
   private async generatePDF(type: ReportType, data: any, startDate: Date, endDate: Date): Promise<Buffer> {
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #1e293b; }
-          h1 { font-size: 24px; margin-bottom: 8px; }
-          .meta { color: #64748b; font-size: 12px; margin-bottom: 30px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-          th, td { border: 1px solid #e2e8f0; padding: 10px 14px; text-align: left; font-size: 13px; }
-          th { background: #f8fafc; font-weight: 600; }
-          .summary { background: #f0f9ff; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-          .metric { display: inline-block; margin-right: 40px; }
-          .metric-label { font-size: 11px; color: #64748b; text-transform: uppercase; }
-          .metric-value { font-size: 20px; font-weight: 600; }
-        </style>
-      </head>
-      <body>
-        <h1>${this.generateTitle(type, ReportPeriod.MONTHLY)}</h1>
+    const title = this.generateTitle(type, ReportPeriod.MONTHLY);
+    const periodLabel = `${startDate.toLocaleDateString('id-ID')} - ${endDate.toLocaleDateString('id-ID')}`;
+    const generatedAt = new Date().toLocaleString('id-ID');
+
+    let summaryHtml = '';
+    if (type === ReportType.SUBSCRIPTION_SUMMARY && data) {
+      summaryHtml = `
+        <div class="metrics">
+          <div class="metric-card"><div class="metric-label">Active</div><div class="metric-value">${data.active || 0}</div></div>
+          <div class="metric-card"><div class="metric-label">Trial</div><div class="metric-value">${data.trial || 0}</div></div>
+          <div class="metric-card"><div class="metric-label">Expired</div><div class="metric-value">${data.expired || 0}</div></div>
+          <div class="metric-card"><div class="metric-label">Suspended</div><div class="metric-value">${data.suspended || 0}</div></div>
+          <div class="metric-card"><div class="metric-label">Cancelled</div><div class="metric-value">${data.cancelled || 0}</div></div>
+        </div>
+        ${data.planDistribution ? `
+          <h3>Distribusi Plan</h3>
+          <table><thead><tr><th>Plan</th><th>Jumlah Bisnis</th></tr></thead><tbody>
+            ${data.planDistribution.map((p: any) => `<tr><td>${p.plan}</td><td>${p.count}</td></tr>`).join('')}
+          </tbody></table>
+        ` : ''}
+      `;
+    } else if (type === ReportType.TRANSACTION && data) {
+      summaryHtml = `
+        <div class="metrics">
+          <div class="metric-card"><div class="metric-label">Total Transaksi</div><div class="metric-value">${data.total || 0}</div></div>
+          <div class="metric-card"><div class="metric-label">Berhasil</div><div class="metric-value success">${data.successful || 0}</div></div>
+          <div class="metric-card"><div class="metric-label">Gagal</div><div class="metric-value danger">${data.failed || 0}</div></div>
+          <div class="metric-card"><div class="metric-label">Refund</div><div class="metric-value">${data.refunded || 0}</div></div>
+          <div class="metric-card"><div class="metric-label">Success Rate</div><div class="metric-value">${data.total ? ((data.successful / data.total) * 100).toFixed(1) : 0}%</div></div>
+        </div>
+      `;
+    } else {
+      summaryHtml = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+    }
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      *{margin:0;padding:0;box-sizing:border-box}
+      body{font-family:'Segoe UI',Arial,sans-serif;padding:40px;color:#1e293b;line-height:1.6}
+      .header{border-bottom:3px solid #2563eb;padding-bottom:20px;margin-bottom:30px}
+      h1{font-size:28px;color:#1e293b;margin-bottom:8px}
+      .meta{color:#64748b;font-size:13px}.meta p{margin-bottom:4px}
+      .metrics{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:30px}
+      .metric-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px 24px;min-width:140px}
+      .metric-label{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+      .metric-value{font-size:24px;font-weight:700;color:#1e293b}
+      .metric-value.success{color:#16a34a}.metric-value.danger{color:#dc2626}
+      h3{font-size:16px;margin-bottom:12px;color:#334155}
+      table{width:100%;border-collapse:collapse;margin:12px 0 24px}
+      th,td{border:1px solid #e2e8f0;padding:10px 14px;text-align:left;font-size:13px}
+      th{background:#f1f5f9;font-weight:600;color:#475569}
+      tr:nth-child(even){background:#f8fafc}
+      pre{background:#f8fafc;padding:16px;border-radius:8px;font-size:12px;overflow-x:auto;border:1px solid #e2e8f0}
+      .footer{margin-top:40px;padding-top:20px;border-top:1px solid #e2e8f0;color:#94a3b8;font-size:11px;text-align:center}
+    </style></head><body>
+      <div class="header">
+        <h1>${title}</h1>
         <div class="meta">
-          <p>Periode: ${startDate.toLocaleDateString('id-ID')} - ${endDate.toLocaleDateString('id-ID')}</p>
-          <p>Digenerate: ${new Date().toLocaleString('id-ID')}</p>
+          <p><strong>Periode:</strong> ${periodLabel}</p>
+          <p><strong>Digenerate:</strong> ${generatedAt}</p>
         </div>
-        <div class="summary">
-          <pre>${JSON.stringify(data, null, 2)}</pre>
-        </div>
-      </body>
-      </html>
-    `;
-    return Buffer.from(html, 'utf-8');
+      </div>
+      ${summaryHtml}
+      <div class="footer"><p>Laporan ini digenerate otomatis oleh sistem BOSS Platform</p></div>
+    </body></html>`;
+
+    const puppeteer = await import('puppeteer-core');
+    const browser = await puppeteer.launch({
+      headless: true,
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+    });
+
+    try {
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: 'networkidle0', timeout: 15000 });
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: { top: '20mm', right: '15mm', bottom: '20mm', left: '15mm' },
+      });
+      return Buffer.from(pdfBuffer);
+    } finally {
+      await browser.close();
+    }
   }
 
   private async generateExcel(type: ReportType, data: any, startDate: Date, endDate: Date): Promise<Buffer> {
