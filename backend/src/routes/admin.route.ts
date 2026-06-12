@@ -30,6 +30,12 @@ const resolveSetting = () =>
   getContainer().resolve("platformSettingController");
 const resolveUserMgmt = () =>
   getContainer().resolve("userManagementController");
+const resolveBusinessMgmt = () =>
+  getContainer().resolve("businessManagementController");
+const resolveSubMgmt = () =>
+  getContainer().resolve("adminSubscriptionController");
+const resolveNotification = () =>
+  getContainer().resolve("adminNotificationController");
 
 // Dashboard
 router.get("/dashboard/overview", adminController.getDashboardOverview);
@@ -65,6 +71,26 @@ router.post(
   adminController.bulkUnsuspendBusinesses,
 );
 router.post("/businesses/bulk/delete", adminController.bulkDeleteBusinesses);
+
+// Business Management (DI-based)
+router.put("/businesses/:businessId/details", resolveBusinessMgmt().updateBusiness);
+router.get("/businesses/:businessId/settings", resolveBusinessMgmt().getSettings);
+router.put("/businesses/:businessId/settings", resolveBusinessMgmt().updateSettings);
+router.get("/businesses/:businessId/health-score", resolveBusinessMgmt().getHealthScore);
+router.get("/businesses/:businessId/activity", resolveBusinessMgmt().getRecentActivity);
+
+// Subscription Management (DI-based)
+router.get("/subscriptions/plans", resolveSubMgmt().getAllPlans);
+router.get("/subscriptions/business/:businessId", resolveSubMgmt().getBusinessSubscription);
+router.put("/subscriptions/business/:businessId/change-plan", resolveSubMgmt().changePlan);
+router.put("/subscriptions/business/:businessId/extend", resolveSubMgmt().extendSubscription);
+router.put("/subscriptions/business/:businessId/cancel", resolveSubMgmt().cancelSubscription);
+router.put("/subscriptions/business/:businessId/mark-paid", resolveSubMgmt().markAsPaid);
+
+// Notifications (DI-based)
+router.post("/notifications/send", resolveNotification().sendToBusiness);
+router.post("/notifications/broadcast", resolveNotification().broadcast);
+router.get("/notifications/business/:businessId", resolveNotification().getBusinessNotifications);
 
 // Outlets
 router.get("/outlets", adminController.getAllOutlets);

@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Building2,
   CreditCard,
@@ -20,17 +20,23 @@ import {
   Clock,
   XCircle,
   Copy,
-} from 'lucide-react';
+} from "lucide-react";
 
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { toast } from 'sonner';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { toast } from "sonner";
 
 interface Business {
   id: string;
@@ -89,37 +95,41 @@ export default function BusinessDetailSheet({
 
   if (!business) return null;
 
-  const isSuspended = business.subscriptionStatus === 'SUSPENDED';
+  const isSuspended = business.subscriptionStatus === "SUSPENDED";
 
-  const statusConfig: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
+  const statusConfig: Record<
+    string,
+    { label: string; className: string; icon: React.ReactNode }
+  > = {
     ACTIVE: {
-      label: 'Aktif',
-      className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+      label: "Aktif",
+      className: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
       icon: <CheckCircle2 className="h-3 w-3" />,
     },
     SUSPENDED: {
-      label: 'Suspended',
-      className: 'bg-red-500/10 text-red-600 border-red-500/20',
+      label: "Suspended",
+      className: "bg-red-500/10 text-red-600 border-red-500/20",
       icon: <XCircle className="h-3 w-3" />,
     },
     TRIAL: {
-      label: 'Trial',
-      className: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+      label: "Trial",
+      className: "bg-blue-500/10 text-blue-600 border-blue-500/20",
       icon: <Clock className="h-3 w-3" />,
     },
     EXPIRED: {
-      label: 'Expired',
-      className: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+      label: "Expired",
+      className: "bg-orange-500/10 text-orange-600 border-orange-500/20",
       icon: <XCircle className="h-3 w-3" />,
     },
     AWAITING_PAYMENT: {
-      label: 'Menunggu Bayar',
-      className: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
+      label: "Menunggu Bayar",
+      className: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
       icon: <Clock className="h-3 w-3" />,
     },
   };
 
-  const statusInfo = statusConfig[business.subscriptionStatus] || statusConfig.ACTIVE;
+  const statusInfo =
+    statusConfig[business.subscriptionStatus] || statusConfig.ACTIVE;
 
   const handleCopy = async (text: string, label: string) => {
     try {
@@ -128,27 +138,29 @@ export default function BusinessDetailSheet({
       toast.success(`${label} disalin`);
       setTimeout(() => setCopied(null), 2000);
     } catch {
-      toast.error('Gagal menyalin');
+      toast.error("Gagal menyalin");
     }
   };
 
   const handleSuspend = async () => {
     try {
       await onSuspend(business.id, !isSuspended);
-      toast.success(`Bisnis berhasil di${isSuspended ? 'aktifkan' : 'suspend'}`);
+      toast.success(
+        `Bisnis berhasil di${isSuspended ? "aktifkan" : "suspend"}`,
+      );
     } catch {
-      toast.error('Gagal mengubah status bisnis');
+      toast.error("Gagal mengubah status bisnis");
     }
   };
 
   const handleDelete = async () => {
     try {
       await onDelete(business.id);
-      toast.success('Bisnis berhasil dihapus');
+      toast.success("Bisnis berhasil dihapus");
       onClose(false);
       setShowDeleteDialog(false);
     } catch {
-      toast.error('Gagal menghapus bisnis');
+      toast.error("Gagal menghapus bisnis");
     }
   };
 
@@ -173,7 +185,7 @@ export default function BusinessDetailSheet({
                       </SheetTitle>
                       <SheetDescription className="flex items-center gap-2 mt-1 flex-wrap">
                         <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded">
-                          {business.id.split('-')[0]}
+                          {business.id.split("-")[0]}
                         </span>
                         <span className="text-muted-foreground">•</span>
                         <span className="text-xs text-muted-foreground truncate">
@@ -181,7 +193,10 @@ export default function BusinessDetailSheet({
                         </span>
                       </SheetDescription>
                       <div className="flex items-center gap-2 mt-2">
-                        <Badge variant="outline" className={statusInfo.className}>
+                        <Badge
+                          variant="outline"
+                          className={statusInfo.className}
+                        >
                           {statusInfo.icon}
                           <span className="ml-1">{statusInfo.label}</span>
                         </Badge>
@@ -198,12 +213,12 @@ export default function BusinessDetailSheet({
                 {/* Action Buttons */}
                 <div className="flex items-center gap-2 mt-4">
                   <Button
-                    variant={isSuspended ? 'default' : 'outline'}
+                    variant={isSuspended ? "default" : "outline"}
                     size="sm"
                     className={
                       isSuspended
-                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5'
-                        : 'text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/20 gap-1.5'
+                        ? "bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+                        : "text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/20 gap-1.5"
                     }
                     onClick={handleSuspend}
                     disabled={isSuspendPending}
@@ -250,22 +265,30 @@ export default function BusinessDetailSheet({
               <TabsContent value="overview" className="space-y-4 mt-0">
                 {/* Stats */}
                 <div className="grid grid-cols-2 gap-3">
-                  <Card>
+                  <Card className="py-0 gap-0">
                     <CardContent className="p-4 text-center">
-                      <div className="text-2xl font-bold">{business._count?.outlets || 0}</div>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Outlet</p>
+                      <div className="text-2xl font-bold">
+                        {business._count?.outlets || 0}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">
+                        Outlet
+                      </p>
                     </CardContent>
                   </Card>
-                  <Card>
+                  <Card className="py-0 gap-0">
                     <CardContent className="p-4 text-center">
-                      <div className="text-2xl font-bold">{business._count?.orders || 0}</div>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Transaksi</p>
+                      <div className="text-2xl font-bold">
+                        {business._count?.orders || 0}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">
+                        Transaksi
+                      </p>
                     </CardContent>
                   </Card>
                 </div>
 
                 {/* Business Info */}
-                <Card>
+                <Card className="gap-0">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium flex items-center gap-2">
                       <Building2 className="h-4 w-4 text-muted-foreground" />
@@ -274,24 +297,30 @@ export default function BusinessDetailSheet({
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <InfoRow label="Nama" value={business.name} />
-                    <InfoRow label="Deskripsi" value={business.description || '~'} />
+                    <InfoRow
+                      label="Deskripsi"
+                      value={business.description || "~"}
+                    />
                     <InfoRow
                       label="Terdaftar"
                       value={
                         business.createdAt
-                          ? new Date(business.createdAt).toLocaleDateString('id-ID', {
-                              day: 'numeric',
-                              month: 'long',
-                              year: 'numeric',
-                            })
-                          : '-'
+                          ? new Date(business.createdAt).toLocaleDateString(
+                              "id-ID",
+                              {
+                                day: "numeric",
+                                month: "long",
+                                year: "numeric",
+                              },
+                            )
+                          : "-"
                       }
                     />
                   </CardContent>
                 </Card>
 
                 {/* Owner Info */}
-                <Card>
+                <Card className="gap-0">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium flex items-center gap-2">
                       <Users className="h-4 w-4 text-muted-foreground" />
@@ -302,19 +331,31 @@ export default function BusinessDetailSheet({
                     <div className="flex items-center gap-3 p-2 rounded-lg">
                       <Avatar className="h-9 w-9 border border-border">
                         <AvatarFallback className="text-xs bg-muted">
-                          {business.owner?.name?.substring(0, 2).toUpperCase() || '??'}
+                          {business.owner?.name
+                            ?.substring(0, 2)
+                            .toUpperCase() || "??"}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{business.owner?.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">{business.owner?.email}</p>
+                        <p className="text-sm font-medium truncate">
+                          {business.owner?.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {business.owner?.email}
+                        </p>
                       </div>
                       {business.owner?.isVerified ? (
-                        <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20 shrink-0">
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20 shrink-0"
+                        >
                           <Shield className="h-3 w-3 mr-1" /> Verified
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-600 border-amber-500/20 shrink-0">
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] bg-amber-500/10 text-amber-600 border-amber-500/20 shrink-0"
+                        >
                           <AlertTriangle className="h-3 w-3 mr-1" /> Pending
                         </Badge>
                       )}
@@ -331,7 +372,7 @@ export default function BusinessDetailSheet({
                 </Card>
 
                 {/* Subscription Info */}
-                <Card>
+                <Card className="gap-0">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium flex items-center gap-2">
                       <Package className="h-4 w-4 text-muted-foreground" />
@@ -340,13 +381,17 @@ export default function BusinessDetailSheet({
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">Paket</span>
+                      <span className="text-xs text-muted-foreground">
+                        Paket
+                      </span>
                       <Badge variant="secondary" className="font-semibold">
-                        {business.subscriptionPlan || 'TRIAL'}
+                        {business.subscriptionPlan || "TRIAL"}
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">Status</span>
+                      <span className="text-xs text-muted-foreground">
+                        Status
+                      </span>
                       <Badge variant="outline" className={statusInfo.className}>
                         {statusInfo.icon}
                         <span className="ml-1">{statusInfo.label}</span>
@@ -354,13 +399,17 @@ export default function BusinessDetailSheet({
                     </div>
                     {business.subscriptionEndDate && (
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">Berakhir</span>
+                        <span className="text-xs text-muted-foreground">
+                          Berakhir
+                        </span>
                         <span className="text-xs font-medium flex items-center gap-1.5">
                           <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                          {new Date(business.subscriptionEndDate).toLocaleDateString('id-ID', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric',
+                          {new Date(
+                            business.subscriptionEndDate,
+                          ).toLocaleDateString("id-ID", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
                           })}
                         </span>
                       </div>
@@ -372,7 +421,7 @@ export default function BusinessDetailSheet({
               {/* TAB: Bank */}
               <TabsContent value="bank" className="mt-0">
                 {business.bankName ? (
-                  <Card>
+                  <Card className="py-0 gap-0">
                     <CardHeader className="pb-3">
                       <CardTitle className="text-sm font-medium flex items-center gap-2">
                         <CreditCard className="h-4 w-4 text-muted-foreground" />
@@ -386,23 +435,36 @@ export default function BusinessDetailSheet({
                             <CreditCard className="h-5 w-5 text-muted-foreground" />
                           </div>
                           <div>
-                            <p className="font-semibold text-sm">{business.bankName}</p>
-                            <p className="text-xs text-muted-foreground">Bank Account</p>
+                            <p className="font-semibold text-sm">
+                              {business.bankName}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Bank Account
+                            </p>
                           </div>
                         </div>
                         <Separator className="my-3" />
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs text-muted-foreground">Nomor Rekening</span>
+                            <span className="text-xs text-muted-foreground">
+                              Nomor Rekening
+                            </span>
                             <div className="flex items-center gap-2">
-                              <span className="font-mono text-sm font-medium">{business.bankAccount}</span>
+                              <span className="font-mono text-sm font-medium">
+                                {business.bankAccount}
+                              </span>
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 className="h-6 w-6"
-                                onClick={() => handleCopy(business.bankAccount!, 'Nomor rekening')}
+                                onClick={() =>
+                                  handleCopy(
+                                    business.bankAccount!,
+                                    "Nomor rekening",
+                                  )
+                                }
                               >
-                                {copied === 'Nomor rekening' ? (
+                                {copied === "Nomor rekening" ? (
                                   <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
                                 ) : (
                                   <Copy className="h-3.5 w-3.5" />
@@ -411,19 +473,25 @@ export default function BusinessDetailSheet({
                             </div>
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="text-xs text-muted-foreground">Atas Nama</span>
-                            <span className="text-sm font-medium">{business.accountHolder}</span>
+                            <span className="text-xs text-muted-foreground">
+                              Atas Nama
+                            </span>
+                            <span className="text-sm font-medium">
+                              {business.accountHolder}
+                            </span>
                           </div>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
                 ) : (
-                  <Card>
-                    <CardContent className="py-8">
+                  <Card className="border-dashed border-2 py-0 border-border">
+                    <CardContent className="py-4">
                       <div className="text-center text-muted-foreground">
                         <CreditCard className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">Belum ada informasi rekening bank</p>
+                        <p className="text-sm">
+                          Belum ada informasi rekening bank
+                        </p>
                       </div>
                     </CardContent>
                   </Card>
@@ -440,7 +508,10 @@ export default function BusinessDetailSheet({
                   </div>
                   {business.outlets && business.outlets.length > 0 ? (
                     business.outlets.map((outlet) => (
-                      <Card key={outlet.id} className="overflow-hidden">
+                      <Card
+                        key={outlet.id}
+                        className="overflow-hidden gap-0 py-0"
+                      >
                         <CardContent className="p-4">
                           <div className="flex items-start gap-3">
                             <div className="h-9 w-9 rounded-md bg-muted flex items-center justify-center shrink-0">
@@ -448,22 +519,24 @@ export default function BusinessDetailSheet({
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <p className="text-sm font-medium truncate">{outlet.name}</p>
+                                <p className="text-sm font-medium truncate">
+                                  {outlet.name}
+                                </p>
                                 {outlet.isOpen !== undefined && (
                                   <Badge
                                     variant="outline"
                                     className={
                                       outlet.isOpen
-                                        ? 'text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
-                                        : 'text-[10px] bg-muted text-muted-foreground'
+                                        ? "text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                                        : "text-[10px] bg-muted text-muted-foreground"
                                     }
                                   >
-                                    {outlet.isOpen ? 'Buka' : 'Tutup'}
+                                    {outlet.isOpen ? "Buka" : "Tutup"}
                                   </Badge>
                                 )}
                               </div>
                               <p className="text-xs text-muted-foreground truncate mt-0.5">
-                                {outlet.address || 'Tidak ada alamat'}
+                                {outlet.address || "Tidak ada alamat"}
                               </p>
                               {outlet._count?.orders !== undefined && (
                                 <p className="text-xs text-primary font-medium mt-1">
@@ -476,7 +549,7 @@ export default function BusinessDetailSheet({
                       </Card>
                     ))
                   ) : (
-                    <Card>
+                    <Card className="border-dashed border-2 py-0 border-border">
                       <CardContent className="py-6">
                         <div className="text-center text-muted-foreground">
                           <MapPin className="h-6 w-6 mx-auto mb-2 opacity-50" />
@@ -499,8 +572,10 @@ export default function BusinessDetailSheet({
         title="Hapus Bisnis"
         description={
           <span>
-            Apakah Anda yakin ingin menghapus bisnis <strong>"{business.name}"</strong>? Tindakan ini
-            permanen dan akan menghapus seluruh data terkait termasuk outlet, produk, dan transaksi.
+            Apakah Anda yakin ingin menghapus bisnis{" "}
+            <strong>"{business.name}"</strong>? Tindakan ini permanen dan akan
+            menghapus seluruh data terkait termasuk outlet, produk, dan
+            transaksi.
           </span>
         }
         confirmLabel="Hapus Bisnis"
