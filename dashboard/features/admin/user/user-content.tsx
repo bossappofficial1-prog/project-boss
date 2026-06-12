@@ -47,7 +47,6 @@ export default function UserContent() {
     search: searchQuery,
     limit,
     page,
-    status: statusFilter === 'all' ? undefined : statusFilter,
   });
 
   const { data: stats } = useAdminUserStats();
