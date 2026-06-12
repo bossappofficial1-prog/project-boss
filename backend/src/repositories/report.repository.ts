@@ -1,13 +1,9 @@
 import { Prisma } from "@prisma/client";
-import { db } from "../config/prisma";
+import { BaseRepository } from "./base.repository";
 
-export class ReportRepository {
-  /**
-   * 1. Agregasi Pendapatan
-   * RAW QUERY: Lebih cepat karena SUM dan COUNT dihitung langsung oleh Database C-Engine.
-   */
-  static async getRevenueAggregate(outletId: string, start: Date, end: Date) {
-    const result = await db.$queryRaw<any[]>`
+export class ReportRepository extends BaseRepository {
+  async getRevenueAggregate(outletId: string, start: Date, end: Date) {
+    const result = await this.db.$queryRaw<any[]>`
       SELECT 
         SUM("totalAmount") as "totalAmount", 
         COUNT(id) as "count"
@@ -24,13 +20,8 @@ export class ReportRepository {
     };
   }
 
-  /**
-   * 2. Agregasi Pengeluaran
-   * RAW QUERY
-   * Menyesuaikan dengan schema @@map("expenses")
-   */
-  static async getExpenseAggregate(outletId: string, start: Date, end: Date) {
-    const result = await db.$queryRaw<any[]>`
+  async getExpenseAggregate(outletId: string, start: Date, end: Date) {
+    const result = await this.db.$queryRaw<any[]>`
       SELECT 
         SUM("amount") as "totalAmount", 
         COUNT(id) as "count"
@@ -46,11 +37,7 @@ export class ReportRepository {
     };
   }
 
-  /**
-   * 3. Penarikan Data Laporan Outlet
-   * RAW QUERY: Menggunakan JSON Aggregation bawaan PostgreSQL (json_agg)
-   */
-  static async getOutletReport(
+  async getOutletReport(
     outletIds: string[],
     date: string,
     startDate: Date,
@@ -63,8 +50,7 @@ export class ReportRepository {
 
     const joinedOutletIds = Prisma.join(outletIds);
 
-    // a. Tarik Orders + relasi Items
-    const orders = await db.$queryRaw<any[]>`
+    const orders = await this.db.$queryRaw<any[]>`
       SELECT 
         o.id, 
         o."createdAt", 
@@ -92,8 +78,7 @@ export class ReportRepository {
         AND o."createdAt" <= ${endDate}
     `;
 
-    // b. Tarik Expenses (Dari tabel mapped "expenses")
-    const expenses = await db.$queryRaw<any[]>`
+    const expenses = await this.db.$queryRaw<any[]>`
       SELECT id, amount, date, "outletId"
       FROM "expenses"
       WHERE "outletId" IN (${joinedOutletIds})
@@ -101,8 +86,7 @@ export class ReportRepository {
         AND "date" <= ${endDate}
     `;
 
-    // c. Tarik Stock Logs (HPP Masuk)
-    const stockLogs = await db.$queryRaw<any[]>`
+    const stockLogs = await this.db.$queryRaw<any[]>`
       SELECT 
         sl.id, 
         sl."createdAt", 
@@ -120,14 +104,10 @@ export class ReportRepository {
     return { orders, expenses, stockLogs };
   }
 
-  /**
-   * 4. List Order dengan Produk (Untuk Sales Summary)
-   * PRISMA QUERY: Tetap pakai Prisma
-   */
-  static async getCompletedOrdersWithProducts(outletId: string, start: Date, end: Date) {
-    return await db.order.findMany({
+  async getCompletedOrdersWithProducts(outletId: string, start: Date, end: Date) {
+    return this.db.order.findMany({
       where: {
-        outletId: outletId,
+        outletId,
         orderStatus: "COMPLETED",
         createdAt: { gte: start, lte: end },
       },
@@ -146,12 +126,8 @@ export class ReportRepository {
     });
   }
 
-  /**
-   * 5. List Order untuk Staff / Kasir Laporan
-   * PRISMA QUERY: Tetap pakai Prisma karena relasinya sangat dalam
-   */
-  static async getOrdersForStaffReport(outletIds: string[], start: Date, end: Date) {
-    return await db.order.findMany({
+  async getOrdersForStaffReport(outletIds: string[], start: Date, end: Date) {
+    return this.db.order.findMany({
       where: {
         outletId: { in: outletIds },
         orderStatus: "COMPLETED",

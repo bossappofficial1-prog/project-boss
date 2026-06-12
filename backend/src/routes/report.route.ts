@@ -1,13 +1,5 @@
 import { Router } from "express";
-import {
-  getFinancialSummaryController,
-  getOutletReportController,
-  getCompareOutletsReportController,
-  getStaffReportController,
-  exportTransactionReportController,
-  exportOutletReportExcelController,
-  exportStaffReportExcelController,
-} from "../controller/report.controller";
+import { getContainer } from "../container";
 import { getDailyReportController } from "../controller/daily-report.controller";
 import { protect } from "../middleware/auth.middleware";
 
@@ -15,13 +7,15 @@ const router = Router();
 
 router.use(protect);
 
-router.get("/financial-summary", getFinancialSummaryController);
+const resolveReport = () => getContainer().resolve("reportController");
+
+router.get("/financial-summary", (req, res) => resolveReport().getFinancialSummary(req, res));
 router.get("/daily/:outletId", getDailyReportController);
-router.get("/compare", getCompareOutletsReportController);
-router.get("/outlet/:outletId", getOutletReportController);
-router.get("/staff/:outletId", getStaffReportController);
-router.get("/export/outlet/:outletId", exportOutletReportExcelController);
-router.get("/export/staff/:outletId", exportStaffReportExcelController);
-router.post("/export-transaction", exportTransactionReportController);
+router.get("/compare", (req, res) => resolveReport().getCompareOutletsReport(req, res));
+router.get("/outlet/:outletId", (req, res) => resolveReport().getOutletReport(req, res));
+router.get("/staff/:outletId", (req, res) => resolveReport().getStaffReport(req, res));
+router.get("/export/outlet/:outletId", (req, res) => resolveReport().exportOutletReportExcel(req, res));
+router.get("/export/staff/:outletId", (req, res) => resolveReport().exportStaffReportExcel(req, res));
+router.post("/export-transaction", (req, res) => resolveReport().exportTransactionReport(req, res));
 
 export default router;
