@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
 import { BaseController } from "./base.controller";
-import { ReportService } from "../service/report.service";
+import { AdminReportService } from "../service/admin-report.service";
 import { HttpStatus } from "../constants/http-status";
 
-export class ReportController extends BaseController {
-  constructor(private reportService: ReportService) {
+export class AdminReportController extends BaseController {
+  constructor(private adminReportService: AdminReportService) {
     super();
   }
 
@@ -12,7 +12,7 @@ export class ReportController extends BaseController {
     const { type, period, startDate, endDate } = req.body;
     const performedBy = (req as any).user?.id;
 
-    const report = await this.reportService.generateReport(
+    const report = await this.adminReportService.generateReport(
       type,
       period,
       performedBy,
@@ -30,7 +30,7 @@ export class ReportController extends BaseController {
   getAll = this.handler(async (req: Request, res: Response) => {
     const { type, status, page, limit } = req.query;
 
-    const result = await this.reportService.getAll({
+    const result = await this.adminReportService.getAll({
       type: type as any,
       status: status as any,
       page: page ? parseInt(page as string) : undefined,
@@ -48,19 +48,19 @@ export class ReportController extends BaseController {
   });
 
   getById = this.handler(async (req: Request, res: Response) => {
-    const { reportId } = req.params;
+    const reportId = req.params.reportId as string;
 
-    const report = await this.reportService.getById(reportId as string);
+    const report = await this.adminReportService.getById(reportId);
 
     return this.success(res, report);
   });
 
   delete = this.handler(async (req: Request, res: Response) => {
-    const { reportId } = req.params;
+    const reportId = req.params.reportId as string;
     const performedBy = (req as any).user?.id;
 
-    const result = await this.reportService.delete(
-      reportId as string,
+    const result = await this.adminReportService.delete(
+      reportId,
       performedBy,
     );
 
