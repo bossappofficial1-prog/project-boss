@@ -111,14 +111,16 @@ router.post('/users/bulk/reactivate', (req, res) => getUserManagementController(
 // Report management routes (new DI-based)
 router.get('/reports', (req, res) => getReportController().getAll(req, res));
 router.post('/reports/generate', (req, res) => getReportController().generate(req, res));
-router.get('/reports/:reportId', (req, res) => getReportController().getById(req, res));
-router.delete('/reports/:reportId', (req, res) => getReportController().delete(req, res));
 
-// Legacy report routes (keep for backward compatibility)
+// Legacy report routes (keep for backward compatibility - MUST be before :reportId param)
 router.get('/reports/financial', adminController.getFinancialReports);
 router.get('/reports/revenue', adminController.getRevenueReport);
 router.get('/reports/business-performance', adminController.getBusinessPerformanceReport);
 router.get('/reports/:reportId/download', adminController.downloadReport);
+
+// Report CRUD with ID param (after specific routes)
+router.get('/reports/:reportId', (req, res) => getReportController().getById(req, res));
+router.delete('/reports/:reportId', (req, res) => getReportController().delete(req, res));
 
 // Audit log routes
 router.get('/audit-logs', (req, res) => getAuditLogController().getAll(req, res));

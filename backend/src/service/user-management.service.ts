@@ -1,22 +1,22 @@
 import { BaseService } from './base.service';
-import { UserRepository, UserFilters } from '../repositories/user.repository';
+import { UserManagementRepository, UserManagementFilters } from '../repositories/user-management.repository';
 import { AuditLogService } from './audit-log.service';
 import { UserStatus, AuditAction, AuditEntityType } from '@prisma/client';
 
 export class UserManagementService extends BaseService {
   constructor(
-    private userRepository: UserRepository,
+    private userManagementRepository: UserManagementRepository,
     private auditLogService: AuditLogService,
   ) {
     super();
   }
 
-  async getAll(filters: UserFilters) {
-    return this.userRepository.findAll(filters);
+  async getAll(filters: UserManagementFilters) {
+    return this.userManagementRepository.findAll(filters);
   }
 
   async getById(id: string) {
-    const user = await this.userRepository.findById(id);
+    const user = await this.userManagementRepository.findById(id);
     if (!user) this.notFound('User tidak ditemukan');
     return user;
   }
@@ -32,7 +32,7 @@ export class UserManagementService extends BaseService {
       this.badRequest('Tidak bisa suspend admin');
     }
 
-    const updated = await this.userRepository.updateStatus(userId, UserStatus.SUSPENDED);
+    const updated = await this.userManagementRepository.updateStatus(userId, UserStatus.SUSPENDED);
 
     await this.auditLogService.logAdminAction(
       performedBy,
@@ -57,7 +57,7 @@ export class UserManagementService extends BaseService {
       this.badRequest('User sudah dalam status aktif');
     }
 
-    const updated = await this.userRepository.updateStatus(userId, UserStatus.ACTIVE);
+    const updated = await this.userManagementRepository.updateStatus(userId, UserStatus.ACTIVE);
 
     await this.auditLogService.logAdminAction(
       performedBy,
@@ -86,7 +86,7 @@ export class UserManagementService extends BaseService {
       this.badRequest('Tidak bisa hapus user yang memiliki bisnis. Hapus bisnis terlebih dahulu.');
     }
 
-    await this.userRepository.delete(userId);
+    await this.userManagementRepository.delete(userId);
 
     await this.auditLogService.logAdminAction(
       performedBy,
@@ -140,6 +140,6 @@ export class UserManagementService extends BaseService {
   }
 
   async getStats() {
-    return this.userRepository.getStats();
+    return this.userManagementRepository.getStats();
   }
 }

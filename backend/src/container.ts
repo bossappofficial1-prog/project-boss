@@ -6,7 +6,7 @@ import { AdminRepository } from './repositories/admin.repository';
 import { AuditLogRepository } from './repositories/audit-log.repository';
 import { ReportRepository } from './repositories/report.repository';
 import { PlatformSettingRepository } from './repositories/platform-setting.repository';
-import { UserRepository } from './repositories/user.repository';
+import { UserManagementRepository } from './repositories/user-management.repository';
 
 // Services
 import { AdminService } from './service/admin.service';
@@ -31,7 +31,7 @@ export interface Cradle {
   auditLogRepository: AuditLogRepository;
   reportRepository: ReportRepository;
   platformSettingRepository: PlatformSettingRepository;
-  userRepository: UserRepository;
+  userManagementRepository: UserManagementRepository;
 
   // Services
   adminService: AdminService;
@@ -63,7 +63,7 @@ export function createAppContainer(): AwilixContainer<Cradle> {
     auditLogRepository: asClass(AuditLogRepository).singleton(),
     reportRepository: asClass(ReportRepository).singleton(),
     platformSettingRepository: asClass(PlatformSettingRepository).singleton(),
-    userRepository: asClass(UserRepository).singleton(),
+    userManagementRepository: asClass(UserManagementRepository).singleton(),
 
     // Services
     adminService: asClass(AdminService).singleton(),
