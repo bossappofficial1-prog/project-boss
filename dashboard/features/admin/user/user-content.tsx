@@ -34,7 +34,7 @@ export default function UserContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [showSuspendConfirmation, setShowSuspendConfirmation] = useState(false);
@@ -47,6 +47,7 @@ export default function UserContent() {
     search: searchQuery,
     limit,
     page,
+    status: statusFilter === 'all' ? undefined : statusFilter,
   });
 
   const { data: stats } = useAdminUserStats();
@@ -344,7 +345,7 @@ export default function UserContent() {
             <SelectValue placeholder="Semua Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Semua Status</SelectItem>
+            <SelectItem value="all">Semua Status</SelectItem>
             <SelectItem value="ACTIVE">Aktif</SelectItem>
             <SelectItem value="SUSPENDED">Suspended</SelectItem>
             <SelectItem value="INACTIVE">Nonaktif</SelectItem>

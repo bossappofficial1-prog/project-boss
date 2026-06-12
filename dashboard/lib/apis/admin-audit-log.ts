@@ -1,6 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '@/lib/axios';
-import { toast } from 'sonner';
+import { useQuery} from '@tanstack/react-query';
+import {apiClient as api} from './base';
 
 // Types
 export interface AuditLog {
