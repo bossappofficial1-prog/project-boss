@@ -3,6 +3,7 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { QueueCard } from "./queue-card";
 import type { QueueV2Entry, QueueOrderStatus } from "@/lib/apis/queue-v2";
+import { cn } from "@/lib/utils";
 
 interface KanbanColumnProps {
     title: string;
@@ -30,15 +31,18 @@ export function KanbanColumn({
     pendingId,
 }: KanbanColumnProps) {
     return (
-        <div className="flex flex-col min-w-[280px] w-full rounded-md border border-border bg-muted/30">
+        <div className="flex flex-col min-w-[280px] w-full rounded-lg border border-border bg-muted/30">
             {/* Column header */}
-            <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
                 <div className="flex items-center gap-2">
                     {icon}
                     <h3 className="text-sm font-semibold text-foreground">{title}</h3>
                 </div>
                 <span
-                    className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold text-white ${accentColor}`}
+                    className={cn(
+                        "flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold text-white",
+                        accentColor
+                    )}
                 >
                     {count}
                 </span>

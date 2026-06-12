@@ -45,62 +45,82 @@ const FAQ_ITEMS = [
   {
     question: "Apakah BOSS benar-benar gratis?",
     answer:
-      "Ya, paket Trial sepenuhnya gratis selama 35 hari. Anda bisa mencoba fitur-fitur dasar tanpa perlu kartu kredit. Setelah masa trial habis, Anda dapat memilih paket Basic atau Pro untuk melanjutkan.",
+      "Ya! Anda bisa mencoba BOSS gratis selama 35 hari tanpa kartu kredit. Setelah masa trial habis, Anda bisa pilih paket Basic (gratis) atau Pro (Rp 149.000/bulan) sesuai kebutuhan bisnis Anda.",
   },
   {
-    question: "Apakah bisa dipakai di HP / smartphone?",
+    question: "Bisakah digunakan di HP?",
     answer:
-      "Ya, BOSS berbasis web dan responsif — bisa diakses dari browser HP, tablet, maupun komputer tanpa perlu instalasi apapun. Juga bisa diinstal sebagai PWA (Progressive Web App) untuk akses lebih cepat.",
+      "Tentu bisa. BOSS berjalan langsung dari browser HP, tablet, atau laptop — tidak perlu install apa pun. Tampilannya sudah dioptimalkan untuk layar kecil sehingga nyaman dipakai di mana saja.",
   },
   {
-    question: "Apakah mendukung pembayaran digital?",
+    question: "Apakah mendukung pembayaran QRIS?",
     answer:
-      "Ya, BOSS mendukung QRIS, Virtual Account, dan pembayaran manual transfer bank. Pelanggan bisa bayar dari aplikasi, kasir memproses, dan semua transaksi tercatat otomatis.",
+      "Ya, BOSS mendukung QRIS, Virtual Account, dan transfer bank manual. Semua pembayaran tercatat otomatis di laporan keuangan tanpa perlu input manual lagi.",
   },
   {
-    question: "Bisa untuk jenis bisnis apa saja?",
+    question: "Jenis bisnis apa saja yang cocok pakai BOSS?",
     answer:
-      "BOSS cocok untuk warung makan, kafe, toko retail, barbershop, salon, laundry, apotek, service bisnis, event & tiket, dan hampir semua jenis UMKM di Indonesia. Setiap tipe bisnis punya fitur yang disesuaikan.",
+      "BOSS dirancang untuk berbagai jenis usaha: restoran & kafe, toko retail, barbershop & salon, laundry, apotek, jasa service, event & tiket, dan masih banyak lagi. Setiap jenis bisnis punya fitur yang sudah disesuaikan.",
   },
   {
-    question: "Apakah bisa untuk banyak cabang?",
+    question: "Bisa untuk banyak cabang?",
     answer:
-      "Ya, paket Basic sudah mendukung 2 outlet, dan Pro mendukung outlet dan staff tanpa batas. Pantau semua cabang dari satu dashboard, transfer stok antar outlet, dan kelola akses terpusat.",
+      "Bisa. Paket Basic mendukung hingga 2 outlet, sedangkan Pro mendukung outlet dan staff tanpa batas. Anda bisa pantau semua cabang dari satu dashboard, transfer stok antar outlet, dan kelola akses staff secara terpusat.",
   },
   {
-    question: "Bagaimana sistem absensi karyawan?",
+    question: "Bagaimana cara mencatat absensi karyawan?",
     answer:
-      "BOSS memiliki sistem absensi dengan Face Recognition (pengenalan wajah) dan validasi lokasi GPS. Karyawan bisa absen masuk dan pulang langsung dari HP. Semua data absensi tercatat dan bisa dipantau owner dari dashboard.",
+      "Karyawan bisa absen masuk dan pulang langsung dari HP mereka. Sistem kami menggunakan verifikasi wajah (face recognition) dan validasi lokasi GPS agar data absensi akurat. Semua catatan bisa dipantau owner dari dashboard.",
   },
   {
-    question: "Apakah ada sistem akuntansi?",
+    question: "Apakah ada fitur akuntansi?",
     answer:
-      "Ya, paket Pro memiliki sistem akuntansi double-entry lengkap dengan Bagan Akun (COA), Jurnal Umum, Buku Besar, dan Neraca Keuangan. Semua transaksi tercatat otomatis dan laporan bisa diekspor.",
+      "Ya, paket Pro dilengkapi sistem akuntansi lengkap: Bagan Akun, Jurnal Umum, Buku Besar, dan Neraca Keuangan. Semua transaksi tercatat otomatis dan laporan bisa diekspor ke Excel.",
   },
   {
-    question: "Apa itu Kitchen Display System?",
+    question: "Apa itu Kitchen Display System (KDS)?",
     answer:
-      "KDS adalah layar digital untuk dapur yang menampilkan order real-time dalam 3 lane: Antrian, Dimasak, dan Siap Saji. Notifikasi suara otomatis saat order baru masuk — tidak perlu teriak ke dapur lagi.",
+      "KDS adalah layar digital untuk dapur yang menampilkan pesanan secara real-time. Pesanan masuk ke kolom Antrian, lalu dipindahkan ke Dimasak, dan akhirnya Siap Disajikan. Ada notifikasi suara setiap ada order baru, jadi koki tidak perlu diteriaki dari kasir.",
+  },
+  {
+    question: "Bagaimana cara mengelola stok barang?",
+    answer:
+      "Stok berkurang otomatis setiap kali ada penjualan. Anda bisa atur batas minimum stok untuk dapat peringatan saat barang hampir habis. Untuk bisnis F&B, ada juga fitur bahan baku dan resep menu yang terhubung langsung dengan stok.",
+  },
+  {
+    question: "Apakah pelanggan bisa pesan langsung dari meja?",
+    answer:
+      "Ya, pelanggan cukup scan QR Code di meja untuk membuka menu digital. Mereka bisa pilih menu, catat pesanan, dan bayar langsung dari HP — tanpa perlu install aplikasi. Pesanan otomatis masuk ke kasir dan dapur.",
+  },
+  {
+    question: "Bagaimana program loyalitas bekerja?",
+    answer:
+      "Anda bisa atur sistem poin untuk pelanggan: setiap belanja mereka dapat poin, bisa naik level member (Bronze/Silver/Gold), dan tukar poin dengan reward. Semua berjalan otomatis tanpa perlu kartu fisik.",
+  },
+  {
+    question: "Apakah bisa cetak struk?",
+    answer:
+      "Ya, BOSS mendukung pencetakan struk ke printer thermal (ESC/POS) secara langsung maupun ke PDF. Struk sudah termasuk detail pesanan, pajak, dan informasi outlet Anda.",
   },
   {
     question: "Bagaimana cara upgrade paket?",
     answer:
-      "Anda bisa upgrade kapan saja dari dashboard owner. Pilih paket Basic atau Pro, lakukan pembayaran, dan fitur akan aktif langsung. Tidak ada biaya sisa — kami pro-rate otomatis.",
+      "Anda bisa upgrade kapan saja dari dashboard owner. Pilih paket yang diinginkan, lakukan pembayaran, dan fitur langsung aktif. Tidak ada biaya tersembunyi — sistem kami menghitung sisa tagihan secara otomatis.",
   },
   {
     question: "Apakah data bisnis saya aman?",
     answer:
-      "Keamanan adalah prioritas kami. Data Anda dienkripsi, disimpan di server cloud aman, dan ada backup otomatis. Setiap akses staff tercatat untuk audit trail lengkap. Kami patuh terhadap UU Pelindungan Data Pribadi (PDP) Indonesia.",
+      "Keamanan adalah prioritas utama kami. Semua informasi bisnis Anda disimpan di server cloud yang aman dan selalu di-backup secara otomatis. Setiap akses staff tercatat untuk audit trail lengkap.",
   },
   {
-    question: "Apakah bisa integrasi dengan Google Calendar?",
+    question: "Bisa integrasi dengan layanan lain?",
     answer:
-      "Ya, BOSS bisa terhubung dengan Google Calendar untuk sinkronisasi reservasi dan booking secara otomatis. Pelanggan juga bisa menerima notifikasi via WhatsApp.",
+      "Ya, BOSS bisa terhubung dengan Google Calendar untuk sinkronisasi jadwal booking, WhatsApp untuk notifikasi otomatis ke pelanggan, dan berbagai payment gateway untuk pembayaran digital.",
   },
   {
     question: "Bagaimana jika internet terputus?",
     answer:
-      "Aplikasi kasir BOSS bisa berjalan offline saat internet terputus. Transaksi tersimpan lokal dan otomatis sinkron saat koneksi pulih. Tidak ada transaksi yang hilang.",
+      "Aplikasi kasir BOSS tetap bisa berjalan saat internet mati. Transaksi tersimpan di perangkat dan otomatis sinkron ke server begitu koneksi pulih. Tidak ada data yang hilang.",
   },
 ];
 

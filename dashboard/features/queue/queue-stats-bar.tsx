@@ -2,6 +2,7 @@
 
 import { Users, Clock, CheckCircle, XCircle, Timer, Activity } from "lucide-react";
 import type { QueueV2Stats } from "@/lib/apis/queue-v2";
+import { cn } from "@/lib/utils";
 
 interface QueueStatsBarProps {
     stats: QueueV2Stats;
@@ -61,9 +62,11 @@ export function QueueStatsBar({ stats }: QueueStatsBarProps) {
                 return (
                     <div
                         key={item.key}
-                        className={`flex items-center gap-3 rounded-md border border-border bg-card px-3 py-2.5 ${item.bg}`}
+                        className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5"
                     >
-                        <Icon className={`w-4 h-4 ${item.color} shrink-0`} />
+                        <div className={cn("p-1.5 rounded-md", item.bg)}>
+                            <Icon className={cn("w-4 h-4", item.color)} />
+                        </div>
                         <div className="min-w-0">
                             <p className="text-lg font-bold text-foreground leading-tight">
                                 {value ?? 0}

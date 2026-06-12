@@ -180,37 +180,29 @@ export function QueueV2Content({ outletId }: QueueV2ContentProps) {
             {/* View Toggle */}
             <div className="flex items-center bg-muted/50 p-1 rounded-lg border border-border/40 mr-2">
               <Button
-                variant={viewMode === "focus" ? "secondary" : "ghost"}
+                variant={viewMode === "focus" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setViewMode("focus")}
-                className={cn(
-                  "h-8 px-3 text-[10px] font-bold transition-all",
-                  viewMode === "focus" && "shadow-sm bg-red-500 text-red-50 hover:bg-red-600 hover:text-red-50"
-                )}
               >
                 <Monitor className="w-3.5 h-3.5 mr-2" />
                 Focus
               </Button>
               <Button
-                variant={viewMode === "kanban" ? "secondary" : "ghost"}
+                variant={viewMode === "kanban" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setViewMode("kanban")}
-                className={cn(
-                  "h-8 px-3 text-[10px] font-bold transition-all",
-                  viewMode === "kanban" && "shadow-sm bg-red-500 text-red-50 hover:bg-red-600 hover:text-red-50"
-                )}
               >
                 <LayoutGrid className="w-3.5 h-3.5 mr-2" />
                 Kanban
               </Button>
             </div>
 
-            <Button variant="outline" size="sm" onClick={() => refetch()} className="h-9 font-bold text-[10px]">
-              <RefreshCw className={cn("w-3.5 h-3.5 mr-2", isFetching && "animate-spin")} />
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              <RefreshCw className={cn("w-3.5 h-3.5", isFetching && "animate-spin")} />
               <span className="hidden sm:inline">Refresh</span>
             </Button>
-            <Button size="sm" onClick={() => router.push("/cashier/pos")} className="h-9 font-bold text-[10px] px-4">
-              <Plus className="w-4 h-4 mr-2" />
+            <Button size="sm" onClick={() => router.push("/cashier/pos")}>
+              <Plus className="w-4 h-4" />
               Tambah Antrian
             </Button>
           </div>
@@ -220,13 +212,13 @@ export function QueueV2Content({ outletId }: QueueV2ContentProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Cari (Nama / No Telpon / Order ID)..."
-            className="w-full sm:max-w-sm h-10 text-xs font-bold"
+            className="w-full sm:max-w-sm h-9 text-xs"
           />
           <DatePicker
             value={date}
             onValueChange={setDate}
             placeholder="Semua Tanggal"
-            className="w-full sm:w-[240px] h-10"
+            className="w-full sm:w-[200px] h-9"
           />
         </div>
       </div>

@@ -4,6 +4,7 @@ import { Clock, User, Timer, ChevronRight, X, CalendarClock, ImageIcon, Shopping
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { QueueV2Entry, QueueOrderStatus } from "@/lib/apis/queue-v2";
+import { cn } from "@/lib/utils";
 
 interface QueueCardProps {
     entry: QueueV2Entry;
@@ -120,7 +121,10 @@ export function QueueCard({
 
     return (
         <div
-            className={`group relative rounded-md border-l-4 ${config.borderColor} bg-card border border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer`}
+            className={cn(
+                "group relative rounded-md border-l-4 bg-card border border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer",
+                config.borderColor
+            )}
             onClick={() => onDetail?.(entry)}
         >
             <div className="p-3 space-y-2">
@@ -134,7 +138,7 @@ export function QueueCard({
                             {entry.customerName}
                         </span>
                     </div>
-                    <Badge variant="outline" className={`text-[10px] ${config.color} border-0`}>
+                    <Badge variant="outline" className={cn("text-[10px] border-0", config.color)}>
                         {config.label}
                     </Badge>
                 </div>
@@ -212,10 +216,9 @@ export function QueueCard({
                             <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-8 text-xs"
                                 onClick={() => onViewProof?.(entry)}
                             >
-                                <ImageIcon className="w-3 h-3 mr-1" />
+                                <ImageIcon className="w-3 h-3" />
                                 Bukti
                             </Button>
                         )}
@@ -223,32 +226,31 @@ export function QueueCard({
                             <Button
                                 size="sm"
                                 variant={primary.variant}
-                                className="flex-1 h-8 text-xs"
+                                className="flex-1"
                                 disabled={isPending}
                                 onClick={() => onPrimaryAction?.(entry, primary.nextStatus)}
                             >
                                 {primary.label}
-                                <ChevronRight className="w-3 h-3 ml-1" />
+                                <ChevronRight className="w-3 h-3" />
                             </Button>
                         )}
                         {isAwaitingManualProof && (
-                            <span className="flex-1 text-[10px] text-amber-500 text-center">
+                            <span className="flex-1 text-xs text-amber-500 text-center">
                                 Menunggu bukti pembayaran
                             </span>
                         )}
                         {blockAction && !isAwaitingManualProof && (
-                            <span className="flex-1 text-[10px] text-amber-500 text-center">
+                            <span className="flex-1 text-xs text-amber-500 text-center">
                                 Belum bisa dilayani (jadwal belum tiba)
                             </span>
                         )}
                         <Button
                             size="sm"
                             variant="ghost"
-                            className="h-8 text-xs text-destructive hover:text-destructive/90 hover:bg-destructive/10"
                             disabled={isPending}
                             onClick={() => onCancel?.(entry)}
                         >
-                            <X className="w-3 h-3" />
+                            <X className="w-3 h-3 text-destructive" />
                         </Button>
                     </div>
                 )}
