@@ -13,7 +13,7 @@ import { ensureString } from '../utils/request';
 import { AppError } from '../errors/app-error';
 import { HttpStatus } from '../constants/http-status';
 
-class AdminController extends BaseController {
+export class AdminController extends BaseController {
     getDashboardOverview = this.handler(async (req: Request, res: Response) => {
         const data = await AdminService.getDashboardOverview();
         return this.success(res, data);
@@ -416,6 +416,136 @@ class AdminController extends BaseController {
         const { outletId } = req.params;
         const data = await AdminService.deleteOutlet(outletId as string);
         return this.success(res, data, HttpStatus.OK, "Outlet berhasil dihapus");
+    });
+
+    // Bulk business operations
+    bulkSuspendBusinesses = this.handler(async (req: Request, res: Response) => {
+        const { businessIds, reason } = req.body;
+        if (!Array.isArray(businessIds) || businessIds.length === 0) {
+            throw new AppError('businessIds array is required', HttpStatus.BAD_REQUEST);
+        }
+        const results = { success: 0, failed: 0, errors: [] as string[] };
+        for (const businessId of businessIds) {
+            try {
+                await AdminService.toggleBusinessSuspend(businessId, true);
+                results.success++;
+            } catch (error: any) {
+                results.failed++;
+                results.errors.push(`${businessId}: ${error.message}`);
+            }
+        }
+        return this.success(res, {
+            message: `Bulk suspend selesai: ${results.success} berhasil, ${results.failed} gagal`,
+            ...results,
+        });
+    });
+
+    bulkUnsuspendBusinesses = this.handler(async (req: Request, res: Response) => {
+        const { businessIds } = req.body;
+        if (!Array.isArray(businessIds) || businessIds.length === 0) {
+            throw new AppError('businessIds array is required', HttpStatus.BAD_REQUEST);
+        }
+        const results = { success: 0, failed: 0, errors: [] as string[] };
+        for (const businessId of businessIds) {
+            try {
+                await AdminService.toggleBusinessSuspend(businessId, false);
+                results.success++;
+            } catch (error: any) {
+                results.failed++;
+                results.errors.push(`${businessId}: ${error.message}`);
+            }
+        }
+        return this.success(res, {
+            message: `Bulk unsuspend selesai: ${results.success} berhasil, ${results.failed} gagal`,
+            ...results,
+        });
+    });
+
+    bulkDeleteBusinesses = this.handler(async (req: Request, res: Response) => {
+        const { businessIds } = req.body;
+        if (!Array.isArray(businessIds) || businessIds.length === 0) {
+            throw new AppError('businessIds array is required', HttpStatus.BAD_REQUEST);
+        }
+        const results = { success: 0, failed: 0, errors: [] as string[] };
+        for (const businessId of businessIds) {
+            try {
+                await AdminService.deleteBusiness(businessId);
+                results.success++;
+            } catch (error: any) {
+                results.failed++;
+                results.errors.push(`${businessId}: ${error.message}`);
+            }
+        }
+        return this.success(res, {
+            message: `Bulk delete selesai: ${results.success} berhasil, ${results.failed} gagal`,
+            ...results,
+        });
+    });
+
+    bulkDeleteOutlets = this.handler(async (req: Request, res: Response) => {
+        const { outletIds } = req.body;
+        if (!Array.isArray(outletIds) || outletIds.length === 0) {
+            throw new AppError('outletIds array is required', HttpStatus.BAD_REQUEST);
+        }
+        const results = { success: 0, failed: 0, errors: [] as string[] };
+        for (const outletId of outletIds) {
+            try {
+                await AdminService.deleteOutlet(outletId);
+                results.success++;
+            } catch (error: any) {
+                results.failed++;
+                results.errors.push(`${outletId}: ${error.message}`);
+            }
+        }
+        return this.success(res, {
+            message: `Bulk delete selesai: ${results.success} berhasil, ${results.failed} gagal`,
+            ...results,
+        });
+    });
+
+    bulkVerifyInvoices = this.handler(async (req: Request, res: Response) => {
+        const { invoiceIds } = req.body;
+        if (!Array.isArray(invoiceIds) || invoiceIds.length === 0) {
+            throw new AppError('invoiceIds array is required', HttpStatus.BAD_REQUEST);
+        }
+        const results = { success: 0, failed: 0, errors: [] as string[] };
+        for (const invoiceId of invoiceIds) {
+            try {
+                await SubscriptionInvoiceService.verifyInvoice(invoiceId);
+                results.success++;
+            } catch (error: any) {
+                results.failed++;
+                results.errors.push(`${invoiceId}: ${error.message}`);
+            }
+        }
+        return this.success(res, {
+            message: `Bulk verify selesai: ${results.success} berhasil, ${results.failed} gagal`,
+            ...results,
+        });
+    });
+
+    bulkRejectInvoices = this.handler(async (req: Request, res: Response) => {
+        const { invoiceIds, reason } = req.body;
+        if (!Array.isArray(invoiceIds) || invoiceIds.length === 0) {
+            throw new AppError('invoiceIds array is required', HttpStatus.BAD_REQUEST);
+        }
+        if (!reason) {
+            throw new AppError('reason is required for rejection', HttpStatus.BAD_REQUEST);
+        }
+        const results = { success: 0, failed: 0, errors: [] as string[] };
+        for (const invoiceId of invoiceIds) {
+            try {
+                await SubscriptionInvoiceService.rejectInvoice(invoiceId, reason);
+                results.success++;
+            } catch (error: any) {
+                results.failed++;
+                results.errors.push(`${invoiceId}: ${error.message}`);
+            }
+        }
+        return this.success(res, {
+            message: `Bulk reject selesai: ${results.success} berhasil, ${results.failed} gagal`,
+            ...results,
+        });
     });
 }
 

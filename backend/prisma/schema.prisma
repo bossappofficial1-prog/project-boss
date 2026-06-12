@@ -14,6 +14,7 @@ model User {
   avatar                  String?
   password                String
   role                    UserRole                @default(OWNER)
+  status                  UserStatus              @default(ACTIVE)
   isVerified              Boolean                 @default(false)
   verificationCode        String?
   verificationCodeExpires DateTime?
@@ -27,9 +28,12 @@ model User {
   sentTransfers           OutletTransferRequest[] @relation("SentTransfers")
   pushSubscriptions       PushSubscription[]
   transactionsVerified    Transaction[]           @relation("TransactionVerifiedBy")
+  auditLogs               AuditLog[]              @relation("AuditPerformedBy")
+  reports                 Report[]
 
   @@index([email])
   @@index([role])
+  @@index([status])
 }
 
 model PushSubscription {
@@ -947,6 +951,77 @@ enum UserRole {
   ADMIN
 }
 
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum AuditAction {
+  USER_CREATED
+  USER_UPDATED
+  USER_SUSPENDED
+  USER_REACTIVATED
+  USER_DELETED
+  BUSINESS_SUSPENDED
+  BUSINESS_UNSUSPENDED
+  BUSINESS_DELETED
+  OUTLET_FORCE_CLOSED
+  OUTLET_FORCE_OPENED
+  OUTLET_DELETED
+  INVOICE_VERIFIED
+  INVOICE_REJECTED
+  BULK_INVOICE_VERIFIED
+  BULK_INVOICE_REJECTED
+  BULK_BUSINESS_SUSPENDED
+  BULK_BUSINESS_UNSUSPENDED
+  BULK_BUSINESS_DELETED
+  BULK_OUTLET_DELETED
+  SETTINGS_UPDATED
+  REPORT_GENERATED
+  PLAN_CREATED
+  PLAN_UPDATED
+  PLAN_DELETED
+  BANNER_CREATED
+  BANNER_UPDATED
+  BANNER_DELETED
+}
+
+enum AuditEntityType {
+  USER
+  BUSINESS
+  OUTLET
+  SUBSCRIPTION_INVOICE
+  SUBSCRIPTION_PLAN
+  BANNER
+  SETTINGS
+  REPORT
+}
+
+enum ReportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum ReportType {
+  REVENUE
+  TRANSACTION
+  BUSINESS_PERFORMANCE
+  USER_ACTIVITY
+  SUBSCRIPTION_SUMMARY
+}
+
+enum ReportPeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  CUSTOM
+}
+
 enum ProductType {
   GOODS
   SERVICE
@@ -1419,4 +1494,56 @@ enum IntegrationStatus {
   CONNECTED
   DISCONNECTED
   ERROR
+}
+
+model AuditLog {
+  id          String         @id @default(uuid())
+  action      AuditAction
+  entityType  AuditEntityType
+  entityId    String
+  entityName  String?
+  details     Json?
+  ipAddress   String?
+  performedBy String
+  createdAt   DateTime       @default(now())
+
+  performedByUser User @relation("AuditPerformedBy", fields: [performedBy], references: [id])
+
+  @@index([performedBy])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model PlatformSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     Json
+  updatedBy String?
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+}
+
+model Report {
+  id           String       @id @default(uuid())
+  type         ReportType
+  period       ReportPeriod
+  status       ReportStatus @default(PENDING)
+  title        String
+  parameters   Json?
+  fileUrl      String?
+  fileSize     Int?
+  generatedBy  String
+  errorMessage String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  generatedByUser User @relation(fields: [generatedBy], references: [id])
+
+  @@index([type])
+  @@index([status])
+  @@index([generatedBy])
+  @@index([createdAt])
 }
