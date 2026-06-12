@@ -12,6 +12,9 @@ import {
   Wallet,
   MapPin,
   Map,
+  FileText,
+  Activity,
+  TrendingUp,
   type LucideIcon,
 } from "lucide-react";
 
@@ -71,6 +74,12 @@ export const sidebarData: {
               title: "Revenue (MRR)",
               id: "analytics-revenue",
               url: `/admin/analytics/revenue`,
+            },
+            {
+              title: "Full Analytics",
+              id: "analytics-full",
+              url: `/admin/analytics/dashboard`,
+              badge: "New",
             },
           ],
         },
@@ -136,7 +145,7 @@ export const sidebarData: {
         {
           title: "Financial Reports",
           id: "reports",
-          icon: BarChart3,
+          icon: FileText,
           url: `/admin/reports`,
         },
         {
@@ -144,6 +153,13 @@ export const sidebarData: {
           id: "orders",
           icon: CreditCard,
           url: `/admin/orders`,
+        },
+        {
+          title: "Audit Log",
+          id: "audit-logs",
+          icon: Activity,
+          url: `/admin/audit-logs`,
+          badge: "New",
         },
       ],
     },
