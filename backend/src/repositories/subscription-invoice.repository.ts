@@ -102,6 +102,16 @@ export class SubscriptionInvoiceRepository {
                 },
             });
 
+            // Nonaktifkan subscription lama yang bukan current
+            await tx.businessSubscription.updateMany({
+                where: {
+                    businessId: invoice.businessId,
+                    id: { not: invoice.subscriptionId },
+                    status: { in: ['ACTIVE', 'TRIAL', 'AWAITING_PAYMENT'] },
+                },
+                data: { status: 'SUPERSEDED' },
+            });
+
             await tx.business.update({
                 where: { id: invoice.businessId || `default` },
                 data: {
