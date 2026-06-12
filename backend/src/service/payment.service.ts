@@ -114,8 +114,15 @@ export class PaymentService {
       throw new AppError(Messages.OUTLET_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
 
-    // SECURITY: Validate that the business subscription is active and not expired
-    await PlanLimitService.assertSubscriptionActive(outlet.businessId);
+    try {
+      // SECURITY: Validate that the business subscription is active and not expired
+      await PlanLimitService.assertSubscriptionActive(outlet.businessId);
+    } catch (error) {
+      throw new AppError(
+        "Tidak dapat memproses transaksi untuk outlet ini sekarang, Silakan coba lagi nanti.",
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
 
     if (!outlet.isOpen) {
       throw new AppError(Messages.OUTLET_CLOSED, HttpStatus.BAD_REQUEST);
@@ -875,7 +882,12 @@ export class PaymentService {
         itemsDescription: transaction.order.items
           .map((item) => {
             const product = productMap.get(item.productId);
-            const unit = product?.type === "GOODS" ? (product.goods?.unit || "pcs") : (product?.type === "TICKET" ? "tiket" : "pcs");
+            const unit =
+              product?.type === "GOODS"
+                ? product.goods?.unit || "pcs"
+                : product?.type === "TICKET"
+                  ? "tiket"
+                  : "pcs";
             return `${item.product.name} sebanyak ${item.quantity} ${unit}`;
           })
           .join(", "),
@@ -941,14 +953,17 @@ export class PaymentService {
     );
 
     try {
-      SocketEmitter.getInstance().emitToBusinessOutlet(transaction.order.outletId, {
-        type: "manual_payment_verified",
-        orderId,
-        amount: transaction.amount,
-        paymentMethod: transaction.manualMethod ?? "manual",
-        customerName: transaction.order.guestCustomer?.name ?? "-",
-        timestamp: new Date(),
-      });
+      SocketEmitter.getInstance().emitToBusinessOutlet(
+        transaction.order.outletId,
+        {
+          type: "manual_payment_verified",
+          orderId,
+          amount: transaction.amount,
+          paymentMethod: transaction.manualMethod ?? "manual",
+          customerName: transaction.order.guestCustomer?.name ?? "-",
+          timestamp: new Date(),
+        },
+      );
     } catch (socketError) {
       console.error(
         "❌ Error emitting manual_payment_verified event:",
@@ -1023,15 +1038,18 @@ export class PaymentService {
     );
 
     try {
-      SocketEmitter.getInstance().emitToBusinessOutlet(transaction.order.outletId, {
-        type: "manual_payment_rejected",
-        orderId,
-        amount: transaction.amount,
-        paymentMethod: transaction.manualMethod ?? "manual",
-        customerName: transaction.order.guestCustomer?.name ?? "-",
-        timestamp: new Date(),
-        message: reason,
-      });
+      SocketEmitter.getInstance().emitToBusinessOutlet(
+        transaction.order.outletId,
+        {
+          type: "manual_payment_rejected",
+          orderId,
+          amount: transaction.amount,
+          paymentMethod: transaction.manualMethod ?? "manual",
+          customerName: transaction.order.guestCustomer?.name ?? "-",
+          timestamp: new Date(),
+          message: reason,
+        },
+      );
     } catch (socketError) {
       console.error(
         "❌ Error emitting manual_payment_rejected event:",
