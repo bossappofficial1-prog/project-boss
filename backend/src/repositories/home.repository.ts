@@ -132,8 +132,8 @@ export class HomeRepository {
             INNER JOIN "OrderItem" oi ON oi."productId" = p.id
             INNER JOIN "Order" o ON o.id = oi."orderId"
             INNER JOIN "Transaction" t ON t."orderId" = o.id
-            WHERE t.status = 'SUCCESS'
-            AND o."orderStatus" = 'COMPLETED' -- <=== TAMBAHAN KONDISI INI
+            WHERE o."paymentStatus" = 'SUCCESS'
+            AND o."orderStatus" = 'COMPLETED'
             AND o."createdAt" >= NOW() - INTERVAL '30 days'
             GROUP BY p.id, p.name, p.image, p.type, out.slug, pg."sellingPrice", ps."sellingPrice", pt."sellingPrice"
             ORDER BY sold_count DESC

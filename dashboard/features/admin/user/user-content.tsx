@@ -1,45 +1,73 @@
-'use client';
+"use client";
 
-import React, { useState, useMemo } from 'react';
-import { Plus, UserCog, Trash2, EyeIcon, MailPlus, CheckCircle2, ShieldAlert, Ban, UserCheck, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/hooks/use-users';
-import { useSuspendUser, useReactivateUser, useBulkSuspendUsers, useBulkReactivateUsers, useAdminUserStats } from '@/lib/apis/admin-users';
-import { FormUser } from '@/features/admin/user/form-user';
-import { User } from '@/types';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import UserDetailSheet from '@/features/admin/user/user-detail-sheet';
-import { DataTable } from '@/components/ui/data-table';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { formatISOStringDate } from '@/lib/utils';
-import { GoogleIcon } from '@/icons';
-import { toast } from 'sonner';
+import React, { useState, useMemo } from "react";
+import {
+  Plus,
+  UserCog,
+  Trash2,
+  EyeIcon,
+  MailPlus,
+  CheckCircle2,
+  ShieldAlert,
+  Ban,
+  UserCheck,
+  RefreshCw,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  useUsers,
+  useCreateUser,
+  useUpdateUser,
+  useDeleteUser,
+} from "@/hooks/use-users";
+import {
+  useSuspendUser,
+  useReactivateUser,
+  useBulkSuspendUsers,
+  useBulkReactivateUsers,
+  useAdminUserStats,
+} from "@/lib/apis/admin-users";
+import { FormUser } from "@/features/admin/user/form-user";
+import { User } from "@/types";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import UserDetailSheet from "@/features/admin/user/user-detail-sheet";
+import { DataTable } from "@/components/ui/data-table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { formatISOStringDate } from "@/lib/utils";
+import { GoogleIcon } from "@/icons";
+import { toast } from "sonner";
 
 const STATUS_LABELS: Record<string, string> = {
-  ACTIVE: 'Aktif',
-  SUSPENDED: 'Suspended',
-  INACTIVE: 'Nonaktif',
+  ACTIVE: "Aktif",
+  SUSPENDED: "Suspended",
+  INACTIVE: "Nonaktif",
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  ACTIVE: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
-  SUSPENDED: 'bg-red-500/10 text-red-600 border-red-500/20',
-  INACTIVE: 'bg-gray-500/10 text-gray-600 border-gray-500/20',
+  ACTIVE: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+  SUSPENDED: "bg-red-500/10 text-red-600 border-red-500/20",
+  INACTIVE: "bg-gray-500/10 text-gray-600 border-gray-500/20",
 };
 
 export default function UserContent() {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [showSuspendConfirmation, setShowSuspendConfirmation] = useState(false);
   const [selectedUser, setSelectedUser] = useState<Partial<User> | undefined>();
-  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedRowIds, setSelectedRowIds] = useState<string[]>([]);
 
@@ -66,8 +94,8 @@ export default function UserContent() {
   const columns = useMemo(
     () => [
       {
-        accessorKey: 'id',
-        header: 'Name',
+        accessorKey: "id",
+        header: "Name",
         enableSorting: false,
         cell(record: any) {
           const user = record.row.original;
@@ -80,20 +108,24 @@ export default function UserContent() {
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-col">
-                <span className="font-medium text-sm text-foreground">{user.name}</span>
-                <span className="text-xs text-muted-foreground">{user.email}</span>
+                <span className="font-medium text-sm text-foreground">
+                  {user.name}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {user.email}
+                </span>
               </div>
             </div>
           );
         },
       },
       {
-        accessorKey: 'provider',
-        header: 'Login Dengan',
+        accessorKey: "provider",
+        header: "Login Dengan",
         enableSorting: false,
         cell(props: any) {
           const record = props.row.original;
-          return record.provider === 'local' ? (
+          return record.provider === "local" ? (
             <span className="text-sm flex items-center gap-2 text-foreground">
               <MailPlus className="size-3.5" /> Email
             </span>
@@ -105,16 +137,16 @@ export default function UserContent() {
         },
       },
       {
-        accessorKey: 'role',
-        header: 'Role',
+        accessorKey: "role",
+        header: "Role",
         cell(record: any) {
           const user = record.row.original;
           return (
             <Badge
               variant="outline"
               className={`text-[10px] px-2 py-0.5 h-5 font-medium border-0
-                ${user.role === 'OWNER' ? 'bg-purple-500/15 text-purple-700 dark:text-purple-400' : ''}
-                ${user.role === 'ADMIN' ? 'bg-blue-500/15 text-blue-700 dark:text-blue-400' : ''}
+                ${user.role === "OWNER" ? "bg-purple-500/15 text-purple-700 dark:text-purple-400" : ""}
+                ${user.role === "ADMIN" ? "bg-blue-500/15 text-blue-700 dark:text-blue-400" : ""}
               `}
             >
               {user.role}
@@ -123,21 +155,24 @@ export default function UserContent() {
         },
       },
       {
-        accessorKey: 'status',
-        header: 'Status',
+        accessorKey: "status",
+        header: "Status",
         cell(record: any) {
           const user = record.row.original;
-          const status = user.status || 'ACTIVE';
+          const status = user.status || "ACTIVE";
           return (
-            <Badge variant="outline" className={STATUS_COLORS[status] || STATUS_COLORS.ACTIVE}>
+            <Badge
+              variant="outline"
+              className={STATUS_COLORS[status] || STATUS_COLORS.ACTIVE}
+            >
               {STATUS_LABELS[status] || status}
             </Badge>
           );
         },
       },
       {
-        accessorKey: 'isVerified',
-        header: 'Verifikasi',
+        accessorKey: "isVerified",
+        header: "Verifikasi",
         cell(record: any) {
           const user = record.row.original;
           return (
@@ -148,15 +183,15 @@ export default function UserContent() {
                 <ShieldAlert className="h-4 w-4 text-amber-500" />
               )}
               <span className="text-xs capitalize text-muted-foreground">
-                {user.isVerified ? 'Verified' : 'Unverified'}
+                {user.isVerified ? "Verified" : "Unverified"}
               </span>
             </div>
           );
         },
       },
       {
-        accessorKey: 'createdAt',
-        header: 'Terdaftar',
+        accessorKey: "createdAt",
+        header: "Terdaftar",
         cell(value: any) {
           return (
             <span className="text-muted-foreground">
@@ -171,7 +206,7 @@ export default function UserContent() {
 
   const handleRowActions = (row: User) => [
     {
-      label: 'Edit',
+      label: "Edit",
       icon: UserCog,
       onClick() {
         setSelectedUser({
@@ -185,12 +220,12 @@ export default function UserContent() {
         setIsFormOpen(true);
       },
     },
-    ...((row as any).status !== 'SUSPENDED'
+    ...((row as any).status !== "SUSPENDED"
       ? [
           {
-            label: 'Suspend',
+            label: "Suspend",
             icon: Ban,
-            variant: 'destructive' as const,
+            variant: "destructive" as const,
             onClick() {
               setSelectedUser({ id: row.id, name: row.name });
               setShowSuspendConfirmation(true);
@@ -199,7 +234,7 @@ export default function UserContent() {
         ]
       : [
           {
-            label: 'Aktifkan',
+            label: "Aktifkan",
             icon: UserCheck,
             onClick() {
               reactivateUser.mutate(row.id!);
@@ -207,18 +242,18 @@ export default function UserContent() {
           },
         ]),
     {
-      label: 'Hapus',
+      label: "Hapus",
       icon: Trash2,
-      variant: 'destructive' as const,
+      variant: "destructive" as const,
       onClick() {
         setSelectedUser({ id: row.id, name: row.name });
         setShowDeleteConfirmation(true);
       },
     },
-    ...(row.role === 'OWNER' && (row as any).business
+    ...(row.role === "OWNER" && (row as any).business
       ? [
           {
-            label: 'Detail',
+            label: "Detail",
             icon: EyeIcon,
             onClick() {
               setSelectedUserId(row.id!);
@@ -231,12 +266,12 @@ export default function UserContent() {
 
   const bulkActions = [
     {
-      label: 'Suspend Terpilih',
+      label: "Suspend Terpilih",
       icon: Ban,
-      variant: 'destructive' as const,
+      variant: "destructive" as const,
       onClick: () => {
         if (selectedRowIds.length === 0) {
-          toast.error('Pilih user terlebih dahulu');
+          toast.error("Pilih user terlebih dahulu");
           return;
         }
         bulkSuspend.mutate(
@@ -246,11 +281,11 @@ export default function UserContent() {
       },
     },
     {
-      label: 'Aktifkan Terpilih',
+      label: "Aktifkan Terpilih",
       icon: UserCheck,
       onClick: () => {
         if (selectedRowIds.length === 0) {
-          toast.error('Pilih user terlebih dahulu');
+          toast.error("Pilih user terlebih dahulu");
           return;
         }
         bulkReactivate.mutate(selectedRowIds, {
@@ -265,7 +300,9 @@ export default function UserContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">User Management</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            User Management
+          </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Kelola akses, peran, dan status pengguna sistem
           </p>
@@ -278,7 +315,9 @@ export default function UserContent() {
             disabled={isRefetching}
             className="gap-2"
           >
-            <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`h-4 w-4 ${isRefetching ? "animate-spin" : ""}`}
+            />
             Refresh
           </Button>
           <Button
@@ -313,7 +352,9 @@ export default function UserContent() {
               <CheckCircle2 className="h-4 w-4 text-emerald-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-emerald-600">{stats.active}</div>
+              <div className="text-2xl font-bold text-emerald-600">
+                {stats.active}
+              </div>
             </CardContent>
           </Card>
           <Card>
@@ -322,7 +363,9 @@ export default function UserContent() {
               <Ban className="h-4 w-4 text-red-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">{stats.suspended}</div>
+              <div className="text-2xl font-bold text-red-600">
+                {stats.suspended}
+              </div>
             </CardContent>
           </Card>
           <Card>
@@ -331,7 +374,9 @@ export default function UserContent() {
               <ShieldAlert className="h-4 w-4 text-gray-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-gray-600">{stats.inactive}</div>
+              <div className="text-2xl font-bold text-gray-600">
+                {stats.inactive}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -340,7 +385,7 @@ export default function UserContent() {
       {/* Filter */}
       <div className="flex items-center gap-3">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-45">
             <SelectValue placeholder="Semua Status" />
           </SelectTrigger>
           <SelectContent>
@@ -373,8 +418,8 @@ export default function UserContent() {
         rowActions={handleRowActions}
         enableRowSelection
         bulkActions={bulkActions}
-        onRowSelectionChange={(selection) => {
-          const ids = Object.keys(selection).filter((key) => selection[key]);
+        onRowSelectionChange={(selectedRows) => {
+          const ids = selectedRows.map((row) => row.id);
           setSelectedRowIds(ids);
         }}
       />
@@ -402,18 +447,21 @@ export default function UserContent() {
               });
         }}
         defaultValues={
-          selectedUser?.id && selectedUser.name && selectedUser.role && selectedUser.email
+          selectedUser?.id &&
+          selectedUser.name &&
+          selectedUser.role &&
+          selectedUser.email
             ? {
                 id: selectedUser.id,
                 name: selectedUser.name,
-                role: selectedUser.role,
+                role: selectedUser.role as any,
                 email: selectedUser.email,
-                provider: selectedUser.provider,
-                createdAt: selectedUser.createdAt,
-                phone: selectedUser.phone ?? '',
+                provider: selectedUser.provider as any,
+                createdAt: selectedUser.createdAt ?? "",
+                phone: selectedUser.phone ?? "",
                 isVerified: selectedUser.isVerified ?? false,
-                avatar: selectedUser.avatar ?? '',
-                updatedAt: selectedUser.updatedAt ?? '',
+                avatar: selectedUser.avatar ?? "",
+                updatedAt: selectedUser.updatedAt ?? "",
               }
             : undefined
         }
