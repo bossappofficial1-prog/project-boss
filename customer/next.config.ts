@@ -21,7 +21,8 @@ const parseRemotePatterns = (patterns: string): RemotePattern[] => {
       const url = new URL(urlStr);
       const protocol = url.protocol.replace(":", "") as "http" | "https" | "";
       const pattern: RemotePattern = {
-        protocol: protocol === "http" || protocol === "https" ? protocol : undefined,
+        protocol:
+          protocol === "http" || protocol === "https" ? protocol : undefined,
         hostname: url.hostname,
         pathname: url.pathname === "/" ? "/**" : url.pathname,
       };
@@ -54,7 +55,11 @@ const parseRemotePatterns = (patterns: string): RemotePattern[] => {
       const trimmed = pattern.trim();
       if (!trimmed) return null;
       if (trimmed.includes("://")) return fromUrl(trimmed);
-      return { protocol: "https" as const, hostname: trimmed, pathname: "/**" } satisfies RemotePattern;
+      return {
+        protocol: "https" as const,
+        hostname: trimmed,
+        pathname: "/**",
+      } satisfies RemotePattern;
     })
     .filter(Boolean) as RemotePattern[];
 
@@ -71,13 +76,15 @@ const dedupePatterns = (patterns: RemotePattern[]): RemotePattern[] => {
 };
 
 const nextConfig: NextConfig = {
-  output: 'standalone',
+  output: "export",
   reactStrictMode: false,
   images: {
-    remotePatterns: parseRemotePatterns(process.env.NEXT_PUBLIC_REMOTE_PATTERNS || '')
+    remotePatterns: parseRemotePatterns(
+      process.env.NEXT_PUBLIC_REMOTE_PATTERNS || "",
+    ),
   },
   generateBuildId: async () => {
-    return 'boss-customer-' + (process.env.NEXT_PUBLIC_BUILD_ID || Date.now());
+    return "boss-customer-" + (process.env.NEXT_PUBLIC_BUILD_ID || Date.now());
   },
 };
 
