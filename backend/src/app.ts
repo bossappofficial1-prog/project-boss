@@ -46,6 +46,9 @@ app.use(
       "X-Requested-With",
       "ngrok-skip-browser-warning",
       "X-Auth-Role",
+      "X-Screen-Size",
+      "X-Timezone",
+      "X-Language",
     ],
   }),
 );
