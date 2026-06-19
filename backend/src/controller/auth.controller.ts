@@ -14,6 +14,8 @@ import {
   getUserCookieName,
   setAuthCookie,
 } from "../utils/auth-cookie";
+import { SessionService } from "../service/session.service";
+import { DeviceFingerprint } from "../utils/device-fingerprint";
 
 const DEFAULT_GOOGLE_REDIRECT = "/owner";
 const TOKEN_MAX_AGE_MS = 24 * 60 * 60 * 1000;
@@ -307,7 +309,28 @@ class AuthController extends BaseController {
         return res.redirect(errorRedirect);
       }
 
-      const token = user.token;
+      const fp = DeviceFingerprint.fromReq(req);
+      const userSessionId = await SessionService.create(user.user.id, req, fp);
+
+      await redis.set(
+        `session:${user.user.id}`,
+        JSON.stringify({ ...user.user, businessId: user.user.business?.id, sessionId: userSessionId }),
+        "EX",
+        60 * 60 * 24,
+      );
+
+      const token = JwtUtil.generate({
+        sessionId: user.user.id,
+        userSessionId,
+        role: user.user.role,
+        isVerified: user.user.isVerified,
+        email: user.user.email,
+        name: user.user.name,
+        provider: user.user.provider,
+        businessId: user.user.business?.id ?? null,
+        subscriptionStatus: user.user.business?.subscriptionStatus ?? null,
+        subscriptionPlan: user.user.business?.subscriptionPlan ?? null,
+      });
 
       const cookieName = getUserCookieName(user.user.role);
       setAuthCookie(res, cookieName, token, TOKEN_MAX_AGE_MS);
