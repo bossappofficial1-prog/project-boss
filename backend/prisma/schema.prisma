@@ -30,10 +30,33 @@ model User {
   transactionsVerified    Transaction[]           @relation("TransactionVerifiedBy")
   auditLogs               AuditLog[]              @relation("AuditPerformedBy")
   reports                 Report[]
+  sessions                UserSession[]
+  twoFactorEnabled        Boolean                 @default(false)
+  twoFactorSecret         String?
+  backupCodes             String?
 
   @@index([email])
   @@index([role])
   @@index([status])
+}
+
+model UserSession {
+  id           String   @id @default(uuid())
+  userId       String
+  deviceName   String?
+  deviceType   String?  @default("desktop")
+  browser      String?
+  os           String?
+  ip           String?
+  location     String?
+  isCurrent    Boolean  @default(false)
+  lastActiveAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, lastActiveAt])
 }
 
 model PushSubscription {

@@ -7,6 +7,7 @@ export const AUTH_COOKIE_NAMES = {
   admin: "admin_token",
   cashier: "cashier_token",
   legacy: "token",
+  trustDevice: "trust_device",
 } as const;
 
 export type AuthRoleHint = "OWNER" | "ADMIN" | "CASHIER" | "MANAGER";

@@ -29,6 +29,8 @@ import {
   UpdateProfileValues,
 } from "../schemas/profile-setting.schema";
 import { ImageService } from "./image.service";
+import { SessionService } from "./session.service";
+import { TwoFactorService } from "./two-factor.service";
 
 export interface GoogleLinkToken {
   token: string;
@@ -39,7 +41,7 @@ export interface GoogleLinkToken {
 }
 
 export class AuthService extends BaseService {
-  static async login(data: LoginInput) {
+  static async login(data: LoginInput, req?: any) {
     const user = await getUserByEmailService(data.email);
 
     if (!user) {
@@ -55,15 +57,31 @@ export class AuthService extends BaseService {
       this.unauthorized(Messages.INVALID_CREDENTIALS);
     }
 
+    if (user.twoFactorEnabled) {
+      const isTrusted = TwoFactorService.isTrustedDevice(user.id, req?.cookies?.trust_device);
+      if (!isTrusted) {
+        const tempToken = JwtUtil.generate(
+          { userId: user.id, purpose: "2fa" },
+          "5m",
+        );
+        return { requiresTwoFactor: true, tempToken };
+      }
+    }
+
+    const userSessionId = req
+      ? await SessionService.create(user.id, req)
+      : undefined;
+
     await redis.set(
       `session:${user.id}`,
-      JSON.stringify({ ...user, businessId: user.business?.id }),
+      JSON.stringify({ ...user, businessId: user.business?.id, sessionId: userSessionId }),
       "EX",
       60 * 60 * 24,
     );
 
     const token = JwtUtil.generate({
       sessionId: user.id,
+      userSessionId,
       name: user.name,
       role: user.role,
       email: user.email,

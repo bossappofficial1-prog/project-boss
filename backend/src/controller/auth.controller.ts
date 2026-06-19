@@ -137,7 +137,14 @@ class AuthController extends BaseController {
 
   login = this.handler(async (req: Request, res: Response) => {
     const payload = req.body;
-    const result = await AuthService.login(payload);
+    const result = await AuthService.login(payload, req) as any;
+
+    if (result.requiresTwoFactor) {
+      return this.success(res, {
+        requiresTwoFactor: true,
+        tempToken: result.tempToken,
+      });
+    }
 
     const cookieName = getUserCookieName(result.user.role);
     setAuthCookie(res, cookieName, result.token, TOKEN_MAX_AGE_MS);
@@ -203,6 +210,8 @@ class AuthController extends BaseController {
         );
       }
     }
+
+    clearAuthCookie(res, AUTH_COOKIE_NAMES.trustDevice!);
 
     if (!roleHint) {
       clearAuthCookie(res, AUTH_COOKIE_NAMES.owner);

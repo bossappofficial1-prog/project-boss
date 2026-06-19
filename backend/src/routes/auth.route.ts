@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { authController } from "../controller/auth.controller";
+import { sessionController } from "../controller/session.controller";
+import { twoFactorController } from "../controller/two-factor.controller";
 import { validateSchema } from "../middleware/zod.middleware";
 import {
   loginSchema,
@@ -123,5 +125,20 @@ authRouter.patch(
 authRouter.post("/link-account", authController.linkAccount);
 
 authRouter.get("/link-account", authController.getLinkAccountInfo);
+
+// ── Session Management ──
+authRouter.get("/sessions", protect, sessionController.listSessions);
+authRouter.delete("/sessions/:sessionId", protect, sessionController.revokeSession);
+authRouter.post("/sessions/revoke-others", protect, sessionController.revokeOtherSessions);
+
+// ── 2FA / TOTP ──
+authRouter.get("/2fa/status", protect, twoFactorController.getStatus);
+authRouter.post("/2fa/setup", protect, twoFactorController.generateSetup);
+authRouter.post("/2fa/verify", protect, twoFactorController.verifyAndEnable);
+authRouter.post("/2fa/disable", protect, twoFactorController.disable);
+authRouter.post("/2fa/regenerate-codes", protect, twoFactorController.regenerateBackupCodes);
+
+// 2FA login (no protect - uses tempToken)
+authRouter.post("/2fa/authenticate", twoFactorController.authenticate);
 
 export default authRouter;

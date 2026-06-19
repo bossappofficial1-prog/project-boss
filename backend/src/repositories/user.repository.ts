@@ -51,6 +51,10 @@ export class UserRepository {
         createdAt: true,
         updatedAt: true,
         provider: true,
+        twoFactorEnabled: true,
+        twoFactorSecret: true,
+        backupCodes: true,
+        status: true,
 
         business: {
           select: {
@@ -254,6 +258,9 @@ export class UserRepository {
         | "isVerified"
         | "verificationCode"
         | "verificationCodeExpires"
+        | "twoFactorEnabled"
+        | "twoFactorSecret"
+        | "backupCodes"
       >
     >,
   ) {

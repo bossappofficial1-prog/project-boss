@@ -7,9 +7,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Shield, KeyRound, Monitor, AlertTriangle } from "lucide-react";
+import { Shield, KeyRound, AlertTriangle } from "lucide-react";
 import { PasswordForm } from "../password-form";
+import { SessionsSection } from "./sessions-section";
+import { AuthenticatorSection } from "./authenticator-section";
 
 interface SecuritySectionProps {
   userId: string;
@@ -75,39 +76,8 @@ export function SecuritySection({ userId, provider }: SecuritySectionProps) {
         </Card>
       )}
 
-      <Card className="shadow-sm gap-0 border-border/60">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Monitor className="w-4 h-4 text-muted-foreground" />
-            Sesi Login Aktif
-          </CardTitle>
-          <CardDescription>
-            Kelola perangkat yang terhubung ke akun Anda.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between p-4 rounded-lg border border-border/60 bg-muted/20">
-            <div className="flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <div>
-                <p className="text-sm font-medium">Perangkat Ini</p>
-                <p className="text-xs text-muted-foreground">
-                  Sesi aktif saat ini
-                </p>
-              </div>
-            </div>
-            <Badge
-              variant="outline"
-              className="text-emerald-600 border-emerald-500/20 bg-emerald-50/50 dark:bg-emerald-950/20 text-[10px] font-bold uppercase tracking-wider"
-            >
-              Aktif
-            </Badge>
-          </div>
-          <p className="text-[11px] text-muted-foreground mt-3 text-center">
-            Fitur manajemen sesi akan segera tersedia.
-          </p>
-        </CardContent>
-      </Card>
+      <AuthenticatorSection />
+      <SessionsSection />
     </div>
   );
 }

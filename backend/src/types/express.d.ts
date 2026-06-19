@@ -19,7 +19,7 @@ type SubscriptionContext = Business & {
 declare global {
   namespace Express {
     export interface Request {
-      storedUser?: PrismaUser & { businessId: string };
+      storedUser?: PrismaUser & { businessId: string; sessionId?: string };
       storedCashier?: {
         id: string;
         username?: string;
