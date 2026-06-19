@@ -2,6 +2,7 @@ import { BaseService } from "./base.service";
 import { SessionRepository } from "../repositories/session.repository";
 import { redis } from "../config/redis";
 import { randomUUID } from "crypto";
+import { DeviceFingerprint } from "../utils/device-fingerprint";
 
 const SESSION_TTL_SECONDS = 24 * 60 * 60;
 
@@ -9,14 +10,16 @@ export class SessionService extends BaseService {
   static async create(
     userId: string,
     req: { headers: Record<string, string | string[] | undefined>; ip?: string },
+    deviceFingerprint?: string,
   ): Promise<string> {
     const userAgent = (req.headers["user-agent"] as string) || "Unknown";
     const ip = req.ip || (req.headers["x-forwarded-for"] as string) || "Unknown";
     const parsed = SessionService.parseUserAgent(userAgent);
+    const fp = deviceFingerprint || DeviceFingerprint.fromReq(req);
 
     const existingSessions = await SessionRepository.findActiveByUserId(userId);
     const matched = existingSessions.find(
-      (s) => s.browser === parsed.browser && s.os === parsed.os && s.deviceType === parsed.deviceType,
+      (s) => s.deviceFingerprint === fp,
     );
 
     if (matched) {
@@ -40,6 +43,7 @@ export class SessionService extends BaseService {
       browser: parsed.browser,
       os: parsed.os,
       ip,
+      deviceFingerprint: fp,
       isCurrent: true,
       expiresAt,
     });

@@ -10,6 +10,7 @@ export class SessionRepository {
     os?: string;
     ip?: string;
     location?: string;
+    deviceFingerprint?: string;
     isCurrent?: boolean;
     expiresAt: Date;
   }) {

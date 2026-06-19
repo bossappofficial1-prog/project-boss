@@ -31,6 +31,7 @@ import {
 import { ImageService } from "./image.service";
 import { SessionService } from "./session.service";
 import { TwoFactorService } from "./two-factor.service";
+import { DeviceFingerprint } from "../utils/device-fingerprint";
 
 export interface GoogleLinkToken {
   token: string;
@@ -58,7 +59,8 @@ export class AuthService extends BaseService {
     }
 
     if (user.twoFactorEnabled) {
-      const isTrusted = TwoFactorService.isTrustedDevice(user.id, req?.cookies?.trust_device);
+      const fp = req ? DeviceFingerprint.fromReq(req) : undefined;
+      const isTrusted = TwoFactorService.isTrustedDevice(user.id, req?.cookies?.trust_device, fp);
       if (!isTrusted) {
         const tempToken = JwtUtil.generate(
           { userId: user.id, purpose: "2fa" },
@@ -68,8 +70,9 @@ export class AuthService extends BaseService {
       }
     }
 
+    const fp = req ? DeviceFingerprint.fromReq(req) : undefined;
     const userSessionId = req
-      ? await SessionService.create(user.id, req)
+      ? await SessionService.create(user.id, req, fp)
       : undefined;
 
     await redis.set(

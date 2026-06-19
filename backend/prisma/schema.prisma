@@ -41,19 +41,20 @@ model User {
 }
 
 model UserSession {
-  id           String   @id @default(uuid())
-  userId       String
-  deviceName   String?
-  deviceType   String?  @default("desktop")
-  browser      String?
-  os           String?
-  ip           String?
-  location     String?
-  isCurrent    Boolean  @default(false)
-  lastActiveAt DateTime @default(now())
-  createdAt    DateTime @default(now())
-  expiresAt    DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String   @id @default(uuid())
+  userId            String
+  deviceName        String?
+  deviceType        String?  @default("desktop")
+  browser           String?
+  os                String?
+  ip                String?
+  location          String?
+  deviceFingerprint String?
+  isCurrent         Boolean  @default(false)
+  lastActiveAt      DateTime @default(now())
+  createdAt         DateTime @default(now())
+  expiresAt         DateTime
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([userId, lastActiveAt])

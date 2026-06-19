@@ -4,6 +4,7 @@ import { TwoFactorService } from "../service/two-factor.service";
 import { AuthService } from "../service/auth.service";
 import { SessionService } from "../service/session.service";
 import { UserRepository } from "../repositories/user.repository";
+import { DeviceFingerprint } from "../utils/device-fingerprint";
 import { HttpStatus } from "../constants/http-status";
 import { JwtUtil } from "../utils";
 import { redis } from "../config/redis";
@@ -54,6 +55,7 @@ class TwoFactorController extends BaseController {
 
   authenticate = this.handler(async (req: Request, res: Response) => {
     const { tempToken, token, trustDevice } = req.body;
+    const fp = DeviceFingerprint.fromReq(req);
 
     if (!tempToken || !token) {
       return this.error(res, "Token dan kode verifikasi wajib diisi", undefined, HttpStatus.BAD_REQUEST);
@@ -80,7 +82,7 @@ class TwoFactorController extends BaseController {
       return this.error(res, "User tidak ditemukan", undefined, HttpStatus.NOT_FOUND);
     }
 
-    const userSessionId = await SessionService.create(payload.userId, req);
+    const userSessionId = await SessionService.create(payload.userId, req, fp);
 
     await redis.set(
       `session:${payload.userId}`,
@@ -108,7 +110,7 @@ class TwoFactorController extends BaseController {
 
     if (trustDevice) {
       const trustToken = JwtUtil.generate(
-        { userId: payload.userId, purpose: "trusted_device" },
+        { userId: payload.userId, purpose: "trusted_device", fp },
         "30d",
       );
       setAuthCookie(res, AUTH_COOKIE_NAMES.trustDevice!, trustToken, 30 * 24 * 60 * 60 * 1000);

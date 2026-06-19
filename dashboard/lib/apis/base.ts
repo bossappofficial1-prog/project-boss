@@ -1,5 +1,6 @@
 // Shared API utilities for BOSS Dashboard (used by all API categories)
 import axios, { AxiosInstance } from "axios";
+import { getDeviceFingerprintHeaders } from "@/lib/device-fingerprint";
 
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:1234/api/v1";
@@ -48,6 +49,8 @@ apiClient.interceptors.request.use(
       config.headers = config.headers ?? {};
       config.headers["X-Auth-Role"] = roleHint;
     }
+    const fpHeaders = getDeviceFingerprintHeaders();
+    Object.assign(config.headers, fpHeaders);
     return config;
   },
   (error) => {

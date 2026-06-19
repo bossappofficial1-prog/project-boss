@@ -1,9 +1,11 @@
 import { BaseService } from "./base.service";
 import { UserRepository } from "../repositories/user.repository";
+import { SessionRepository } from "../repositories/session.repository";
 import { redis } from "../config/redis";
 import { BcryptUtil, JwtUtil } from "../utils";
 import { generateSecret, generateURI, verify } from "otplib";
 import QRCode from "qrcode";
+import { DeviceFingerprint, DeviceFingerprintInput } from "../utils/device-fingerprint";
 
 const BACKUP_CODES_COUNT = 8;
 const BACKUP_CODE_LENGTH = 10;
@@ -136,11 +138,15 @@ export class TwoFactorService extends BaseService {
     return false;
   }
 
-  static isTrustedDevice(userId: string, trustCookie?: string): boolean {
+  static isTrustedDevice(userId: string, trustCookie?: string, deviceFingerprint?: string): boolean {
     if (!trustCookie) return false;
     try {
-      const payload = JwtUtil.verify<{ userId: string; purpose: string }>(trustCookie);
-      return payload.userId === userId && payload.purpose === "trusted_device";
+      const payload = JwtUtil.verify<{ userId: string; purpose: string; fp: string }>(trustCookie);
+      if (payload.userId !== userId || payload.purpose !== "trusted_device") return false;
+      if (deviceFingerprint && payload.fp) {
+        return payload.fp === deviceFingerprint;
+      }
+      return true;
     } catch {
       return false;
     }
