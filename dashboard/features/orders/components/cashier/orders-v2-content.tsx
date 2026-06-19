@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { RefreshCw, Plus } from "lucide-react";
+import { RefreshCw, Plus, AlertCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -52,7 +52,7 @@ export function OrdersV2Content({ outletId }: OrdersV2ContentProps) {
   const [query, setQuery] = useState("");
   const [date, setDate] = useState<string | undefined>(undefined);
   const debouncedQuery = useDebounce(query, 1000);
-  const { data, isLoading, refetch } = useOrdersV2Board(outletId, debouncedQuery, date);
+  const { data, isLoading, error, refetch } = useOrdersV2Board(outletId, debouncedQuery, date);
   const updateStatus = useOrdersV2UpdateStatus();
 
   const [detailEntry, setDetailEntry] = useState<OrderV2Entry | null>(null);
@@ -177,6 +177,26 @@ export function OrdersV2Content({ outletId }: OrdersV2ContentProps) {
     cancelledToday: 0,
     revenueToday: 0,
   };
+
+  if (error) {
+    return (
+      <div className="mx-auto max-w-[1600px] p-4 space-y-4">
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="rounded-full bg-destructive/10 p-4 mb-4">
+            <AlertCircle className="w-8 h-8 text-destructive" />
+          </div>
+          <h2 className="text-lg font-semibold text-foreground mb-2">Gagal Memuat Pesanan</h2>
+          <p className="text-sm text-muted-foreground mb-6 max-w-md">
+            {error?.message || "Terjadi kesalahan saat memuat data pesanan. Silakan coba lagi."}
+          </p>
+          <Button variant="outline" onClick={() => refetch()}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Coba Lagi
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return <OrdersV2Skeleton />;

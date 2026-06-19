@@ -65,8 +65,8 @@ export function OrdersKanbanBoard({
                         key={col.key}
                         title={col.title}
                         icon={col.icon}
-                        entries={board[col.key]}
-                        count={board[col.key].length}
+                        entries={board[col.key] ?? []}
+                        count={(board[col.key] ?? []).length}
                         accentColor={col.accent}
                         onPrimaryAction={onPrimaryAction}
                         onCancel={onCancel}
@@ -84,7 +84,7 @@ export function OrdersKanbanBoard({
             {/* Mobile */}
             <div className="lg:hidden space-y-3">
                 {COLUMNS.map((col) => {
-                    const entries = board[col.key];
+                    const entries = board[col.key] ?? [];
                     if (col.key === "completed" && entries.length === 0) return null;
 
                     return (

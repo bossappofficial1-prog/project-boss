@@ -12,6 +12,7 @@ export function useOrdersV2Board(outletId: string, q?: string, date?: string) {
     queryFn: () => ordersV2Api.getBoard(outletId, q, date),
     enabled: !!outletId,
     staleTime: 10_000,
+    refetchInterval: 30_000,
   });
 }
 
