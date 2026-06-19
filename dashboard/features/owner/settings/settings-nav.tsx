@@ -52,8 +52,7 @@ export function SettingsNav({
       id: "security",
       label: "Keamanan",
       icon: Shield,
-      description: "Password & sesi",
-      hidden: !isLocalAuth,
+      description: "2FA & sesi login",
     },
     {
       id: "business",
