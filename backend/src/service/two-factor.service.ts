@@ -9,7 +9,7 @@ import { DeviceFingerprint, DeviceFingerprintInput } from "../utils/device-finge
 
 const BACKUP_CODES_COUNT = 8;
 const BACKUP_CODE_LENGTH = 10;
-const TOTP_ISSUER = "ProjectBoss";
+const TOTP_ISSUER = "Bossapp Owner";
 const TOTP_SETUP_PREFIX = "2fa:setup:";
 
 export class TwoFactorService extends BaseService {

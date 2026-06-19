@@ -12,6 +12,7 @@ import Loading from "@/components/ui/loading";
 import { CommandSearch } from "@/components/ui/command-search";
 import { useRouter } from "next/navigation";
 import { FeatureGuideOverlay } from "@/features/guides/components/feature-guide-overlay";
+import { TwoFactorReminder } from "@/components/ui/two-factor-reminder";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -80,6 +81,7 @@ export default function DashboardLayout({
   return (
     <>
       <FeatureGuideOverlay />
+      <TwoFactorReminder />
       <SidebarProvider defaultOpen={true}>
         <Sidebar />
         <SidebarInset className="flex flex-col flex-1">
