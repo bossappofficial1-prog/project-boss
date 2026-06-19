@@ -16,7 +16,7 @@ import {
   Plus,
   AlertCircle,
 } from "lucide-react";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 
 export interface MediaItem {
   url: string;
@@ -65,7 +65,7 @@ export default function ServiceMediaUploader({
 
       const fileArray = Array.from(files).slice(0, remaining);
       if (fileArray.length === 0) {
-        toast.error(`Maksimal ${maxItems} media`);
+        gooeyToast.error(`Maksimal ${maxItems} media`);
         return;
       }
 
@@ -74,7 +74,7 @@ export default function ServiceMediaUploader({
         // const isVideo = file.type.startsWith("video/");
         const maxSize = MAX_IMAGE_SIZE;
         if (file.size > maxSize) {
-          toast.error(`${file.name}: Terlalu besar (maks ${"5MB"})`);
+          gooeyToast.error(`${file.name}: Terlalu besar (maks ${"5MB"})`);
           return;
         }
       }
@@ -92,9 +92,9 @@ export default function ServiceMediaUploader({
           });
         }
         onChange([...value, ...newItems]);
-        toast.success(`${newItems.length} media berhasil diupload`);
+        gooeyToast.success(`${newItems.length} media berhasil diupload`);
       } catch (err: any) {
-        toast.error(err?.response?.data?.message || "Gagal upload media");
+        gooeyToast.error(err?.response?.data?.message || "Gagal upload media");
       } finally {
         setUploadingState(false);
         if (fileInputRef.current) fileInputRef.current.value = "";
@@ -114,7 +114,7 @@ export default function ServiceMediaUploader({
     );
 
     if (!ytMatch && !igMatch) {
-      toast.error(
+      gooeyToast.error(
         "URL tidak valid. Hanya YouTube atau Instagram yang didukung.",
       );
       return;
@@ -144,7 +144,7 @@ export default function ServiceMediaUploader({
     onChange([...value, newItem]);
     setEmbedUrl("");
     setShowEmbedInput(false);
-    toast.success("Video embed berhasil ditambahkan");
+    gooeyToast.success("Video embed berhasil ditambahkan");
   }, [embedUrl, value, onChange]);
 
   const handleRemove = useCallback(

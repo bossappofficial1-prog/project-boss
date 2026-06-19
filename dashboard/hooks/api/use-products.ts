@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { productApi, uploadApi } from "@/lib/api";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import z from "zod";
 import {
   type CreateProductPayload,
@@ -288,7 +288,7 @@ export function useProductFormSubmit({
         }
 
         await createMutation.mutateAsync(payload);
-        toast.success("Produk berhasil ditambahkan");
+        gooeyToast.success("Produk berhasil ditambahkan");
       } else {
         if (!productId) throw new Error("Product ID is required for updating");
 
@@ -352,7 +352,7 @@ export function useProductFormSubmit({
         }
 
         await updateMutation.mutateAsync({ id: productId, payload });
-        toast.success("Produk berhasil diperbarui");
+        gooeyToast.success("Produk berhasil diperbarui");
       }
 
       onSuccess?.();
@@ -369,7 +369,7 @@ export function useProductFormSubmit({
           );
         }
       }
-      toast.error(error?.response?.data?.message || "Gagal menyimpan produk");
+      gooeyToast.error(error?.response?.data?.message || "Gagal menyimpan produk");
       throw error;
     }
   };

@@ -14,7 +14,7 @@ import {
 import { useOrder } from "@/hooks/use-orders-react-query";
 import { Copy, Mail, Loader2, Check, Share2 } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { apiClient } from "@/lib/apis/base";
 
 interface OrderDetailDialogProps {
@@ -202,14 +202,14 @@ function TicketCodeRow({ ticket }: { ticket: any }) {
             const { data: res } = await apiClient.get(`/tickets/share-info/${ticket.code}`);
             if (res?.success && res?.data?.ticketUrl) {
                 await navigator.clipboard.writeText(res.data.ticketUrl);
-                toast.success("Link tiket berhasil disalin ke clipboard!");
+                gooeyToast.success("Link tiket berhasil disalin ke clipboard!");
             } else {
                 await navigator.clipboard.writeText(`${window.location.origin}/ticket/verify/${ticket.code}`);
-                toast.success("Link tiket berhasil disalin!");
+                gooeyToast.success("Link tiket berhasil disalin!");
             }
         } catch (error) {
             await navigator.clipboard.writeText(`${window.location.origin}/ticket/verify/${ticket.code}`);
-            toast.success("Link tiket berhasil disalin!");
+            gooeyToast.success("Link tiket berhasil disalin!");
         } finally {
             setTimeout(() => setIsCopying(false), 1500);
         }
@@ -238,12 +238,12 @@ function TicketCodeRow({ ticket }: { ticket: any }) {
         try {
             const { data: res } = await apiClient.post(`/tickets/resend-email/${ticket.code}`);
             if (res?.success) {
-                toast.success(res.message || "E-tiket berhasil dikirim ulang ke email pelanggan!");
+                gooeyToast.success(res.message || "E-tiket berhasil dikirim ulang ke email pelanggan!");
             } else {
-                toast.error("Gagal mengirim ulang e-tiket.");
+                gooeyToast.error("Gagal mengirim ulang e-tiket.");
             }
         } catch (error: any) {
-            toast.error(error.response?.data?.message || "Gagal mengirim ulang e-tiket via email.");
+            gooeyToast.error(error.response?.data?.message || "Gagal mengirim ulang e-tiket via email.");
         } finally {
             setIsEmailSending(false);
         }

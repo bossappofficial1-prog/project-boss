@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
-import { toast } from 'sonner'
+import { gooeyToast } from "goey-toast"
 import { useMutation } from '@tanstack/react-query'
 import { CreditCard, User } from 'lucide-react'
 import { businessApi } from '@/lib/api'
@@ -82,12 +82,12 @@ export default function BankAccountModal({
       })
     },
     onSuccess: () => {
-      toast.success('Informasi rekening berhasil disimpan')
+      gooeyToast.success('Informasi rekening berhasil disimpan')
       onOpenChange(false)
       onSuccess?.()
     },
     onError: (e: any) =>
-      toast.error(e?.message || 'Gagal menyimpan informasi bank'),
+      gooeyToast.error(e?.message || 'Gagal menyimpan informasi bank'),
   })
 
   const defaultValues: BankFormValues = {

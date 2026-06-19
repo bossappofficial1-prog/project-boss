@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Brain, AlertCircle, RefreshCw } from "lucide-react";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { MarkdownRenderer } from "@/components/shared/markdown-renderer";
 
 export default function AiAnalystPage() {
@@ -48,7 +48,7 @@ export default function AiAnalystPage() {
   }, [isLoading, isFetching]);
 
   const handleRefresh = () => {
-    toast.promise(regenerateMutation.mutateAsync(), {
+    gooeyToast.promise(regenerateMutation.mutateAsync(), {
       loading: "Menghasilkan analisis bisnis baru...",
       success: "Analisis bisnis berhasil diperbarui!",
       error: (err: any) =>

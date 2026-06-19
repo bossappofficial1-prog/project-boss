@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { ProductItem, useProductsData } from "@/hooks/use-products-data";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { resolveUploadImageUrl } from "@/lib/url";
 import { cn, formatCurrency } from "@/lib/utils";
 import { useOutletStore } from "@/stores/outlet.store";
@@ -298,9 +298,9 @@ export default function ProductsContent() {
       setActionLoading(true);
       await handleDeleteProduct(productId);
       setShowDeleteModal(false);
-      toast.success("Berhasil menghapus produk");
+      gooeyToast.success("Berhasil menghapus produk");
     } catch (err) {
-      toast.error((err as any).message || "Gagal menghapus produk");
+      gooeyToast.error((err as any).message || "Gagal menghapus produk");
     } finally {
       setActionLoading(false);
     }
@@ -310,9 +310,9 @@ export default function ProductsContent() {
     setIsExporting(true);
     try {
       await handleExportProducts();
-      toast.success("Berhasil mengexport data produk");
+      gooeyToast.success("Berhasil mengexport data produk");
     } catch {
-      toast.error("Gagal mengexport data produk");
+      gooeyToast.error("Gagal mengexport data produk");
     } finally {
       setIsExporting(false);
     }

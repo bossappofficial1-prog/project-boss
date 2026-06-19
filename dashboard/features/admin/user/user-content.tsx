@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/select";
 import { formatISOStringDate } from "@/lib/utils";
 import { GoogleIcon } from "@/icons";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 
 const STATUS_LABELS: Record<string, string> = {
   ACTIVE: "Aktif",
@@ -271,7 +271,7 @@ export default function UserContent() {
       variant: "destructive" as const,
       onClick: () => {
         if (selectedRowIds.length === 0) {
-          toast.error("Pilih user terlebih dahulu");
+          gooeyToast.error("Pilih user terlebih dahulu");
           return;
         }
         bulkSuspend.mutate(
@@ -285,7 +285,7 @@ export default function UserContent() {
       icon: UserCheck,
       onClick: () => {
         if (selectedRowIds.length === 0) {
-          toast.error("Pilih user terlebih dahulu");
+          gooeyToast.error("Pilih user terlebih dahulu");
           return;
         }
         bulkReactivate.mutate(selectedRowIds, {

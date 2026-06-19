@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient, UseMutationOptions } from "@tanstack/react-query";
 import { apiClient } from "@/lib/apis/base";
 import { BannerFormValues } from "@/features/admin/banners/banner-form";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 
 export interface Banner {
   id: string;
@@ -86,7 +86,7 @@ export const useBulkUpdateBanner = (
       return response.data.data;
     },
     onSuccess: (data, variables, context) => {
-      toast.success("Berhasil update posisi banner");
+      gooeyToast.success("Berhasil update posisi banner");
       queryClient.invalidateQueries({ queryKey: ["banners"] });
     },
     ...restOptions,
@@ -117,7 +117,7 @@ export const useBulkDeleteBanner = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["banners"] });
-      toast.success(`${data.count} banner berhasil dihapus`);
+      gooeyToast.success(`${data.count} banner berhasil dihapus`);
     },
   });
 };

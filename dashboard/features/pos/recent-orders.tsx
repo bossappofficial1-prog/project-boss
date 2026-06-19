@@ -10,7 +10,7 @@ import type { PosV2RecentOrder } from "@/lib/apis/pos-v2";
 import { usePrint } from "@/hooks/use-print";
 import { useRequestDeleteTransaction } from "@/hooks/api/use-transaction-delete";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 
 interface RecentOrdersProps {
   orders: PosV2RecentOrder[] | undefined;
@@ -45,7 +45,7 @@ export function RecentOrders({ orders, isLoading }: RecentOrdersProps) {
 
   const handleDeleteConfirm = () => {
     if (!selectedOrder?.transactionId) {
-      toast.error("Transaksi tidak ditemukan");
+      gooeyToast.error("Transaksi tidak ditemukan");
       return;
     }
 
@@ -53,13 +53,13 @@ export function RecentOrders({ orders, isLoading }: RecentOrdersProps) {
       { transactionId: selectedOrder.transactionId, reason: deleteReason.trim() || undefined },
       {
         onSuccess: () => {
-          toast.success("Permintaan penghapusan dikirim ke Owner");
+          gooeyToast.success("Permintaan penghapusan dikirim ke Owner");
           setDeleteDialogOpen(false);
           setSelectedOrder(null);
           setDeleteReason("");
         },
         onError: (error: any) => {
-          toast.error(error?.response?.data?.message || error?.message || "Gagal mengirim permintaan penghapusan");
+          gooeyToast.error(error?.response?.data?.message || error?.message || "Gagal mengirim permintaan penghapusan");
         },
       },
     );

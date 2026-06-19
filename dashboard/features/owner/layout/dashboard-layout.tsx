@@ -5,7 +5,7 @@ import Sidebar from "@/features/owner/layout/sidebar";
 import Header from "@/features/owner/layout/header";
 import { useAuthGuard } from "@/features/auth";
 
-import { Toaster } from "sonner";
+import { GooeyToaster } from "goey-toast";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { type UserRole } from "@/lib/auth";
 import Loading from "@/components/ui/loading";
@@ -93,13 +93,7 @@ export default function DashboardLayout({
           </main>
         </SidebarInset>
 
-        <Toaster
-          position="top-right"
-          richColors
-          toastOptions={{
-            duration: 5000,
-          }}
-        />
+        <GooeyToaster position="top-right" />
         <CommandSearch open={commandOpen} setOpen={setCommandOpen} />
       </SidebarProvider>
     </>

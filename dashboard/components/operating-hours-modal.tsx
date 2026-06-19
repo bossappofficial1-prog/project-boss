@@ -11,7 +11,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import {
   useOperatingHours,
   useUpsertOperatingHours,
@@ -74,7 +74,7 @@ export default function OperatingHoursModal({
     for (const hour of Object.values(operatingHoursData)) {
       if (hour.isOpen) {
         if (hour.openTime === hour.closeTime) {
-          toast.error(
+          gooeyToast.error(
             `Jam buka dan tutup tidak boleh sama persis untuk ${getDayLabel(hour.dayOfWeek)}`,
           );
           return;
@@ -82,7 +82,7 @@ export default function OperatingHoursModal({
 
         if (hour.breakStart && hour.breakEnd) {
           if (hour.breakStart === hour.breakEnd) {
-            toast.error(
+            gooeyToast.error(
               `Jam istirahat mulai dan selesai tidak boleh sama persis untuk ${getDayLabel(hour.dayOfWeek)}`,
             );
             return;
@@ -111,7 +111,7 @@ export default function OperatingHoursModal({
           }
 
           if (!isBreakValid) {
-            toast.error(
+            gooeyToast.error(
               `Jam istirahat harus berada di dalam rentang jam operasional untuk ${getDayLabel(hour.dayOfWeek)}`,
             );
             return;
@@ -140,11 +140,11 @@ export default function OperatingHoursModal({
         });
       }
 
-      toast.success("Jam operasional berhasil disimpan");
+      gooeyToast.success("Jam operasional berhasil disimpan");
       onSuccess?.();
       onClose();
     } catch (error) {
-      toast.error("Gagal menyimpan jam operasional");
+      gooeyToast.error("Gagal menyimpan jam operasional");
       console.error(error);
     } finally {
       setIsSaving(false);

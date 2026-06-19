@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { InfoIcon, Clock, Copy } from "lucide-react";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { useOperatingHours } from "@/hooks/use-operating-hours";
 
 interface ServiceOperatingHoursData {
@@ -115,7 +115,7 @@ export default function ServiceOperatingHoursSection({ outletId, value = {}, onC
     if (!outletHours) return;
     const serviceHours = convertOutletHoursToServiceHours(outletHours);
     onChange(serviceHours);
-    toast.success("Jam operasional outlet berhasil disalin!");
+    gooeyToast.success("Jam operasional outlet berhasil disalin!");
   };
 
   const hasAnyHours = useMemo(() => {

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient as api } from "./base";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 
 // Types
 export interface BusinessHealthScore {
@@ -64,14 +64,14 @@ export function useUpdateBusiness() {
       return result;
     },
     onSuccess: (data, variables) => {
-      toast.success(data.message || "Bisnis berhasil diupdate");
+      gooeyToast.success(data.message || "Bisnis berhasil diupdate");
       queryClient.invalidateQueries({ queryKey: ["admin", "businesses"] });
       queryClient.invalidateQueries({
         queryKey: ["admin", "businesses", variables.businessId],
       });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal update bisnis");
+      gooeyToast.error(error.response?.data?.message || "Gagal update bisnis");
     },
   });
 }
@@ -134,13 +134,13 @@ export function useUpdateBusinessSettings() {
       return data;
     },
     onSuccess: (data, variables) => {
-      toast.success(data.message || "Pengaturan berhasil diupdate");
+      gooeyToast.success(data.message || "Pengaturan berhasil diupdate");
       queryClient.invalidateQueries({
         queryKey: ["admin", "businesses", variables.businessId, "settings"],
       });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal update pengaturan");
+      gooeyToast.error(error.response?.data?.message || "Gagal update pengaturan");
     },
   });
 }
@@ -187,7 +187,7 @@ export function useChangeSubscriptionPlan() {
       return data;
     },
     onSuccess: (data, variables) => {
-      toast.success(data.message || "Plan berhasil diubah");
+      gooeyToast.success(data.message || "Plan berhasil diubah");
       queryClient.invalidateQueries({
         queryKey: ["admin", "subscriptions", "business", variables.businessId],
       });
@@ -196,7 +196,7 @@ export function useChangeSubscriptionPlan() {
       });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal mengubah plan");
+      gooeyToast.error(error.response?.data?.message || "Gagal mengubah plan");
     },
   });
 }
@@ -219,7 +219,7 @@ export function useExtendSubscription() {
       return data;
     },
     onSuccess: (data, variables) => {
-      toast.success(data.message || "Langganan berhasil diperpanjang");
+      gooeyToast.success(data.message || "Langganan berhasil diperpanjang");
       queryClient.invalidateQueries({
         queryKey: ["admin", "subscriptions", "business", variables.businessId],
       });
@@ -228,7 +228,7 @@ export function useExtendSubscription() {
       });
     },
     onError: (error: any) => {
-      toast.error(
+      gooeyToast.error(
         error.response?.data?.message || "Gagal memperpanjang langganan",
       );
     },
@@ -253,7 +253,7 @@ export function useCancelSubscription() {
       return data;
     },
     onSuccess: (data, variables) => {
-      toast.success(data.message || "Langganan berhasil dibatalkan");
+      gooeyToast.success(data.message || "Langganan berhasil dibatalkan");
       queryClient.invalidateQueries({
         queryKey: ["admin", "subscriptions", "business", variables.businessId],
       });
@@ -262,7 +262,7 @@ export function useCancelSubscription() {
       });
     },
     onError: (error: any) => {
-      toast.error(
+      gooeyToast.error(
         error.response?.data?.message || "Gagal membatalkan langganan",
       );
     },
@@ -287,13 +287,13 @@ export function useMarkInvoiceAsPaid() {
       return data;
     },
     onSuccess: (data, variables) => {
-      toast.success(data.message || "Invoice ditandai lunas");
+      gooeyToast.success(data.message || "Invoice ditandai lunas");
       queryClient.invalidateQueries({
         queryKey: ["admin", "subscriptions", "business", variables.businessId],
       });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal menandai invoice");
+      gooeyToast.error(error.response?.data?.message || "Gagal menandai invoice");
     },
   });
 }
@@ -312,10 +312,10 @@ export function useSendNotification() {
       return data;
     },
     onSuccess: (data) => {
-      toast.success(data.message || "Notifikasi terkirim");
+      gooeyToast.success(data.message || "Notifikasi terkirim");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal mengirim notifikasi");
+      gooeyToast.error(error.response?.data?.message || "Gagal mengirim notifikasi");
     },
   });
 }
@@ -333,10 +333,10 @@ export function useBroadcastNotification() {
       return data;
     },
     onSuccess: (data) => {
-      toast.success(data.message || "Broadcast terkirim");
+      gooeyToast.success(data.message || "Broadcast terkirim");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal mengirim broadcast");
+      gooeyToast.error(error.response?.data?.message || "Gagal mengirim broadcast");
     },
   });
 }

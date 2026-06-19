@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { z } from "zod";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
@@ -190,10 +190,10 @@ export default function AccountingPage() {
   ) => {
     try {
       await createAccountMutation.mutateAsync(values);
-      toast.success("Akun berhasil didaftarkan");
+      gooeyToast.success("Akun berhasil didaftarkan");
       setAccountDialogOpen(false);
     } catch (err: any) {
-      toast.error(
+      gooeyToast.error(
         err?.response?.data?.message || err?.message || "Gagal membuat akun",
       );
 
@@ -210,10 +210,10 @@ export default function AccountingPage() {
         id: editingAccount.id,
         name: values.name,
       });
-      toast.success("Nama akun berhasil diperbarui");
+      gooeyToast.success("Nama akun berhasil diperbarui");
       setEditingAccount(null);
     } catch (err: any) {
-      toast.error(
+      gooeyToast.error(
         err?.response?.data?.message || err?.message || "Gagal mengedit akun",
       );
       throw err;
@@ -224,10 +224,10 @@ export default function AccountingPage() {
     if (!deleteAccountId) return;
     try {
       await deleteAccountMutation.mutateAsync(deleteAccountId);
-      toast.success("Akun berhasil dihapus");
+      gooeyToast.success("Akun berhasil dihapus");
       setDeleteAccountId(null);
     } catch (err: any) {
-      toast.error(
+      gooeyToast.error(
         err?.response?.data?.message || err?.message || "Gagal menghapus akun",
       );
       throw err;
@@ -238,10 +238,10 @@ export default function AccountingPage() {
     if (!deleteJournalId) return;
     try {
       await deleteJournalMutation.mutateAsync(deleteJournalId);
-      toast.success("Entri jurnal berhasil dihapus");
+      gooeyToast.success("Entri jurnal berhasil dihapus");
       setDeleteJournalId(null);
     } catch (err: any) {
-      toast.error(
+      gooeyToast.error(
         err?.response?.data?.message ||
           err?.message ||
           "Gagal menghapus entri jurnal",
@@ -270,10 +270,10 @@ export default function AccountingPage() {
       };
 
       await createJournalMutation.mutateAsync(payload);
-      toast.success("Jurnal umum berhasil disimpan");
+      gooeyToast.success("Jurnal umum berhasil disimpan");
       setJournalDialogOpen(false);
     } catch (err: any) {
-      toast.error(
+      gooeyToast.error(
         err?.response?.data?.message ||
           err?.message ||
           "Gagal menyimpan jurnal",
@@ -355,7 +355,7 @@ export default function AccountingPage() {
 
     const handleRemoveRow = (index: number) => {
       if (items.length <= 2) {
-        toast.error(
+        gooeyToast.error(
           "Jurnal berpasangan minimal harus memiliki 2 baris (Debit & Kredit)",
         );
         return;

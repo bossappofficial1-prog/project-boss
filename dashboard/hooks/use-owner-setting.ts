@@ -2,7 +2,7 @@ import { PasswordFormValues } from "@/features/owner/settings/password-form";
 import { uploadApi } from "@/lib/api";
 import { apiClient } from "@/lib/apis/base";
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
+import { gooeyToast } from "goey-toast"
 
 export const useProfileSetting = () => {
     const qc = useQueryClient()
@@ -35,7 +35,7 @@ export const useProfileSetting = () => {
         onSuccess: () => {
             sessionStorage.removeItem('user-data-cache-v1')
             qc.invalidateQueries({ queryKey: ['auth-me'] })
-            toast.success('Berhasil update profile');
+            gooeyToast.success('Berhasil update profile');
         }
     })
 
@@ -44,7 +44,7 @@ export const useProfileSetting = () => {
             await apiClient.patch(`/auth/update-password/${data.userId}`, data.payload);
         },
         onSuccess: () => {
-            toast.success('Berhasil update password');
+            gooeyToast.success('Berhasil update password');
         }
     })
 

@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { useOutletStore } from "@/stores/outlet.store";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { Outlet } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -61,7 +61,7 @@ export default function OutletsSection({
   const handleSelectOutlet = (outlet: Outlet) => {
     if (outlet.id === selectedOutlet) return;
     setSelectedOutlet(outlet);
-    toast.success("Outlet terpilih", {
+    gooeyToast.success("Outlet terpilih", {
       description: `Beralih ke ${outlet.name}`,
       duration: 2000,
     });
@@ -72,9 +72,9 @@ export default function OutletsSection({
       await copyToClipboard(
         `${process.env.NEXT_PUBLIC_CUSTOMER_URL}/outlet/${outletSlug}`,
       );
-      toast.success("Link outlet berhasil disalin");
+      gooeyToast.success("Link outlet berhasil disalin");
     } catch {
-      toast.error("Gagal menyalin link");
+      gooeyToast.error("Gagal menyalin link");
     }
   };
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import {
   Plus,
   Search,
@@ -70,10 +70,10 @@ export function SupplierContent() {
     if (!deleteTarget) return;
     try {
       await deleteMutation.mutateAsync(deleteTarget.id);
-      toast.success(`Supplier "${deleteTarget.name}" berhasil dihapus`);
+      gooeyToast.success(`Supplier "${deleteTarget.name}" berhasil dihapus`);
       setDeleteTarget(null);
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Gagal menghapus supplier");
+      gooeyToast.error(error?.response?.data?.message || "Gagal menghapus supplier");
     }
   };
 

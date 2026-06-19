@@ -2,8 +2,8 @@
 
 import React, { useEffect, createContext, useContext, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { Toaster } from "sonner";
+import { gooeyToast } from "goey-toast";
+import { GooeyToaster } from "goey-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { authApi } from "@/lib/api";
@@ -80,7 +80,7 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     if (isManagerAuthError) {
-      toast.error("Sesi login tidak valid, silakan login kembali");
+      gooeyToast.error("Sesi login tidak valid, silakan login kembali");
       if (typeof window !== "undefined") {
         window.location.href = "/auth/login/cashier";
       }
@@ -89,7 +89,7 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     if (cashierData && cashierData.role !== "MANAGER") {
-      toast.error("Anda tidak memiliki akses ke area Manager");
+      gooeyToast.error("Anda tidak memiliki akses ke area Manager");
       router.replace("/unauthorized");
     }
   }, [cashierData, router]);
@@ -144,7 +144,7 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
           <span className="text-lg font-semibold tracking-tight text-foreground">Sistem Manager</span>
           <span className="text-sm text-muted-foreground animate-pulse">Memverifikasi sesi manager...</span>
         </div>
-        <Toaster position="top-right" richColors toastOptions={{ duration: 5000 }} />
+        <GooeyToaster position="top-right" richColors toastOptions={{ duration: 5000 }} />
       </div>
     );
   }
@@ -179,7 +179,7 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
             </div>
           </main>
         </SidebarInset>
-        <Toaster position="top-right" richColors toastOptions={{ duration: 5000 }} />
+        <GooeyToaster position="top-right" richColors toastOptions={{ duration: 5000 }} />
       </SidebarProvider>
     </ManagerContext.Provider>
   );

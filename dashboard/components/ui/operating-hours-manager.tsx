@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Clock, Save, Loader2, Copy } from 'lucide-react'
-import { toast } from 'sonner'
+import { gooeyToast } from "goey-toast"
 import { useOperatingHours, useUpsertOperatingHours } from '@/hooks/use-operating-hours'
 import { isEqual } from 'lodash'
 
@@ -148,7 +148,7 @@ export default function OperatingHoursManager({ outletId, operatingHoursData, on
       onOperatingHoursChange(newData)
     }
 
-    toast.success(`Jam operasional disalin ke ${targetDays.length} hari.`)
+    gooeyToast.success(`Jam operasional disalin ke ${targetDays.length} hari.`)
   }
 
   if (isLoading) return (

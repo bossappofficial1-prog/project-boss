@@ -16,7 +16,7 @@ import { RegisterStep2 } from './register-step2';
 import { useSubscriptionPlans } from '@/hooks/use-subscription-plan';
 import AuthSplitLayout from '../auth-split-layout';
 import Image from 'next/image';
-import { toast } from 'sonner';
+import { gooeyToast } from "goey-toast";
 import { useQueryClient } from '@tanstack/react-query';
 import { PlanCard } from './plan-card';
 import { Button } from '@/components/ui/button';
@@ -150,7 +150,7 @@ export default function RegistrationContent() {
             } else if (invoiceId) {
                 router.push(`/subscription/payment/${invoiceId}`);
             } else {
-                toast.error('Invoice tidak ditemukan. Silakan hubungi support.');
+                gooeyToast.error('Invoice tidak ditemukan. Silakan hubungi support.');
             }
         } catch (error: any) {
             const msg: string = error?.response?.data?.message || error?.message || '';
@@ -166,7 +166,7 @@ export default function RegistrationContent() {
                 return;
             }
 
-            toast.error(msg || 'Gagal menyelesaikan registrasi. Silakan coba lagi.');
+            gooeyToast.error(msg || 'Gagal menyelesaikan registrasi. Silakan coba lagi.');
         } finally {
             setIsSubmitting(false);
         }

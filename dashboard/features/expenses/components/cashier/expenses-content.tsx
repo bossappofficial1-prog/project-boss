@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { id as localeID } from "date-fns/locale";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import {
     CalendarIcon,
     Plus,
@@ -194,19 +194,19 @@ export function ExpensesContent({ outletId, cashierName }: ExpensesContentProps)
             try {
                 if (id) {
                     await updateMutation.mutateAsync({ id, ...formData });
-                    toast.success("Pengeluaran berhasil diperbarui");
+                    gooeyToast.success("Pengeluaran berhasil diperbarui");
                 } else {
                     await createMutation.mutateAsync({
                         ...formData,
                         outletId,
                         cashier: cashierName,
                     });
-                    toast.success("Pengeluaran berhasil ditambahkan");
+                    gooeyToast.success("Pengeluaran berhasil ditambahkan");
                 }
                 setFormOpen(false);
             } catch (error: any) {
                 const msg = error?.response?.data?.message ?? error?.message ?? "Gagal menyimpan pengeluaran";
-                toast.error(msg);
+                gooeyToast.error(msg);
                 formData.receiptUrl && await uploadApi.deleteByUrl(formData.receiptUrl)
             }
         },
@@ -217,12 +217,12 @@ export function ExpensesContent({ outletId, cashierName }: ExpensesContentProps)
         if (!deleteTarget) return;
         try {
             await deleteMutation.mutateAsync(deleteTarget.id);
-            toast.success("Pengeluaran berhasil dihapus");
+            gooeyToast.success("Pengeluaran berhasil dihapus");
             setDeleteOpen(false);
             setDeleteTarget(null);
         } catch (error: any) {
             const msg = error?.response?.data?.message ?? error?.message ?? "Gagal menghapus";
-            toast.error(msg);
+            gooeyToast.error(msg);
         }
     }, [deleteTarget, deleteMutation]);
 

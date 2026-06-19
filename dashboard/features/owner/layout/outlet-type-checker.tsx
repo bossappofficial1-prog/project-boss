@@ -5,7 +5,7 @@ import { useUserData } from '@/hooks/use-user-data';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { MENU_GROUPS } from './sidebar/sidebar';
-import { toast } from 'sonner';
+import { gooeyToast } from "goey-toast";
 
 /**
  * OutletTypeChecker - Client-side component to monitor and enforce outlet-specific and plan-specific rules.
@@ -55,14 +55,14 @@ export default function OutletTypeChecker({ children }: { children: React.ReactN
         if (matchedItem) {
             // 1. Check Outlet Type
             if (matchedItem.requiredTypes && !matchedItem.requiredTypes.includes(selectedOutlet.type)) {
-                toast.error("Fitur tidak tersedia untuk tipe outlet ini");
+                gooeyToast.error("Fitur tidak tersedia untuk tipe outlet ini");
                 router.replace('/owner');
                 return;
             }
 
             // 2. Check PRO Access
             if (matchedItem.requirePro && !hasProAccess) {
-                toast.error("Upgrade ke PRO untuk mengakses fitur ini");
+                gooeyToast.error("Upgrade ke PRO untuk mengakses fitur ini");
                 router.replace('/owner/subscription');
                 return;
             }

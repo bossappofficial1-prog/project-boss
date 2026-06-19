@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Plus, Pencil, Trash2, Trophy, Star, Crown, Gem, Info } from "lucide-react";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { DataTable } from "@/components/ui/data-table";
 import { ReusableForm, FormFieldConfig } from "@/components/ui/reuseable-form";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -62,10 +62,10 @@ export function TierSettings({ outletId }: TierSettingsProps) {
       { outletId, data: { ...values, benefits: values.benefits ?? null } },
       {
         onSuccess: () => {
-          toast.success("Tier berhasil dibuat.");
+          gooeyToast.success("Tier berhasil dibuat.");
           setIsCreateOpen(false);
         },
-        onError: (err: any) => toast.error(err.response?.data?.message ?? "Gagal membuat tier."),
+        onError: (err: any) => gooeyToast.error(err.response?.data?.message ?? "Gagal membuat tier."),
       }
     );
   };
@@ -76,10 +76,10 @@ export function TierSettings({ outletId }: TierSettingsProps) {
       { outletId, tierId: editingTier.id, data: { ...values, benefits: values.benefits ?? null } },
       {
         onSuccess: () => {
-          toast.success("Tier berhasil diperbarui.");
+          gooeyToast.success("Tier berhasil diperbarui.");
           setEditingTier(null);
         },
-        onError: (err: any) => toast.error(err.response?.data?.message ?? "Gagal memperbarui tier."),
+        onError: (err: any) => gooeyToast.error(err.response?.data?.message ?? "Gagal memperbarui tier."),
       }
     );
   };
@@ -90,10 +90,10 @@ export function TierSettings({ outletId }: TierSettingsProps) {
       { outletId, tierId: deletingTierId },
       {
         onSuccess: () => {
-          toast.success("Tier berhasil dihapus.");
+          gooeyToast.success("Tier berhasil dihapus.");
           setDeletingTierId(null);
         },
-        onError: (err: any) => toast.error(err.response?.data?.message ?? "Gagal menghapus tier."),
+        onError: (err: any) => gooeyToast.error(err.response?.data?.message ?? "Gagal menghapus tier."),
       }
     );
   };

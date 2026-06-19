@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -104,7 +104,7 @@ export default function SubscriptionPaymentContent({
     navigator.clipboard.writeText(text);
     setCopiedField(field);
     setTimeout(() => setCopiedField(null), 2000);
-    toast.success("Disalin ke clipboard");
+    gooeyToast.success("Disalin ke clipboard");
   };
 
   const handleUploadProof = async () => {
@@ -114,9 +114,9 @@ export default function SubscriptionPaymentContent({
       setUploadSuccess(true);
       setSelectedFile(null);
       setFilePreview(null);
-      toast.success("Bukti pembayaran berhasil diunggah");
+      gooeyToast.success("Bukti pembayaran berhasil diunggah");
     } catch {
-      toast.error("Gagal mengunggah bukti pembayaran");
+      gooeyToast.error("Gagal mengunggah bukti pembayaran");
     }
   };
 

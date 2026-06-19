@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
+import { gooeyToast } from "goey-toast";
 
 import {
   manualPaymentApi,
@@ -169,12 +169,12 @@ export function useManualPayments(): ManualPaymentsState {
     markProcessing(orderId, 'verify');
     try {
       await manualPaymentApi.verify(orderId);
-      toast.success('Pembayaran manual berhasil diverifikasi.');
+      gooeyToast.success('Pembayaran manual berhasil diverifikasi.');
       await fetchData();
     } catch (err) {
       console.error('Failed to verify manual payment:', err);
       const message = err instanceof Error ? err.message : 'Gagal memverifikasi pembayaran manual.';
-      toast.error(message);
+      gooeyToast.error(message);
     } finally {
       markProcessing(orderId, null);
     }
@@ -184,12 +184,12 @@ export function useManualPayments(): ManualPaymentsState {
     markProcessing(orderId, 'reject');
     try {
       await manualPaymentApi.reject(orderId, reason);
-      toast.warning('Pembayaran manual ditolak.');
+      gooeyToast.warning('Pembayaran manual ditolak.');
       await fetchData();
     } catch (err) {
       console.error('Failed to reject manual payment:', err);
       const message = err instanceof Error ? err.message : 'Gagal menolak pembayaran manual.';
-      toast.error(message);
+      gooeyToast.error(message);
     } finally {
       markProcessing(orderId, null);
     }

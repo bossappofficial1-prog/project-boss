@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button'
 import { AlertTriangle, Loader2, Trash2 } from 'lucide-react'
 import { outletManagementApi } from '@/lib/api'
-import { Toaster, toast } from 'sonner'
+import { GooeyToaster, gooeyToast } from "goey-toast"
 import type { Outlet } from '@/types/dashboard'
 import { AxiosError } from 'axios'
 
@@ -29,13 +29,13 @@ export default function DeleteOutletModal({ open, onOpenChange, outlet, onSucces
             return outletManagementApi.delete(outlet.id)
         },
         onSuccess: () => {
-            toast.success('Outlet berhasil dihapus!')
+            gooeyToast.success('Outlet berhasil dihapus!')
             onSuccess?.()
             onOpenChange(false)
             setConfirmText('')
         },
         onError: (e: any) => {
-            toast.error(((e as AxiosError).response?.data as any).message || 'Gagal menghapus outlet. Coba lagi.')
+            gooeyToast.error(((e as AxiosError).response?.data as any).message || 'Gagal menghapus outlet. Coba lagi.')
         }
     })
 
@@ -43,7 +43,7 @@ export default function DeleteOutletModal({ open, onOpenChange, outlet, onSucces
         if (confirmText === outlet?.name) {
             await mutateAsync()
         } else {
-            toast.error('Konfirmasi nama outlet tidak sesuai')
+            gooeyToast.error('Konfirmasi nama outlet tidak sesuai')
         }
     }
 

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Users, UserPlus, Upload } from "lucide-react";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 
 import { useOutletStore } from "@/stores/outlet.store";
 import { Button } from "@/components/ui/button";
@@ -48,7 +48,7 @@ export default function StaffManagementPage() {
       setStaff(results);
     } catch (error) {
       console.error("Failed to load staff list", error);
-      toast.error((error as Error).message ?? "Gagal memuat data staff");
+      gooeyToast.error((error as Error).message ?? "Gagal memuat data staff");
     } finally {
       setIsLoading(false);
     }
@@ -99,10 +99,10 @@ export default function StaffManagementPage() {
           ...finalPayload,
           outletId: selectedOutlet.id,
         });
-        toast.success("Staff berhasil ditambahkan");
+        gooeyToast.success("Staff berhasil ditambahkan");
       } else if (editingStaff) {
         await staffApi.update(editingStaff.id, finalPayload);
-        toast.success("Data staff berhasil diperbarui");
+        gooeyToast.success("Data staff berhasil diperbarui");
       }
 
       setIsModalOpen(false);
@@ -123,13 +123,13 @@ export default function StaffManagementPage() {
     try {
       setIsDeleting(true);
       await staffApi.delete(deletingStaff.id);
-      toast.success("Staff berhasil dihapus");
+      gooeyToast.success("Staff berhasil dihapus");
       setDeletingStaff(null);
       await loadStaff();
       return true;
     } catch (error) {
       console.error("Failed to delete staff", error);
-      toast.error((error as Error).message ?? "Gagal menghapus staff");
+      gooeyToast.error((error as Error).message ?? "Gagal menghapus staff");
       return false;
     } finally {
       setIsDeleting(false);

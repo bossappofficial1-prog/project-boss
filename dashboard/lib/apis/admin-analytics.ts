@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient as api } from './base';
-import { toast } from 'sonner';
+import { gooeyToast } from "goey-toast";
 
 // Types
 export interface DashboardAnalytics {
@@ -68,11 +68,11 @@ export function useClearAnalyticsCache() {
       return data;
     },
     onSuccess: () => {
-      toast.success('Cache berhasil dihapus');
+      gooeyToast.success('Cache berhasil dihapus');
       queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard', 'analytics'] });
     },
     onError: (error: any) => {
-      toast.error('Gagal menghapus cache');
+      gooeyToast.error('Gagal menghapus cache');
     },
   });
 }

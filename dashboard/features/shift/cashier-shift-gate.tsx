@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { ReusableForm } from "@/components/ui/reuseable-form";
 import { Card } from "@/components/ui/card";
 import { OutletType } from "@/types";
@@ -40,7 +40,7 @@ export function CashierShiftGate(props: {
               openingCash: values.openingCash,
               notes: values.notes,
             });
-            toast.success("Shift berhasil dibuka");
+            gooeyToast.success("Shift berhasil dibuka");
           }}
           fields={[
             { name: "openingCash", label: "Opening Cash", type: "currency", colSpan: "full" },

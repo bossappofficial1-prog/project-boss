@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { Check, Package, Search, X } from "lucide-react";
@@ -81,10 +81,10 @@ export function SupplierFormDialog({
   const handleSubmit = async (values: SupplierFormValues) => {
     if (isEdit) {
       await updateMutation.mutateAsync({ id: supplier.id, payload: values });
-      toast.success("Supplier berhasil diperbarui");
+      gooeyToast.success("Supplier berhasil diperbarui");
     } else {
       await createMutation.mutateAsync({ ...values, outletId });
-      toast.success("Supplier berhasil ditambahkan");
+      gooeyToast.success("Supplier berhasil ditambahkan");
     }
     onOpenChange(false);
   };

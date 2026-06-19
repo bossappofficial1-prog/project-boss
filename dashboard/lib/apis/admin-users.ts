@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { apiClient } from "./base";
 
 export interface AdminUser {
@@ -85,11 +85,11 @@ export function useSuspendUser() {
       return data;
     },
     onSuccess: (data) => {
-      toast.success(data.message || "User berhasil disuspend");
+      gooeyToast.success(data.message || "User berhasil disuspend");
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal suspend user");
+      gooeyToast.error(error.response?.data?.message || "Gagal suspend user");
     },
   });
 }
@@ -103,11 +103,11 @@ export function useReactivateUser() {
       return data;
     },
     onSuccess: (data) => {
-      toast.success(data.message || "User berhasil diaktifkan");
+      gooeyToast.success(data.message || "User berhasil diaktifkan");
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal mengaktifkan user");
+      gooeyToast.error(error.response?.data?.message || "Gagal mengaktifkan user");
     },
   });
 }
@@ -121,11 +121,11 @@ export function useDeleteUser() {
       return data;
     },
     onSuccess: (data) => {
-      toast.success(data.message || "User berhasil dihapus");
+      gooeyToast.success(data.message || "User berhasil dihapus");
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal menghapus user");
+      gooeyToast.error(error.response?.data?.message || "Gagal menghapus user");
     },
   });
 }
@@ -148,11 +148,11 @@ export function useBulkSuspendUsers() {
       return data;
     },
     onSuccess: (data) => {
-      toast.success(data.message || "Bulk suspend selesai");
+      gooeyToast.success(data.message || "Bulk suspend selesai");
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal bulk suspend");
+      gooeyToast.error(error.response?.data?.message || "Gagal bulk suspend");
     },
   });
 }
@@ -168,11 +168,11 @@ export function useBulkReactivateUsers() {
       return data;
     },
     onSuccess: (data) => {
-      toast.success(data.message || "Bulk reactivate selesai");
+      gooeyToast.success(data.message || "Bulk reactivate selesai");
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal bulk reactivate");
+      gooeyToast.error(error.response?.data?.message || "Gagal bulk reactivate");
     },
   });
 }

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 
 import {
   ReusableForm,
@@ -109,11 +109,11 @@ export default function ProductMediaModal({
           queryClient.invalidateQueries({ queryKey: ["products"] });
           onSaved?.();
           if (!options?.silent) {
-            toast.success("Media produk berhasil diperbarui");
+            gooeyToast.success("Media produk berhasil diperbarui");
           }
         } catch (error: any) {
           console.error("Error updating product media:", error);
-          toast.error(
+          gooeyToast.error(
             error?.response?.data?.message || "Gagal memperbarui media",
           );
           formRef.current?.setValue("media", lastSavedRef.current, {

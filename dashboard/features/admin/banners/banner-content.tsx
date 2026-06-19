@@ -12,7 +12,7 @@ import BannerForm, { BannerFormValues } from './banner-form';
 import { Banner, useBanners, useBulkDeleteBanner, useBulkUpdateBanner, useCreateBanner, useDeleteBanner, useUpdateBanner } from '@/hooks/use-banners';
 import { BannerTable } from './banner-table';
 import { uploadApi } from '@/lib/api';
-import { toast } from 'sonner';
+import { gooeyToast } from "goey-toast";
 import { fileToBase64 } from '@/lib/utils';
 import ConfirmationModal from '@/components/ui/confirmation-modal';
 import { useQueryClient } from '@tanstack/react-query';
@@ -47,7 +47,7 @@ export default function GlobalBannerContent() {
             if (context?.previous) {
                 queryClient.setQueryData(['banners'], context.previous);
             }
-            toast.error('Gagal update posisi banner.', {
+            gooeyToast.error('Gagal update posisi banner.', {
                 description: error?.response.data.message ?? 'Silakan coba kembali.'
             });
         }
@@ -111,12 +111,12 @@ export default function GlobalBannerContent() {
                     setMode('create')
                     setIsEdit(false)
                     setFormKey(prev => prev + 1)
-                    toast.success('Success', {
+                    gooeyToast.success('Success', {
                         description: 'Berhasil menambahkan banner baru'
                     })
                 },
                 onError: (error: any) => {
-                    toast.error('Gagal', {
+                    gooeyToast.error('Gagal', {
                         description: error?.response.data.message || 'Image wajib diisi'
                     })
                 }
@@ -128,12 +128,12 @@ export default function GlobalBannerContent() {
                     setMode('create')
                     setIsEdit(false)
                     setFormKey(prev => prev + 1)
-                    toast.success('Success', {
+                    gooeyToast.success('Success', {
                         description: `Berhasil update banner ${selectedBanner?.title}`
                     })
                 },
                 onError: (error: any) => {
-                    toast.error('Gagal', {
+                    gooeyToast.error('Gagal', {
                         description: error?.response.data.message || 'Image wajib diisi'
                     })
                 }
@@ -308,7 +308,7 @@ export default function GlobalBannerContent() {
                     description={`Yakin untuk menghapus banner '${selectedBannerToDelete.title}', Setelah proses selesai tidak dapat dibatalkan`}
                     onConfirm={async () => deleteBanner(selectedBannerToDelete.id, {
                         onSuccess() {
-                            toast.success(`Success`, { description: `Berhasil menghapus banner ${selectedBannerToDelete.title}` });
+                            gooeyToast.success(`Success`, { description: `Berhasil menghapus banner ${selectedBannerToDelete.title}` });
                             setSelectedBannerToDelete(null);
                             setShowConfirmDialog(false)
                         },

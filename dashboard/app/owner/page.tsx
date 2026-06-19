@@ -15,7 +15,7 @@ import { PageSkeleton } from "@/features/owner/dashboard/skeletons";
 import { Card } from "@/components/ui/card";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { outletManagementApi } from "@/lib/api";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { PageGuide } from "@/features/guides/components/page-guide";
 
 export default function DashboardPage() {
@@ -88,7 +88,7 @@ export default function DashboardPage() {
       if (context?.previousDashboard) {
         queryClient.setQueryData(["dashboard"], context.previousDashboard);
       }
-      toast.error("Gagal mengubah status outlet");
+      gooeyToast.error("Gagal mengubah status outlet");
     },
     onSettled: () => {
       // Always refetch after error or success

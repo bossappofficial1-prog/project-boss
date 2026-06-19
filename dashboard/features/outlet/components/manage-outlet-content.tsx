@@ -27,7 +27,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import MapPicker from "@/components/ui/map-picker";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import OperatingHoursModal from "@/components/operating-hours-modal";
 import { useOutletStore } from "@/stores/outlet.store";
 import { OutletType, type Outlet } from "@/types";
@@ -168,10 +168,10 @@ export default function ManageOutletContent() {
       });
 
       setIsEditing(false);
-      toast.success("Outlet berhasil diperbarui");
+      gooeyToast.success("Outlet berhasil diperbarui");
       queryClient.invalidateQueries({ queryKey: ["outlets"] });
     } catch (error: any) {
-      toast.error(error.message || "Gagal memperbarui outlet");
+      gooeyToast.error(error.message || "Gagal memperbarui outlet");
     }
   };
 

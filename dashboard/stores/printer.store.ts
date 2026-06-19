@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { toast } from 'sonner';
+import { gooeyToast } from "goey-toast";
 
 const BT_OPTIONAL_SERVICES = [
   "000018f0-0000-1000-8000-00805f9b34fb",
@@ -113,7 +113,7 @@ export const usePrinterStore = create<PrinterState>((set, get) => ({
 
   connect: async () => {
     if (!navigator.bluetooth) {
-      toast.error("Browser tidak mendukung Web Bluetooth.");
+      gooeyToast.error("Browser tidak mendukung Web Bluetooth.");
       return;
     }
     set({ isConnecting: true });
@@ -130,9 +130,9 @@ export const usePrinterStore = create<PrinterState>((set, get) => ({
       // Store device reference in a way we can access later
       (window as any).__btDevice = device;
       (window as any).__btCharacteristic = char;
-      toast.success(`Terhubung ke ${device.name || "Printer"}`);
+      gooeyToast.success(`Terhubung ke ${device.name || "Printer"}`);
     } catch (err: any) {
-      if (err.name !== "NotFoundError") toast.error(`Bluetooth gagal: ${err.message}`);
+      if (err.name !== "NotFoundError") gooeyToast.error(`Bluetooth gagal: ${err.message}`);
     } finally {
       set({ isConnecting: false });
       get().refreshSavedDevices();
@@ -149,9 +149,9 @@ export const usePrinterStore = create<PrinterState>((set, get) => ({
       });
       (window as any).__btDevice = device;
       (window as any).__btCharacteristic = char;
-      toast.success(`Terhubung ke ${device.name || "Printer"}`);
+      gooeyToast.success(`Terhubung ke ${device.name || "Printer"}`);
     } catch (err: any) {
-      toast.error(`Gagal reconnect: ${err.message}`);
+      gooeyToast.error(`Gagal reconnect: ${err.message}`);
     } finally {
       set({ isConnecting: false });
     }
@@ -159,7 +159,7 @@ export const usePrinterStore = create<PrinterState>((set, get) => ({
 
   connectUsb: async () => {
     if (!navigator.usb) {
-      toast.error("Browser tidak mendukung WebUSB.");
+      gooeyToast.error("Browser tidak mendukung WebUSB.");
       return;
     }
     set({ isConnecting: true });
@@ -172,9 +172,9 @@ export const usePrinterStore = create<PrinterState>((set, get) => ({
       });
       (window as any).__usbDevice = device;
       (window as any).__usbEndpoint = endpointNumber;
-      toast.success(`Terhubung ke ${device.productName || "USB Printer"}`);
+      gooeyToast.success(`Terhubung ke ${device.productName || "USB Printer"}`);
     } catch (err: any) {
-      if (err.name !== "NotFoundError") toast.error(`USB gagal: ${err.message}`);
+      if (err.name !== "NotFoundError") gooeyToast.error(`USB gagal: ${err.message}`);
     } finally {
       set({ isConnecting: false });
     }
@@ -190,9 +190,9 @@ export const usePrinterStore = create<PrinterState>((set, get) => ({
       });
       (window as any).__usbDevice = device;
       (window as any).__usbEndpoint = endpointNumber;
-      toast.success(`Terhubung ke ${device.productName || "USB Printer"}`);
+      gooeyToast.success(`Terhubung ke ${device.productName || "USB Printer"}`);
     } catch (err: any) {
-      toast.error(`Gagal reconnect USB: ${err.message}`);
+      gooeyToast.error(`Gagal reconnect USB: ${err.message}`);
     } finally {
       set({ isConnecting: false });
     }
@@ -220,7 +220,7 @@ export const usePrinterStore = create<PrinterState>((set, get) => ({
       delete (window as any).__btCharacteristic;
       delete (window as any).__usbDevice;
       delete (window as any).__usbEndpoint;
-      toast.info("Printer diputus.");
+      gooeyToast.info("Printer diputus.");
     }
   },
 
@@ -230,7 +230,7 @@ export const usePrinterStore = create<PrinterState>((set, get) => ({
     if (connectionType === "bluetooth") {
       const characteristic = (window as any).__btCharacteristic;
       if (!characteristic) {
-        toast.error("Printer tidak terhubung.");
+        gooeyToast.error("Printer tidak terhubung.");
         return false;
       }
       try {
@@ -241,7 +241,7 @@ export const usePrinterStore = create<PrinterState>((set, get) => ({
         }
         return true;
       } catch (err: any) {
-        toast.error(`Gagal print (BT): ${err.message}`);
+        gooeyToast.error(`Gagal print (BT): ${err.message}`);
         return false;
       }
     }
@@ -250,19 +250,19 @@ export const usePrinterStore = create<PrinterState>((set, get) => ({
       const device = (window as any).__usbDevice;
       const endpoint = (window as any).__usbEndpoint;
       if (!device || endpoint === null || endpoint === undefined) {
-        toast.error("Printer tidak terhubung.");
+        gooeyToast.error("Printer tidak terhubung.");
         return false;
       }
       try {
         await device.transferOut(endpoint, data as any);
         return true;
       } catch (err: any) {
-        toast.error(`Gagal print (USB): ${err.message}`);
+        gooeyToast.error(`Gagal print (USB): ${err.message}`);
         return false;
       }
     }
 
-    toast.error("Printer tidak terhubung.");
+    gooeyToast.error("Printer tidak terhubung.");
     return false;
   },
 }));

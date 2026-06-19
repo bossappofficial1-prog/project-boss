@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { RefreshCw, Plus, LayoutGrid, Monitor } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -117,14 +117,14 @@ export function QueueV2Content({ outletId }: QueueV2ContentProps) {
         });
 
         const label = STATUS_LABELS[confirmState.nextStatus] ?? confirmState.nextStatus;
-        toast.success(`Antrian #${confirmState.entry.position} → ${label}`);
+        gooeyToast.success(`Antrian #${confirmState.entry.position} → ${label}`);
         setConfirmOpen(false);
         setConfirmState(null);
         setDetailOpen(false);
       } catch (error: any) {
         const message =
           error?.response?.data?.message ?? error?.message ?? "Gagal mengubah status antrian";
-        toast.error(message);
+        gooeyToast.error(message);
       }
     },
     [confirmState, transition],

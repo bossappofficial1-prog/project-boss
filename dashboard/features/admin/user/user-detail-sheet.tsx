@@ -27,7 +27,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency, formatISOStringDate } from '@/lib/utils';
-import { toast } from 'sonner';
+import { gooeyToast } from "goey-toast";
 
 interface Props {
   isOpen: boolean;
@@ -81,10 +81,10 @@ function UserDetailContent({ data }: { data: UserDetail }) {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(label);
-      toast.success(`${label} disalin`);
+      gooeyToast.success(`${label} disalin`);
       setTimeout(() => setCopied(null), 2000);
     } catch {
-      toast.error('Gagal menyalin');
+      gooeyToast.error('Gagal menyalin');
     }
   };
 

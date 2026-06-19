@@ -1,6 +1,6 @@
 import { tableApi } from "@/lib/api"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
+import { gooeyToast } from "goey-toast"
 import z from "zod"
 
 export const tableSchema = z.object({
@@ -19,10 +19,10 @@ export const useTable = () => {
             tableApi.createTable({ ...data.payload, outletId: data.outletId }),
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['tables', data.outletId] })
-            toast.success('Meja berhasil ditambahkan')
+            gooeyToast.success('Meja berhasil ditambahkan')
         },
         onError: (error: any) => {
-            toast.error(error.response?.data?.message || 'Gagal menambahkan meja')
+            gooeyToast.error(error.response?.data?.message || 'Gagal menambahkan meja')
         },
     })
 
@@ -31,10 +31,10 @@ export const useTable = () => {
             tableApi.updateTable(id, payload),
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['tables', data.outletId] })
-            toast.success('Meja berhasil diperbarui')
+            gooeyToast.success('Meja berhasil diperbarui')
         },
         onError: (error: any) => {
-            toast.error(error.response?.data?.message || 'Gagal memperbarui meja')
+            gooeyToast.error(error.response?.data?.message || 'Gagal memperbarui meja')
         }
     })
 
@@ -42,10 +42,10 @@ export const useTable = () => {
         mutationFn: (id: string) => tableApi.deleteTable(id),
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['tables'] })
-            toast.success('Meja berhasil dihapus')
+            gooeyToast.success('Meja berhasil dihapus')
         },
         onError: (error: any) => {
-            toast.error(error.response?.data?.message || 'Gagal menghapus meja')
+            gooeyToast.error(error.response?.data?.message || 'Gagal menghapus meja')
         }
     })
 

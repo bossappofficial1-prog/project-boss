@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useVerifyTicket, useRedeemTicket, TicketCodeInfo } from "@/hooks/use-ticket";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -135,7 +135,7 @@ export default function TicketScanContent() {
             .catch((e) => {
                 console.error(e);
                 setCameraOpen(false);
-                toast.error("Kamera tidak dapat diakses");
+                gooeyToast.error("Kamera tidak dapat diakses");
             });
 
         return () => {
@@ -163,13 +163,13 @@ export default function TicketScanContent() {
         if (!activeCode) return;
         try {
             const result = await redeemMutation.mutateAsync({ code: activeCode, outletId });
-            toast.success(`Tiket ${result.code} berhasil di-redeem!`);
+            gooeyToast.success(`Tiket ${result.code} berhasil di-redeem!`);
             setConfirmOpen(false);
             setActiveCode("");
             setSearchCode("");
         } catch (err: any) {
             const msg = err?.response?.data?.message || "Gagal redeem tiket";
-            toast.error(msg);
+            gooeyToast.error(msg);
         }
     }, [activeCode, redeemMutation, outletId]);
 

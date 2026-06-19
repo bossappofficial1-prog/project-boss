@@ -12,7 +12,7 @@ import { useExportTransactionReport } from "@/hooks/use-export-transaction-repor
 import { useQuery } from "@tanstack/react-query";
 import { authApi } from "@/lib/api";
 import { useDirectDeleteTransaction } from "@/hooks/api/use-transaction-delete";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { Plus, Mail, Trash2, Pencil, Eye } from "lucide-react";
 import { format, subMonths } from "date-fns";
 import { usePathname } from "next/navigation";
@@ -185,13 +185,13 @@ export default function TransactionsPage() {
     if (!deletingManualTransaction) return;
     deleteManualTransactionMutation.mutate(deletingManualTransaction.id, {
       onSuccess: () => {
-        toast.success("Transaksi manual berhasil dihapus.");
+        gooeyToast.success("Transaksi manual berhasil dihapus.");
         setShowDeleteManualConfirm(false);
         setDeletingManualTransaction(null);
         refetch();
       },
       onError: (err: any) => {
-        toast.error(
+        gooeyToast.error(
           err?.response?.data?.message ||
             err?.message ||
             "Gagal menghapus transaksi manual",
@@ -206,12 +206,12 @@ export default function TransactionsPage() {
       { transactionId: transactionToDelete.id, reason: reason || undefined },
       {
         onSuccess: () => {
-          toast.success("Transaksi berhasil dihapus secara langsung.");
+          gooeyToast.success("Transaksi berhasil dihapus secara langsung.");
           setTransactionToDelete(null);
           refetch();
         },
         onError: (err: any) => {
-          toast.error(
+          gooeyToast.error(
             err?.response?.data?.message ||
               err?.message ||
               "Gagal menghapus transaksi",

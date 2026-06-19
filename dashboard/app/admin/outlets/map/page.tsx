@@ -46,7 +46,7 @@ import {
     useGetAdminBusinesses,
     useUpdateOutletForceClose
 } from "@/hooks/api/use-admin-control"
-import { toast } from "sonner"
+import { gooeyToast } from "goey-toast"
 
 type Position = { lat: number; lng: number }
 
@@ -121,7 +121,7 @@ export default function SebaranOutletMap() {
     // Smoothly fly to an outlet coordinates and open details card
     const handleFocusOutlet = (outlet: any) => {
         if (!outlet.latitude || !outlet.longitude) {
-            toast.warning(`Outlet "${outlet.name}" tidak memiliki koordinat lokasi yang valid.`)
+            gooeyToast.warning(`Outlet "${outlet.name}" tidak memiliki koordinat lokasi yang valid.`)
             return
         }
         setSelectedOutlet(outlet)
@@ -134,7 +134,7 @@ export default function SebaranOutletMap() {
                 outletId: outlet.id,
                 isClosed: outlet.isOpen
             })
-            toast.success(`Outlet "${outlet.name}" berhasil di${outlet.isOpen ? 'tutup' : 'buka'} secara paksa.`)
+            gooeyToast.success(`Outlet "${outlet.name}" berhasil di${outlet.isOpen ? 'tutup' : 'buka'} secara paksa.`)
 
             // If the currently viewed outlet is the one updated, sync local state
             if (selectedOutlet?.id === outlet.id) {
@@ -145,7 +145,7 @@ export default function SebaranOutletMap() {
             }
             refetchOutlets()
         } catch (error) {
-            toast.error("Gagal memperbarui status operasional outlet")
+            gooeyToast.error("Gagal memperbarui status operasional outlet")
         }
     }
 

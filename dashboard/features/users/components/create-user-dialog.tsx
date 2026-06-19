@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
+import { gooeyToast } from "goey-toast";
 import { UserRole } from '@/types/user';
 import { useUserOperations } from '@/hooks/use-users';
 
@@ -35,11 +35,11 @@ export default function CreateUserDialog({ children, onSuccess }: { children?: R
     const onSubmit = async (values: CreateUserForm) => {
         try {
             await userOperations.createUser.mutateAsync(values as any);
-            toast.success('User created successfully');
+            gooeyToast.success('User created successfully');
             reset();
             onSuccess?.();
         } catch (err: any) {
-            toast.error(err?.message || 'Failed to create user');
+            gooeyToast.error(err?.message || 'Failed to create user');
         }
     };
 

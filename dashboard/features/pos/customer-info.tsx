@@ -9,7 +9,7 @@ import { useLoyaltyMembers, useRegisterLoyaltyMember, useLoyaltyRewards } from "
 import { Badge } from "@/components/ui/badge";
 import { Loader2, UserPlus, Trophy, Calendar, Gift, Sparkles, Star, Tag, Percent, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { useQuery } from "@tanstack/react-query";
 import { useGetTables } from "@/hooks/api/use-tables";
 import { LayoutGrid } from "lucide-react";
@@ -103,17 +103,17 @@ export function CustomerInfo({
 
     const handleRegister = () => {
         if (!name || !phone) {
-            toast.error("Nama dan nomor telepon harus diisi");
+            gooeyToast.error("Nama dan nomor telepon harus diisi");
             return;
         }
         registerMember.mutate(
             { outletId, name, phone },
             {
                 onSuccess: () => {
-                    toast.success("Berhasil mendaftarkan member baru!");
+                    gooeyToast.success("Berhasil mendaftarkan member baru!");
                 },
                 onError: (err: any) => {
-                    toast.error(err?.response?.data?.message || "Gagal mendaftarkan member");
+                    gooeyToast.error(err?.response?.data?.message || "Gagal mendaftarkan member");
                 },
             },
         );

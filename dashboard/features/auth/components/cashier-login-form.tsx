@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { authApi } from "@/lib/api";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -97,7 +97,7 @@ function CashierLoginFormInner() {
       } catch {}
       saveToHistory(cashierValues.username);
       refreshHistory();
-      toast.success(response.message || "Login berhasil");
+      gooeyToast.success(response.message || "Login berhasil");
       await new Promise((resolve) => setTimeout(resolve, 300));
       router.push("/cashier/pos");
     } catch (err: any) {
@@ -127,7 +127,7 @@ function CashierLoginFormInner() {
       try {
         sessionStorage.setItem("auth-role", "MANAGER");
       } catch {}
-      toast.success(response.message || "Login manager berhasil");
+      gooeyToast.success(response.message || "Login manager berhasil");
       await new Promise((resolve) => setTimeout(resolve, 300));
       router.push("/manager/outlets");
     } catch (err: any) {

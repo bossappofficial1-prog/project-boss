@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient as api } from "./base";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 
 // Types
 export interface Report {
@@ -86,11 +86,11 @@ export function useGenerateReport() {
       return data;
     },
     onSuccess: (data) => {
-      toast.success(data.message || "Laporan sedang diproses");
+      gooeyToast.success(data.message || "Laporan sedang diproses");
       queryClient.invalidateQueries({ queryKey: ["admin-reports"] });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal generate laporan");
+      gooeyToast.error(error.response?.data?.message || "Gagal generate laporan");
     },
   });
 }
@@ -104,11 +104,11 @@ export function useDeleteReport() {
       return data;
     },
     onSuccess: (data) => {
-      toast.success(data.message || "Laporan berhasil dihapus");
+      gooeyToast.success(data.message || "Laporan berhasil dihapus");
       queryClient.invalidateQueries({ queryKey: ["admin-reports"] });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal menghapus laporan");
+      gooeyToast.error(error.response?.data?.message || "Gagal menghapus laporan");
     },
   });
 }
@@ -132,10 +132,10 @@ export function useDownloadReport() {
       return response.data;
     },
     onSuccess: () => {
-      toast.success("Download berhasil");
+      gooeyToast.success("Download berhasil");
     },
     onError: (error: any) => {
-      toast.error("Gagal download laporan");
+      gooeyToast.error("Gagal download laporan");
     },
   });
 }

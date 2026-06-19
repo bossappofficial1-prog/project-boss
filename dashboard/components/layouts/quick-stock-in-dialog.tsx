@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,7 +63,7 @@ export function QuickStockInDialog({ open, onOpenChange, outletId }: QuickStockI
             });
             setStep("FORM");
         } catch (err: any) {
-            toast.error(err?.response?.data?.message || `Barang dengan barcode "${code}" tidak ditemukan`);
+            gooeyToast.error(err?.response?.data?.message || `Barang dengan barcode "${code}" tidak ditemukan`);
             setBarcode("");
             barcodeInputRef.current?.focus();
         }
@@ -78,7 +78,7 @@ export function QuickStockInDialog({ open, onOpenChange, outletId }: QuickStockI
 
     const handleSubmitStock = async () => {
         if (!product || !product.goodsId || quantity <= 0 || hppPerUnit <= 0) {
-            toast.error("Quantity dan HPP harus diisi");
+            gooeyToast.error("Quantity dan HPP harus diisi");
             return;
         }
 
@@ -90,10 +90,10 @@ export function QuickStockInDialog({ open, onOpenChange, outletId }: QuickStockI
                 hppPerUnit,
                 expiryDate: expiryDate ? new Date(expiryDate).toISOString() : undefined,
             }]);
-            toast.success(`Stok "${product.name}" berhasil ditambahkan: ${quantity} ${product.unit}`);
+            gooeyToast.success(`Stok "${product.name}" berhasil ditambahkan: ${quantity} ${product.unit}`);
             reset();
         } catch (err: any) {
-            toast.error(err?.response?.data?.message || "Gagal menyimpan stok");
+            gooeyToast.error(err?.response?.data?.message || "Gagal menyimpan stok");
         } finally {
             setSubmitting(false);
         }

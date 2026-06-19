@@ -2,7 +2,7 @@
 
 import React from "react";
 import { CheckCircle, Printer, X } from "lucide-react";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,

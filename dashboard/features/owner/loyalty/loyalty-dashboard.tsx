@@ -24,7 +24,7 @@ import { id as localeId } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { apiClient } from "@/lib/apis/base";
 
 export function LoyaltyDashboard({ outletId }: { outletId: string }) {
@@ -51,9 +51,9 @@ export function LoyaltyDashboard({ outletId }: { outletId: string }) {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      toast.success("Berhasil mengunduh data penukaran");
+      gooeyToast.success("Berhasil mengunduh data penukaran");
     } catch {
-      toast.error("Gagal mengunduh data penukaran");
+      gooeyToast.error("Gagal mengunduh data penukaran");
     } finally {
       setIsExporting(false);
     }

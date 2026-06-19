@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { gooeyToast } from "goey-toast";
 import { BaseService, BaseQueryParams, PaginatedResponse } from '@/lib/services/BaseService';
 
 /**
@@ -128,7 +128,7 @@ export function createEntityFactory<TEntity = any>(
         
         // Show success toast
         if (!disableToast) {
-          toast.success(defaultMessages.create);
+          gooeyToast.success(defaultMessages.create);
         }
 
         // Call custom onSuccess if provided
@@ -137,7 +137,7 @@ export function createEntityFactory<TEntity = any>(
       onError: (error: any) => {
         // Show error toast
         if (!disableToast) {
-          toast.error(error?.message || 'Gagal menambahkan data');
+          gooeyToast.error(error?.message || 'Gagal menambahkan data');
         }
 
         // Call custom error handler
@@ -169,7 +169,7 @@ export function createEntityFactory<TEntity = any>(
         
         // Show success toast
         if (!disableToast) {
-          toast.success(defaultMessages.update);
+          gooeyToast.success(defaultMessages.update);
         }
 
         // Call custom onSuccess if provided
@@ -178,7 +178,7 @@ export function createEntityFactory<TEntity = any>(
       onError: (error: any) => {
         // Show error toast
         if (!disableToast) {
-          toast.error(error?.message || 'Gagal mengupdate data');
+          gooeyToast.error(error?.message || 'Gagal mengupdate data');
         }
 
         // Call custom error handler
@@ -210,7 +210,7 @@ export function createEntityFactory<TEntity = any>(
         
         // Show success toast
         if (!disableToast) {
-          toast.success(defaultMessages.delete);
+          gooeyToast.success(defaultMessages.delete);
         }
 
         // Call custom onSuccess if provided
@@ -219,7 +219,7 @@ export function createEntityFactory<TEntity = any>(
       onError: (error: any) => {
         // Show error toast
         if (!disableToast) {
-          toast.error(error?.message || 'Gagal menghapus data');
+          gooeyToast.error(error?.message || 'Gagal menghapus data');
         }
 
         // Call custom error handler
@@ -255,7 +255,7 @@ export function createEntityFactory<TEntity = any>(
         
         // Show success toast
         if (!disableToast) {
-          toast.success(`${ids.length} data berhasil dihapus`);
+          gooeyToast.success(`${ids.length} data berhasil dihapus`);
         }
 
         // Call custom onSuccess if provided
@@ -264,7 +264,7 @@ export function createEntityFactory<TEntity = any>(
       onError: (error: any) => {
         // Show error toast
         if (!disableToast) {
-          toast.error(error?.message || 'Gagal menghapus data');
+          gooeyToast.error(error?.message || 'Gagal menghapus data');
         }
 
         // Call custom error handler

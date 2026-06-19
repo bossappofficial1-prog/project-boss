@@ -1,7 +1,7 @@
 import { subscriptionPlanvalues } from "@/features/admin/subcriptions/plans/schema"
 import { apiClient } from "@/lib/apis/base"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
+import { gooeyToast } from "goey-toast"
 
 export interface SubcriptionPlan {
     id: string
@@ -40,7 +40,7 @@ export const useCreateSubscriptionPlans = () => {
         mutationFn: async (data: subscriptionPlanvalues) => (await apiClient.post(`/subscription-plans`, data)).data.data as SubcriptionPlan,
         onSuccess: (data) => {
             query.invalidateQueries({ queryKey: ['subscription-plans'] })
-            toast.success(`Berhasil menambahkan plan "${data.name}"`)
+            gooeyToast.success(`Berhasil menambahkan plan "${data.name}"`)
         }
     })
 }
@@ -52,9 +52,9 @@ export const useDeleteSubscriptionPlans = () => {
         mutationFn: async (id: string) => (await apiClient.delete(`/subscription-plans/${id}`)).data.data as SubcriptionPlan,
         onSuccess: (data) => {
             query.invalidateQueries({ queryKey: ['subscription-plans'] })
-            toast.success(`Berhasil menghapus ${data.name}`)
+            gooeyToast.success(`Berhasil menghapus ${data.name}`)
         },
-        onError: () => toast.error('Gagal menghapus subcriptions plans')
+        onError: () => gooeyToast.error('Gagal menghapus subcriptions plans')
     })
 }
 
@@ -64,7 +64,7 @@ export const useUpdateSubscriptionPlans = () => {
         mutationFn: async (payload: { id: string, data: subscriptionPlanvalues }) => (await apiClient.put(`/subscription-plans/${payload.id}`, payload.data)).data.data as SubcriptionPlan,
         onSuccess: (data) => {
             query.invalidateQueries({ queryKey: ['subscription-plans'] })
-            toast.success(`Berhasil mengupdate plan ${data.name}`)
+            gooeyToast.success(`Berhasil mengupdate plan ${data.name}`)
         }
     })
 }

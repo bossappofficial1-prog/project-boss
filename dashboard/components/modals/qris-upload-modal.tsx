@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import { gooeyToast } from "goey-toast";
 import Image from 'next/image';
 import { outletApi } from '@/lib/apis/outlet';
 import { uploadApi } from '@/lib/api';
@@ -48,13 +48,13 @@ export default function QRISUploadModal({
 
     // Validasi tipe file
     if (!file.type.startsWith('image/')) {
-      toast.error('File harus berupa gambar');
+      gooeyToast.error('File harus berupa gambar');
       return;
     }
 
     // Validasi ukuran file (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
-      toast.error('Ukuran file maksimal 2MB');
+      gooeyToast.error('Ukuran file maksimal 2MB');
       return;
     }
 
@@ -70,7 +70,7 @@ export default function QRISUploadModal({
 
   const handleUpload = async () => {
     if (!outlet || !selectedFile) {
-      toast.error('Pilih file terlebih dahulu');
+      gooeyToast.error('Pilih file terlebih dahulu');
       return;
     }
 
@@ -80,12 +80,12 @@ export default function QRISUploadModal({
       const fileUrl = (await uploadApi.uploadImage(selectedFile)).url
       await outletApi.uploadQRIS(outlet.id, fileUrl);
 
-      toast.success('QRIS berhasil diupload');
+      gooeyToast.success('QRIS berhasil diupload');
       onSuccess?.();
       onOpenChange(false);
     } catch (error: any) {
       console.error('Error uploading QRIS:', error);
-      toast.error(error.message || 'Gagal mengupload QRIS');
+      gooeyToast.error(error.message || 'Gagal mengupload QRIS');
     } finally {
       setIsLoading(false);
     }
@@ -103,14 +103,14 @@ export default function QRISUploadModal({
     try {
       await outletApi.deleteQRIS(outlet.id);
 
-      toast.success('QRIS berhasil dihapus');
+      gooeyToast.success('QRIS berhasil dihapus');
       setPreviewUrl(null);
       setSelectedFile(null);
       onSuccess?.();
       onOpenChange(false);
     } catch (error: any) {
       console.error('Error deleting QRIS:', error);
-      toast.error(error.message || 'Gagal menghapus QRIS');
+      gooeyToast.error(error.message || 'Gagal menghapus QRIS');
     } finally {
       setIsDeleting(false);
     }

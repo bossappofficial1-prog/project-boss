@@ -54,7 +54,7 @@ import {
   useUpdateBusinessSettings,
 } from '@/lib/apis/admin-business-management';
 import { formatCurrency } from '@/lib/utils';
-import { toast } from 'sonner';
+import { gooeyToast } from "goey-toast";
 
 interface Business {
   id: string;
@@ -117,30 +117,30 @@ export default function BusinessDetailSheet({ business, isOpen, onClose, onSuspe
     try {
       await navigator.clipboard.writeText(text);
       setCopied(label);
-      toast.success(`${label} disalin`);
+      gooeyToast.success(`${label} disalin`);
       setTimeout(() => setCopied(null), 2000);
     } catch {
-      toast.error('Gagal menyalin');
+      gooeyToast.error('Gagal menyalin');
     }
   };
 
   const handleSuspend = async () => {
     try {
       await onSuspend(business.id, !isSuspended);
-      toast.success(`Bisnis berhasil di${isSuspended ? 'aktifkan' : 'suspend'}`);
+      gooeyToast.success(`Bisnis berhasil di${isSuspended ? 'aktifkan' : 'suspend'}`);
     } catch {
-      toast.error('Gagal mengubah status bisnis');
+      gooeyToast.error('Gagal mengubah status bisnis');
     }
   };
 
   const handleDelete = async () => {
     try {
       await onDelete(business.id);
-      toast.success('Bisnis berhasil dihapus');
+      gooeyToast.success('Bisnis berhasil dihapus');
       onClose(false);
       setShowDeleteDialog(false);
     } catch {
-      toast.error('Gagal menghapus bisnis');
+      gooeyToast.error('Gagal menghapus bisnis');
     }
   };
 
@@ -626,7 +626,7 @@ function NotificationSection({ business }: { business: Business }) {
 
   const handleSend = () => {
     if (!subject.trim() || !message.trim()) {
-      toast.error('Subject dan pesan wajib diisi');
+      gooeyToast.error('Subject dan pesan wajib diisi');
       return;
     }
     sendNotification.mutate(

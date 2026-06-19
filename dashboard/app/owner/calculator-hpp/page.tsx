@@ -30,7 +30,7 @@ import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { formatCurrency, cn } from "@/lib/utils";
 import { useAutoSaveCalchpp } from "@/stores/use-auto-save-calchpp";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { productApi } from "@/lib/apis/product";
 import { useOutletStore } from "@/stores/outlet.store";
@@ -208,12 +208,12 @@ export default function HppCalculator() {
       return productApi.update(selectedProductId, { type: "GOODS", goods: { sellingPrice: payload.price, averageHpp: payload.hpp } } as any);
     },
     onSuccess: () => {
-      toast.success("HPP dan Harga Jual berhasil diterapkan ke produk");
+      gooeyToast.success("HPP dan Harga Jual berhasil diterapkan ke produk");
       queryClient.invalidateQueries({ queryKey: ["products"] });
       setIsConfirmOpen(false);
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.message || "Gagal menerapkan harga jual");
+      gooeyToast.error(err.response?.data?.message || "Gagal menerapkan harga jual");
     }
   });
 
@@ -337,15 +337,15 @@ export default function HppCalculator() {
                     className="w-full md:w-auto bg-background"
                     onClick={() => {
                       if (!selectedProduct?.goods?.averageHpp) {
-                        toast.error("Produk ini belum memiliki HPP (Stok kosong)");
+                        gooeyToast.error("Produk ini belum memiliki HPP (Stok kosong)");
                         return;
                       }
                       const firstCat = categories[0];
                       if (firstCat && firstCat.items.length > 0) {
                         updateItem(firstCat.id, firstCat.items[0].id, "unitCost", selectedProduct.goods.averageHpp);
-                        toast.success("HPP berhasil dimuat ke kalkulator");
+                        gooeyToast.success("HPP berhasil dimuat ke kalkulator");
                       } else {
-                        toast.error("Kategori kalkulator kosong");
+                        gooeyToast.error("Kategori kalkulator kosong");
                       }
                     }}
                   >

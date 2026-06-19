@@ -13,7 +13,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { format } from "date-fns";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { useReportStaff } from "@/hooks/use-report";
 import { useOutletStore } from "@/stores/outlet.store";
 import { ReportStaffTable } from "./report-staff-table";
@@ -85,9 +85,9 @@ export default function ReportStaffContent() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      toast.success("Berhasil mengexport laporan staff");
+      gooeyToast.success("Berhasil mengexport laporan staff");
     } catch {
-      toast.error("Gagal mengexport laporan staff");
+      gooeyToast.error("Gagal mengexport laporan staff");
     } finally {
       setIsExporting(false);
     }

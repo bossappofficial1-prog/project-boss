@@ -7,7 +7,7 @@ import {
     UseInfiniteQueryOptions,
     InfiniteData
 } from "@tanstack/react-query"
-import { toast } from "sonner"
+import { gooeyToast } from "goey-toast"
 
 // Types for better API design
 type ToastConfig = {
@@ -80,7 +80,7 @@ export default function useReactQuery() {
                     // Toast notification
                     const successMessage = toastConfig?.success
                     if (successMessage !== false) {
-                        toast.success(successMessage || "Operation completed successfully")
+                        gooeyToast.success(successMessage || "Operation completed successfully")
                     }
 
                     // Call user-defined success handler
@@ -93,7 +93,7 @@ export default function useReactQuery() {
                         const message = errorMessage ||
                             (error as Error)?.message ||
                             "Operation failed"
-                        toast.error(message)
+                        gooeyToast.error(message)
                     }
 
                     // Call user-defined error handler

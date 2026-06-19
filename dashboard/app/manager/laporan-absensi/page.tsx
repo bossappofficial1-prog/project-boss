@@ -7,7 +7,7 @@ import { id as localeId } from "date-fns/locale";
 import { Loader2, Plus, Edit, Trash2, MapPin, Eye, Camera, RefreshCcw, ExternalLink } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 import { z } from "zod";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 
 import { useManagerContext } from "@/app/manager/layout";
 import { DataTable } from "@/components/ui/data-table";
@@ -98,36 +98,36 @@ export default function ManagerLaporanAbsensiPage() {
   const createMutation = useMutation({
     mutationFn: (payload: any) => attendanceApi.createManual(payload),
     onSuccess: () => {
-      toast.success("Catatan absensi berhasil ditambahkan!");
+      gooeyToast.success("Catatan absensi berhasil ditambahkan!");
       setIsAddOpen(false);
       queryClient.invalidateQueries({ queryKey: ["manager-attendance"] });
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.message || err?.message || "Gagal menyimpan data.");
+      gooeyToast.error(err.response?.data?.message || err?.message || "Gagal menyimpan data.");
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: (params: { id: string; payload: any }) => attendanceApi.updateManual(params.id, params.payload),
     onSuccess: () => {
-      toast.success("Catatan absensi berhasil diperbarui!");
+      gooeyToast.success("Catatan absensi berhasil diperbarui!");
       setEditingRecord(null);
       queryClient.invalidateQueries({ queryKey: ["manager-attendance"] });
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.message || err?.message || "Gagal memperbarui data.");
+      gooeyToast.error(err.response?.data?.message || err?.message || "Gagal memperbarui data.");
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => attendanceApi.deleteManual(id),
     onSuccess: () => {
-      toast.success("Catatan absensi berhasil dihapus!");
+      gooeyToast.success("Catatan absensi berhasil dihapus!");
       setDeletingId(null);
       queryClient.invalidateQueries({ queryKey: ["manager-attendance"] });
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.message || err?.message || "Gagal menghapus data.");
+      gooeyToast.error(err.response?.data?.message || err?.message || "Gagal menghapus data.");
     },
   });
 

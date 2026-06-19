@@ -10,7 +10,7 @@ import { ExpensesEmptyState } from '@/features/expenses/components/owner/empty-s
 import { ExpensesSkeleton } from '@/features/expenses/components/owner/skeleton';
 import { ExpenseFormDialog } from '@/features/expenses';
 import { type Expense } from '@/hooks/api/use-expenses';
-import { toast } from 'sonner';
+import { gooeyToast } from "goey-toast";
 import { uploadApi } from '@/lib/api';
 import { apiClient } from '@/lib/apis/base';
 import { ReceiptPreviewModal } from '@/components/modals/receipt-preview-modal';
@@ -40,7 +40,7 @@ export default function ExpensesPage() {
 		if (!file) return;
 
 		setScanning(true);
-		const toastId = toast.loading("Memindai struk belanja dengan Gemini AI...");
+		const toastId = gooeyToast("Memindai struk belanja dengan Gemini AI...", { duration: Infinity });
 		
 		try {
 			const fd = new FormData();
@@ -53,11 +53,11 @@ export default function ExpensesPage() {
 				}
 			});
 
-			toast.success("Struk berhasil dipindai dan dicatat sebagai pengeluaran otomatis!", { id: toastId });
+			gooeyToast.success("Struk berhasil dipindai dan dicatat sebagai pengeluaran otomatis!", { id: toastId });
 			refetch();
 		} catch (err: any) {
 			const msg = err?.response?.data?.message || err?.message || "Gagal memindai struk";
-			toast.error(msg, { id: toastId });
+			gooeyToast.error(msg, { id: toastId });
 		} finally {
 			setScanning(false);
 			e.target.value = "";
@@ -74,9 +74,9 @@ export default function ExpensesPage() {
 		if (!ok) return;
 		try {
 			await remove(exp.id);
-			toast.success("Pengeluaran berhasil dihapus");
+			gooeyToast.success("Pengeluaran berhasil dihapus");
 		} catch (error: any) {
-			toast.error(error?.message || "Gagal menghapus pengeluaran");
+			gooeyToast.error(error?.message || "Gagal menghapus pengeluaran");
 		}
 	};
 
@@ -85,18 +85,18 @@ export default function ExpensesPage() {
 			try {
 				if (id) {
 					await update(id, formData);
-					toast.success("Pengeluaran berhasil diperbarui");
+					gooeyToast.success("Pengeluaran berhasil diperbarui");
 				} else {
 					await create({
 						...formData,
 						outletId: outletId!
 					});
-					toast.success("Pengeluaran berhasil ditambahkan");
+					gooeyToast.success("Pengeluaran berhasil ditambahkan");
 				}
 				setModalOpen(false);
 			} catch (error: any) {
 				const msg = error?.response?.data?.message ?? error?.message ?? "Gagal menyimpan pengeluaran";
-				toast.error(msg);
+				gooeyToast.error(msg);
 				formData.receiptUrl && await uploadApi.deleteByUrl(formData.receiptUrl)
 			}
 		},

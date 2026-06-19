@@ -25,7 +25,7 @@ import {
     ReceiptSettingService,
     ReceiptSettingType,
 } from "@/lib/apis/receipt-setting";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 
 import { StatusDot } from "@/features/printer-settings/components/status-dot";
 import { ConnectionTab } from "@/features/printer-settings/components/connection-tab";
@@ -150,11 +150,11 @@ export function PrinterSettings({ outletId }: { outletId?: string }) {
             }
 
             const result = await ReceiptSettingService.update(outletId, payload);
-            toast.success("Pengaturan struk berhasil disimpan", { duration: 5000 });
+            gooeyToast.success("Pengaturan struk berhasil disimpan", { duration: 5000 });
             setReceiptData(result);
         } catch (err) {
             console.error("Update failed:", err);
-            toast.error("Gagal menyimpan pengaturan struk");
+            gooeyToast.error("Gagal menyimpan pengaturan struk");
             throw err;
         } finally {
             setIsSubmitting(false);

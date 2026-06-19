@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useCallback } from "react";
 import { posV2Api } from "@/lib/apis/pos-v2";
 import type { PosV2OrderRequest } from "@/lib/apis/pos-v2";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 
 const KEYS = {
     products: (outletId: string) => ["pos-v2", "products", outletId] as const,
@@ -284,9 +284,9 @@ export function usePosV2CreateOrder() {
         },
         onSuccess: (data: any, variables) => {
             if (data.isOffline) {
-                toast.warning("Koneksi internet bermasalah! Transaksi disimpan secara lokal di browser dan akan disinkronkan otomatis saat online kembali. 📡");
+                gooeyToast.warning("Koneksi internet bermasalah! Transaksi disimpan secara lokal di browser dan akan disinkronkan otomatis saat online kembali. 📡");
             } else {
-                toast.success("Transaksi berhasil!");
+                gooeyToast.success("Transaksi berhasil!");
             }
             
             queryClient.invalidateQueries({
@@ -326,7 +326,7 @@ export function usePosV2OfflineSync(outletId: string) {
         let failedCount = 0;
         const remainingOrders = [];
 
-        toast.info(`Menyinkronkan ${orders.length} transaksi offline... 📡`);
+        gooeyToast.info(`Menyinkronkan ${orders.length} transaksi offline... 📡`);
 
         for (const order of orders) {
             try {
@@ -357,14 +357,14 @@ export function usePosV2OfflineSync(outletId: string) {
         setIsSyncing(false);
 
         if (successCount > 0) {
-            toast.success(`${successCount} transaksi offline berhasil disinkronkan ke server! 🌐`);
+            gooeyToast.success(`${successCount} transaksi offline berhasil disinkronkan ke server! 🌐`);
             // Invalidate queries to refresh lists
             queryClient.invalidateQueries({ queryKey: ["pos-v2"] });
             queryClient.invalidateQueries({ queryKey: ["tables"] });
         }
 
         if (failedCount > 0) {
-            toast.error(`${failedCount} transaksi offline gagal disinkronkan. Akan dicoba lagi nanti.`);
+            gooeyToast.error(`${failedCount} transaksi offline gagal disinkronkan. Akan dicoba lagi nanti.`);
         }
     }, [isSyncing, queryClient]);
 

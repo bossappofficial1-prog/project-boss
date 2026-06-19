@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import {
   Dialog,
   DialogContent,
@@ -141,32 +141,32 @@ export function PurchaseOrderDetailDialog({
       };
 
       await updateItemsMutation.mutateAsync({ id: po!.id, payload });
-      toast.success("Draf Purchase Order berhasil diperbarui");
+      gooeyToast.success("Draf Purchase Order berhasil diperbarui");
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Gagal memperbarui draf");
+      gooeyToast.error(error.response?.data?.message || "Gagal memperbarui draf");
     }
   };
 
   const handleSendPO = async () => {
     try {
       await sendPOMutation.mutateAsync(po!.id);
-      toast.success(
+      gooeyToast.success(
         "Purchase Order resmi berhasil dikirim ke Supplier via WA/Email!",
       );
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Gagal mengirim PO");
+      gooeyToast.error(error.response?.data?.message || "Gagal mengirim PO");
     }
   };
 
   const handleCompletePO = async () => {
     try {
       await completePOMutation.mutateAsync(po!.id);
-      toast.success(
+      gooeyToast.success(
         "Restock Selesai! Stok barang otomatis ditambahkan ke batch FIFO/FEFO outlet.",
       );
       onOpenChange(false);
     } catch (error: any) {
-      toast.error(
+      gooeyToast.error(
         error.response?.data?.message || "Gagal mengonfirmasi penerimaan",
       );
     }

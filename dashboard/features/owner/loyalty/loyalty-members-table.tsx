@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { cn } from "@/lib/utils";
 
 export function LoyaltyMembersTable({ outletId }: { outletId: string }) {
@@ -41,7 +41,7 @@ export function LoyaltyMembersTable({ outletId }: { outletId: string }) {
     if (!editingMember) return;
     const pts = parseInt(pointsToAdjust);
     if (isNaN(pts) || pts === 0) {
-      toast.error("Masukkan jumlah poin yang valid");
+      gooeyToast.error("Masukkan jumlah poin yang valid");
       return;
     }
     try {
@@ -51,12 +51,12 @@ export function LoyaltyMembersTable({ outletId }: { outletId: string }) {
         points: pts,
         note: adjustNote || undefined,
       });
-      toast.success(`Berhasil ${pts > 0 ? "menambah" : "mengurangi"} ${Math.abs(pts)} poin`);
+      gooeyToast.success(`Berhasil ${pts > 0 ? "menambah" : "mengurangi"} ${Math.abs(pts)} poin`);
       setEditingMember(null);
       setPointsToAdjust("0");
       setAdjustNote("");
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Gagal menyesuaikan poin");
+      gooeyToast.error(error?.response?.data?.message || "Gagal menyesuaikan poin");
     }
   };
 

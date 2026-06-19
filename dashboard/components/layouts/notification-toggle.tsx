@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Bell, BellOff, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/apis/base";
 import { cn } from "@/lib/utils";
@@ -107,7 +107,7 @@ export function NotificationToggle({ staffId }: NotificationToggleProps) {
     },
     onSuccess: () => {
       setIsSubscribed(true);
-      toast.success("Notifikasi kasir berhasil diaktifkan 🔔");
+      gooeyToast.success("Notifikasi kasir berhasil diaktifkan 🔔");
     },
     onError: async (err: any) => {
       setIsSubscribed(false);
@@ -118,7 +118,7 @@ export function NotificationToggle({ staffId }: NotificationToggleProps) {
       } catch (e) {
         // ignore rollback errors
       }
-      toast.error(err.response?.data?.message || err.message || "Gagal mengaktifkan notifikasi.");
+      gooeyToast.error(err.response?.data?.message || err.message || "Gagal mengaktifkan notifikasi.");
     },
   });
 
@@ -137,11 +137,11 @@ export function NotificationToggle({ staffId }: NotificationToggleProps) {
     },
     onSuccess: () => {
       setIsSubscribed(false);
-      toast.success("Notifikasi kasir berhasil dinonaktifkan 🔕");
+      gooeyToast.success("Notifikasi kasir berhasil dinonaktifkan 🔕");
     },
     onError: (err: any) => {
       setIsSubscribed(true);
-      toast.error(err.response?.data?.message || err.message || "Gagal menonaktifkan notifikasi.");
+      gooeyToast.error(err.response?.data?.message || err.message || "Gagal menonaktifkan notifikasi.");
     },
   });
 
@@ -163,7 +163,7 @@ export function NotificationToggle({ staffId }: NotificationToggleProps) {
       if (currentPermission === "granted") {
         subscribeMutation.mutate();
       } else if (currentPermission === "denied") {
-        toast.error("Izin notifikasi diblokir browser. Silakan aktifkan izin di pengaturan alamat browser Anda.");
+        gooeyToast.error("Izin notifikasi diblokir browser. Silakan aktifkan izin di pengaturan alamat browser Anda.");
       }
     }
   };

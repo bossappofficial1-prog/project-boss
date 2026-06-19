@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import {
     adminSubscriptionInvoiceApi,
     type AdminSubscriptionInvoiceListParams,
@@ -99,12 +99,12 @@ export function useAdminSubscriptionInvoices(): UseAdminSubscriptionInvoicesStat
     const verifyMutation = useMutation({
         mutationFn: async (invoiceId: string) => adminSubscriptionInvoiceApi.verify(invoiceId),
         onSuccess: async () => {
-            toast.success("Invoice langganan berhasil diverifikasi.");
+            gooeyToast.success("Invoice langganan berhasil diverifikasi.");
             await invalidateList();
         },
         onError: (err: any) => {
             const message = err?.message ?? "Gagal memverifikasi invoice langganan.";
-            toast.error(message);
+            gooeyToast.error(message);
         },
     });
 
@@ -112,12 +112,12 @@ export function useAdminSubscriptionInvoices(): UseAdminSubscriptionInvoicesStat
         mutationFn: async ({ invoiceId, reason }: { invoiceId: string; reason: string }) =>
             adminSubscriptionInvoiceApi.reject({ invoiceId, reason }),
         onSuccess: async () => {
-            toast.warning("Invoice langganan ditolak.");
+            gooeyToast.warning("Invoice langganan ditolak.");
             await invalidateList();
         },
         onError: (err: any) => {
             const message = err?.message ?? "Gagal menolak invoice langganan.";
-            toast.error(message);
+            gooeyToast.error(message);
         },
     });
 

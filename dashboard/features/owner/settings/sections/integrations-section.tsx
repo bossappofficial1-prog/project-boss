@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import {
   Plug,
   Calendar,
@@ -178,18 +178,18 @@ export function IntegrationsSection({ subscriptionPlan }: IntegrationsSectionPro
 
   useEffect(() => {
     if (isWhatsAppOpen && waStatus?.status === "CONNECTED") {
-      toast.success("WhatsApp API berhasil terhubung");
+      gooeyToast.success("WhatsApp API berhasil terhubung");
       setIsWhatsAppOpen(false);
       queryClient.invalidateQueries({ queryKey: ["integrations"] });
     }
   }, [waStatus?.status, isWhatsAppOpen, queryClient]);
 
   const handleGoogleConnect = () => {
-    toast.loading("Mengarahkan ke Google...");
+    gooeyToast("Mengarahkan ke Google...", { duration: Infinity });
     connectGoogle(undefined, {
       onError: (err: any) => {
-        toast.dismiss();
-        toast.error(
+        gooeyToast.dismiss();
+        gooeyToast.error(
           err?.response?.data?.message ||
             "Gagal menghubungkan Google Calendar"
         );
@@ -199,9 +199,9 @@ export function IntegrationsSection({ subscriptionPlan }: IntegrationsSectionPro
 
   const handleGoogleDisconnect = () => {
     disconnectGoogle(undefined, {
-      onSuccess: () => toast.success("Google Calendar berhasil diputus"),
+      onSuccess: () => gooeyToast.success("Google Calendar berhasil diputus"),
       onError: (err: any) =>
-        toast.error(
+        gooeyToast.error(
           err?.response?.data?.message || "Gagal memutuskan koneksi"
         ),
     });
@@ -211,7 +211,7 @@ export function IntegrationsSection({ subscriptionPlan }: IntegrationsSectionPro
     setIsWhatsAppOpen(true);
     initiateWhatsApp(undefined, {
       onError: (err: any) => {
-        toast.error(
+        gooeyToast.error(
           err?.response?.data?.message ||
             "Gagal memulai inisialisasi WhatsApp"
         );
@@ -222,9 +222,9 @@ export function IntegrationsSection({ subscriptionPlan }: IntegrationsSectionPro
 
   const handleWhatsAppDisconnect = () => {
     disconnectWhatsApp(undefined, {
-      onSuccess: () => toast.success("Integrasi WhatsApp berhasil diputus"),
+      onSuccess: () => gooeyToast.success("Integrasi WhatsApp berhasil diputus"),
       onError: (err: any) =>
-        toast.error(
+        gooeyToast.error(
           err?.response?.data?.message || "Gagal memutuskan WhatsApp"
         ),
     });
@@ -232,7 +232,7 @@ export function IntegrationsSection({ subscriptionPlan }: IntegrationsSectionPro
 
   const handleSendTest = () => {
     if (!testPhone.trim()) return;
-    toast.loading("Mengirim pesan uji coba...");
+    gooeyToast("Mengirim pesan uji coba...", { duration: Infinity });
     sendTest(
       {
         phoneNumber: testPhone,
@@ -241,13 +241,13 @@ export function IntegrationsSection({ subscriptionPlan }: IntegrationsSectionPro
       },
       {
         onSuccess: () => {
-          toast.dismiss();
-          toast.success("Pesan uji coba berhasil dikirim!");
+          gooeyToast.dismiss();
+          gooeyToast.success("Pesan uji coba berhasil dikirim!");
           setTestPhone("");
         },
         onError: (err: any) => {
-          toast.dismiss();
-          toast.error(
+          gooeyToast.dismiss();
+          gooeyToast.error(
             err?.response?.data?.message || "Gagal mengirim pesan uji coba"
           );
         },

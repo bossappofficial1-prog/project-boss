@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import {
   Building2,
   LayoutGrid,
@@ -107,7 +107,7 @@ export function TablesContent({
     mutationFn: (tableId: string) =>
       billApi.createBill({ outletId, tableId }),
     onSuccess: () => {
-      toast.success("Bill berhasil dibuat");
+      gooeyToast.success("Bill berhasil dibuat");
       queryClient.invalidateQueries({
         queryKey: ["cashier-tables", outletId],
       });
@@ -116,14 +116,14 @@ export function TablesContent({
       });
     },
     onError: (error: any) => {
-      toast.error(error?.message ?? "Gagal membuat bill");
+      gooeyToast.error(error?.message ?? "Gagal membuat bill");
     },
   });
 
   const payBillMutation = useMutation({
     mutationFn: (billId: string) => billApi.payBill(billId),
     onSuccess: () => {
-      toast.success("Bill berhasil dibayar");
+      gooeyToast.success("Bill berhasil dibayar");
       setDetailOpen(false);
       setSelectedTableId(null);
       queryClient.invalidateQueries({
@@ -134,7 +134,7 @@ export function TablesContent({
       });
     },
     onError: (error: any) => {
-      toast.error(error?.message ?? "Gagal memproses pembayaran");
+      gooeyToast.error(error?.message ?? "Gagal memproses pembayaran");
     },
   });
 

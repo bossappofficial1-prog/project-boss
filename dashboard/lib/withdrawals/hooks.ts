@@ -1,7 +1,7 @@
 // Custom hooks for withdrawal management
 import React, { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { gooeyToast } from "goey-toast";
 import {
     WithdrawalService,
     withdrawalUtils
@@ -88,11 +88,11 @@ export function useProcessWithdrawal() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['withdrawals'] });
             queryClient.invalidateQueries({ queryKey: ['withdrawal-stats'] });
-            toast.success('Withdrawal processed successfully');
+            gooeyToast.success('Withdrawal processed successfully');
         },
 
         onError: (error: any) => {
-            toast.error(error.response?.data?.message || 'Failed to process withdrawal');
+            gooeyToast.error(error.response?.data?.message || 'Failed to process withdrawal');
         },
     });
 
@@ -125,12 +125,12 @@ export function useBulkProcessWithdrawals() {
 
             const successCount = data.results?.length || 0;
             if (successCount > 0) {
-                toast.success(`Successfully processed ${successCount} withdrawals`);
+                gooeyToast.success(`Successfully processed ${successCount} withdrawals`);
             }
         },
 
         onError: (error: any) => {
-            toast.error(error.response?.data?.message || 'Failed to process withdrawals');
+            gooeyToast.error(error.response?.data?.message || 'Failed to process withdrawals');
         },
     });
 

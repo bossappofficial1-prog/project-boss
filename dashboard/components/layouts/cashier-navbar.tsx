@@ -19,7 +19,7 @@ import {
   ScanLine,
   HelpCircle,
 } from "lucide-react";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
@@ -194,10 +194,10 @@ export function CashierNavbar({
         sessionStorage.removeItem("cashier-auth-cache-v1");
       }
       queryClient.removeQueries({ queryKey: ["cashier-auth"] });
-      toast.success("Logout berhasil");
+      gooeyToast.success("Logout berhasil");
       router.push("/auth/login/cashier");
     } catch {
-      toast.error("Gagal logout");
+      gooeyToast.error("Gagal logout");
     }
   };
 
@@ -303,7 +303,7 @@ export function CashierNavbar({
                       closingCash: values.closingCash,
                       notes: values.notes,
                     });
-                    toast.success("Shift berhasil ditutup");
+                    gooeyToast.success("Shift berhasil ditutup");
                     setShiftDialogOpen(false);
                   }}
                   fields={[

@@ -5,7 +5,7 @@ import { z } from "zod";
 import { ReusableForm, type FormFieldConfig } from "@/components/ui/reuseable-form";
 import type { Expense } from "@/hooks/api/use-expenses";
 import { uploadApi } from "@/lib/api";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { ACCEPTED_FILE_TYPES } from "@/lib/file-types";
 
 const expenseSchema = z.object({
@@ -88,7 +88,7 @@ export function ExpenseFormDialog({
                 const response = await uploadApi.uploadImage(file);
                 v.set("receiptUrl", response.url);
             } catch (error) {
-                toast.error("Gagal mengunggah bukti transaksi");
+                gooeyToast.error("Gagal mengunggah bukti transaksi");
             }
         }
 

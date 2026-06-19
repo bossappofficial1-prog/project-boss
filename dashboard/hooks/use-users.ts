@@ -1,6 +1,6 @@
 // Custom hooks for User Management using React Query
 import { useMutation, useQuery, useQueryClient, UseQueryOptions } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { gooeyToast } from "goey-toast";
 import { userApi } from '@/lib/api';
 import type {
     User,
@@ -121,12 +121,12 @@ export function useCreateUser() {
             // Add to cache
             queryClient.setQueryData(userQueryKeys.detail(newUser.id), newUser);
 
-            toast.success('User created successfully!', {
+            gooeyToast.success('User created successfully!', {
                 description: `${newUser.email} has been added to the system.`
             });
         },
         onError: (error: AxiosError) => {
-            toast.error('Failed to create user', {
+            gooeyToast.error('Failed to create user', {
                 description: (error.response?.data as any).message
             });
         },
@@ -148,12 +148,12 @@ export function useUpdateUser() {
             queryClient.invalidateQueries({ queryKey: userQueryKeys.lists() });
             queryClient.invalidateQueries({ queryKey: userQueryKeys.stats() });
 
-            toast.success('User updated successfully!', {
+            gooeyToast.success('User updated successfully!', {
                 description: `${updatedUser.name} has been updated.`
             });
         },
         onError: (error: AxiosError) => {
-            toast.error('Failed to update user', {
+            gooeyToast.error('Failed to update user', {
                 description: (error.response?.data as any).message
             });
         },
@@ -174,10 +174,10 @@ export function useDeleteUser() {
             queryClient.invalidateQueries({ queryKey: userQueryKeys.lists() });
             queryClient.invalidateQueries({ queryKey: userQueryKeys.stats() });
 
-            toast.success('User deleted successfully!');
+            gooeyToast.success('User deleted successfully!');
         },
         onError: (error: AxiosError) => {
-            toast.error('Failed to delete user', {
+            gooeyToast.error('Failed to delete user', {
                 description: (error.response?.data as any).message
             });
         },
@@ -200,10 +200,10 @@ export function useBulkDeleteUsers() {
             queryClient.invalidateQueries({ queryKey: userQueryKeys.lists() });
             queryClient.invalidateQueries({ queryKey: userQueryKeys.stats() });
 
-            toast.success(`Successfully deleted ${result.deletedCount} users`);
+            gooeyToast.success(`Successfully deleted ${result.deletedCount} users`);
         },
         onError: (error: AxiosError) => {
-            toast.error('Failed to delete users', {
+            gooeyToast.error('Failed to delete users', {
                 description: (error.response?.data as any).message
             });
         },
@@ -226,12 +226,12 @@ export function useUpdateUserStatus() {
             queryClient.invalidateQueries({ queryKey: userQueryKeys.stats() });
 
             const statusText = isVerified ? 'verified' : 'unverified';
-            toast.success(`User ${statusText} successfully!`, {
+            gooeyToast.success(`User ${statusText} successfully!`, {
                 description: `${updatedUser.name} is now ${statusText}.`
             });
         },
         onError: (error: AxiosError) => {
-            toast.error('Failed to update user status', {
+            gooeyToast.error('Failed to update user status', {
                 description: (error.response?.data as any).message
             });
         },
@@ -261,10 +261,10 @@ export function useResetUserPassword() {
         mutationFn: ({ userId, newPassword }: { userId: string; newPassword: string }) =>
             userApi.resetUserPassword(userId, newPassword),
         onSuccess: (_, { userId }) => {
-            toast.success('Password reset successfully!');
+            gooeyToast.success('Password reset successfully!');
         },
         onError: (error: AxiosError) => {
-            toast.error('Failed to reset password', {
+            gooeyToast.error('Failed to reset password', {
                 description: (error.response?.data as any).message
             });
         },
@@ -276,10 +276,10 @@ export function useSendVerificationEmail() {
     return useMutation({
         mutationFn: (userId: string) => userApi.sendVerificationEmail(userId),
         onSuccess: () => {
-            toast.success('Verification email sent successfully!');
+            gooeyToast.success('Verification email sent successfully!');
         },
         onError: (error: Error) => {
-            toast.error('Failed to send verification email', {
+            gooeyToast.error('Failed to send verification email', {
                 description: error.message
             });
         },

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { User, Lock, X } from "lucide-react";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 
 import {
   Dialog,
@@ -87,12 +87,12 @@ export function SwitchAccountDialog({
       saveToHistory(selectedUser);
       sessionStorage.removeItem("cashier-auth-cache-v1");
       queryClient.removeQueries({ queryKey: ["cashier-auth"] });
-      toast.success(`Berhasil login sebagai ${response.staff.name}`);
+      gooeyToast.success(`Berhasil login sebagai ${response.staff.name}`);
       onOpenChange(false);
       window.location.href = "/cashier/pos";
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || "Gagal login";
-      toast.error(msg);
+      gooeyToast.error(msg);
     } finally {
       setIsLoading(false);
     }

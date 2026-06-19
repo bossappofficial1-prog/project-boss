@@ -3,7 +3,7 @@
 import { SidebarInset, SidebarProvider, SidebarRail } from "@/components/ui/sidebar";
 import { AppSidebar } from "./admin-sidebar";
 import { SiteHeader } from "./admin-header";
-import { Toaster } from "sonner";
+import { GooeyToaster } from "goey-toast";
 import { useAuthGuard } from "../auth";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -22,13 +22,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <SidebarProvider defaultOpen>
-      <Toaster
-        position="top-right"
-        richColors
-        toastOptions={{
-          duration: 5000,
-        }}
-      />
+      <GooeyToaster position="top-right" />
       <AppSidebar />
       <SidebarRail />
       <SidebarInset className="bg-background">

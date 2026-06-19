@@ -5,7 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Building2, FileText } from "lucide-react";
 import { businessApi } from "@/lib/api";
 import { AxiosError } from "axios";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { z } from "zod";
 import {
   ReusableForm,
@@ -53,7 +53,7 @@ export default function BusinessProfileModal({
       });
     },
     onSuccess: () => {
-      toast.success("Profil bisnis berhasil diperbarui");
+      gooeyToast.success("Profil bisnis berhasil diperbarui");
       onOpenChange(false);
       onSuccess?.();
     },
@@ -63,7 +63,7 @@ export default function BusinessProfileModal({
           ? "Nama bisnis sudah ada"
           : (e.response?.data as any)?.message ||
             "Gagal menyimpan profil bisnis";
-      toast.error(message);
+      gooeyToast.error(message);
     },
   });
 

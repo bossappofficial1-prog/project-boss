@@ -25,7 +25,7 @@
 import { createEntityFactory } from './use-entity-factory';
 import { userService } from '@/lib/services/UserService';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { gooeyToast } from "goey-toast";
 import { User, UserRole } from '@/types';
 
 /**
@@ -52,10 +52,10 @@ export const useUsersV3 = () => {
       onSuccess: (_data: User, { userId }: { userId: string; role: UserRole }) => {
         queryClient.invalidateQueries({ queryKey: ['users', 'list'] });
         queryClient.invalidateQueries({ queryKey: ['users', 'detail', userId] });
-        toast.success('Role berhasil diubah');
+        gooeyToast.success('Role berhasil diubah');
       },
       onError: (error: any) => {
-        toast.error(error?.message || 'Gagal mengubah role');
+        gooeyToast.error(error?.message || 'Gagal mengubah role');
       },
     });
   };
@@ -66,10 +66,10 @@ export const useUsersV3 = () => {
       onSuccess: (_data: User, userId: string) => {
         queryClient.invalidateQueries({ queryKey: ['users', 'list'] });
         queryClient.invalidateQueries({ queryKey: ['users', 'detail', userId] });
-        toast.success('Email berhasil diverifikasi');
+        gooeyToast.success('Email berhasil diverifikasi');
       },
       onError: (error: any) => {
-        toast.error(error?.message || 'Gagal memverifikasi email');
+        gooeyToast.error(error?.message || 'Gagal memverifikasi email');
       },
     });
   };
@@ -80,10 +80,10 @@ export const useUsersV3 = () => {
       onSuccess: (_data: User, userId: string) => {
         queryClient.invalidateQueries({ queryKey: ['users', 'list'] });
         queryClient.invalidateQueries({ queryKey: ['users', 'detail', userId] });
-        toast.success('User berhasil disuspend');
+        gooeyToast.success('User berhasil disuspend');
       },
       onError: (error: any) => {
-        toast.error(error?.message || 'Gagal suspend user');
+        gooeyToast.error(error?.message || 'Gagal suspend user');
       },
     });
   };
@@ -94,10 +94,10 @@ export const useUsersV3 = () => {
       onSuccess: (_data: User, userId: string) => {
         queryClient.invalidateQueries({ queryKey: ['users', 'list'] });
         queryClient.invalidateQueries({ queryKey: ['users', 'detail', userId] });
-        toast.success('User berhasil diaktifkan');
+        gooeyToast.success('User berhasil diaktifkan');
       },
       onError: (error: any) => {
-        toast.error(error?.message || 'Gagal mengaktifkan user');
+        gooeyToast.error(error?.message || 'Gagal mengaktifkan user');
       },
     });
   };
@@ -107,10 +107,10 @@ export const useUsersV3 = () => {
       mutationFn: ({ userId, newPassword }: { userId: string; newPassword: string }) =>
         userService.resetPassword(userId, newPassword),
       onSuccess: () => {
-        toast.success('Password berhasil direset');
+        gooeyToast.success('Password berhasil direset');
       },
       onError: (error: any) => {
-        toast.error(error?.message || 'Gagal reset password');
+        gooeyToast.error(error?.message || 'Gagal reset password');
       },
     });
   };

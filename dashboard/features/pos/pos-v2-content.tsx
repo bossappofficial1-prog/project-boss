@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -241,7 +241,7 @@ export function PosV2Content() {
         case "F2":
           e.preventDefault();
           setIsWalkIn((p) => !p);
-          toast.info(isWalkIn ? "Mode: Input Pelanggan" : "Mode: Walk-in");
+          gooeyToast.info(isWalkIn ? "Mode: Input Pelanggan" : "Mode: Walk-in");
           break;
         case "F8":
           e.preventDefault();
@@ -251,7 +251,7 @@ export function PosV2Content() {
           e.preventDefault();
           if (cartItems.length > 0) {
             handleClearCart();
-            toast.info("Keranjang dikosongkan");
+            gooeyToast.info("Keranjang dikosongkan");
           }
           retailBarcodeRef.current?.focus();
           break;
@@ -267,7 +267,7 @@ export function PosV2Content() {
         (l) => l.product.type === "SERVICE" && l.product.id !== product.id,
       );
       if (existingService) {
-        toast.error("Hanya satu layanan per transaksi");
+        gooeyToast.error("Hanya satu layanan per transaksi");
         return;
       }
       const existing = cart[product.id];
@@ -296,13 +296,13 @@ export function PosV2Content() {
         (product.stock ?? 0) > 0 &&
         current + 1 > (product.stock ?? 0)
       ) {
-        toast.error(`Stok "${product.name}" tidak cukup`);
+        gooeyToast.error(`Stok "${product.name}" tidak cukup`);
         return prev;
       }
       if (product.type === "TICKET") {
         const available = (product.totalQuota ?? 0) - (product.soldCount ?? 0);
         if (available > 0 && current + 1 > available) {
-          toast.error(`Kuota tiket "${product.name}" tidak cukup`);
+          gooeyToast.error(`Kuota tiket "${product.name}" tidak cukup`);
           return prev;
         }
       }
@@ -331,7 +331,7 @@ export function PosV2Content() {
         },
         onError: (error: any) => {
           if (isRetail) beepError();
-          toast.error(
+          gooeyToast.error(
             error?.response?.data?.message ||
               error?.message ||
               "Barcode tidak ditemukan",
@@ -364,14 +364,14 @@ export function PosV2Content() {
         (line.product.stock ?? 0) > 0 &&
         line.quantity + 1 > (line.product.stock ?? 0)
       ) {
-        toast.error(`Stok "${line.product.name}" tidak cukup`);
+        gooeyToast.error(`Stok "${line.product.name}" tidak cukup`);
         return prev;
       }
       if (line.product.type === "TICKET") {
         const available =
           (line.product.totalQuota ?? 0) - (line.product.soldCount ?? 0);
         if (available > 0 && line.quantity + 1 > available) {
-          toast.error(`Kuota tiket "${line.product.name}" tidak cukup`);
+          gooeyToast.error(`Kuota tiket "${line.product.name}" tidak cukup`);
           return prev;
         }
       }
@@ -433,7 +433,7 @@ export function PosV2Content() {
       },
     }));
     setScheduleDialog(null);
-    toast.success("Jadwal layanan tersimpan");
+    gooeyToast.success("Jadwal layanan tersimpan");
   };
 
   const applyOpenOrder = (order: PosV2OpenOrder) => {
@@ -453,7 +453,7 @@ export function PosV2Content() {
     setResumedOrderId(order.id);
     setPendingOpenOrder(null);
     setLeftTab("catalog");
-    toast.success(`Melanjutkan pesanan: ${order.customerName}`);
+    gooeyToast.success(`Melanjutkan pesanan: ${order.customerName}`);
   };
 
   const handleSelectOpenOrder = (order: PosV2OpenOrder) => {
@@ -532,14 +532,14 @@ export function PosV2Content() {
           queryClient.invalidateQueries({ queryKey: ["tables"] });
           queryClient.invalidateQueries({ queryKey: ["cashier-tables"] });
           queryClient.invalidateQueries({ queryKey: ["cashier-bills"] });
-          toast.success(
+          gooeyToast.success(
             isSaved
               ? "Pesanan berhasil disimpan!"
               : "Pesanan berhasil dibayar!",
           );
         },
         onError: (error: any) => {
-          toast.error(
+          gooeyToast.error(
             error?.response?.data?.message ||
               error?.message ||
               "Gagal membuat pesanan",

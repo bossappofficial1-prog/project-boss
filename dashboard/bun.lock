@@ -42,6 +42,7 @@
         "crypto": "^1.0.1",
         "date-fns": "^4.1.0",
         "framer-motion": "^12.29.2",
+        "goey-toast": "^0.5.0",
         "input-otp": "^1.4.2",
         "jose": "^6.1.0",
         "jspdf": "^4.2.1",
@@ -988,6 +989,8 @@
     "glob-to-regexp": ["glob-to-regexp@0.4.1", "", {}, "sha512-lkX1HJXwyMcprw/5YUZc2s7DrpAiHB21/V+E1rHUrVNokkvB6bqMzT0VfV6/86ZNabt1k14YOIaT7nDvOX3Iiw=="],
 
     "globalthis": ["globalthis@1.0.4", "", { "dependencies": { "define-properties": "^1.2.1", "gopd": "^1.0.1" } }, "sha512-DpLKbNU4WylpxJykQujfCcwYWiV/Jhm50Goo0wrVILAv5jOr9d+H+UR3PhSCD2rCCEIg0uc+G+muBTwD54JhDQ=="],
+
+    "goey-toast": ["goey-toast@0.5.0", "", { "dependencies": { "sonner": "^2.0.7" }, "peerDependencies": { "framer-motion": ">=10.0.0", "react": ">=18.0.0", "react-dom": ">=18.0.0" }, "bin": { "goey-toast": "bin/cli.mjs" } }, "sha512-g6r9PyaUmaZy4Bv7h0CJksOC9VASXtMWxwBZjLgQuz8ZA5/S/uKpDdxgPP/tV22ZzyUatjuieAITIdsHfArtWg=="],
 
     "gopd": ["gopd@1.2.0", "", {}, "sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg=="],
 

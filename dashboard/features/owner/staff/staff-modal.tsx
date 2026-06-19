@@ -2,7 +2,7 @@ import { FormFieldConfig, ReusableForm } from "@/components/ui/reuseable-form";
 import { Button } from "@/components/ui/button";
 import { useMemo, useState, useEffect, useRef } from "react";
 import { z } from "zod";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { cn } from "@/lib/utils";
 import { uploadApi } from "@/lib/apis/upload";
 import {
@@ -168,7 +168,7 @@ export function StaffDialog({
       }
     } catch (err) {
       console.error("Gagal mengakses kamera:", err);
-      toast.error("Gagal mengakses kamera. Pastikan izin kamera diberikan.");
+      gooeyToast.error("Gagal mengakses kamera. Pastikan izin kamera diberikan.");
       setIsCapturing(false);
     }
   };
@@ -203,7 +203,7 @@ export function StaffDialog({
         const descriptor = await getFaceDescriptorFromBase64(base64);
 
         if (!descriptor) {
-          toast.error("Wajah tidak terdeteksi. Silakan coba lagi.");
+          gooeyToast.error("Wajah tidak terdeteksi. Silakan coba lagi.");
           setCapturedImage(null);
           return;
         }
@@ -213,7 +213,7 @@ export function StaffDialog({
         form.setValue("faceDescriptor", JSON.stringify(descriptorArray), { shouldValidate: true });
 
         // Upload to backend storage using apiClient
-        toast.info("Mengunggah foto wajah...");
+        gooeyToast.info("Mengunggah foto wajah...");
         
         // Convert base64 to File
         const byteString = atob(base64.split(",")[1]);
@@ -230,14 +230,14 @@ export function StaffDialog({
         
         if (uploadResult.url) {
           form.setValue("faceImageUrl", uploadResult.url, { shouldValidate: true });
-          toast.success("Verifikasi wajah sukses dan terdaftar!");
+          gooeyToast.success("Verifikasi wajah sukses dan terdaftar!");
         } else {
-          toast.error("Gagal mengunggah foto wajah ke server.");
+          gooeyToast.error("Gagal mengunggah foto wajah ke server.");
         }
       }
     } catch (err) {
       console.error("Gagal menangkap foto:", err);
-      toast.error("Gagal memproses pengenalan wajah.");
+      gooeyToast.error("Gagal memproses pengenalan wajah.");
     } finally {
       setFaceApiLoading(false);
     }

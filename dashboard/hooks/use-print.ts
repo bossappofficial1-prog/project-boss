@@ -1,7 +1,7 @@
 import { usePrinterStore } from "@/stores/printer.store";
 import { posV2Api } from "@/lib/apis/pos-v2";
 import React from "react";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 
 export const usePrint = () => {
     const [isPrinting, setIsPrinting] = React.useState(false);
@@ -15,7 +15,7 @@ export const usePrint = () => {
                 const success = await printer.printRaw(new Uint8Array(arrayBuffer));
 
                 if (success) {
-                    toast.success("Struk berhasil dicetak!");
+                    gooeyToast.success("Struk berhasil dicetak!");
                 }
                 setIsPrinting(false);
                 return;
@@ -34,13 +34,13 @@ export const usePrint = () => {
                 a.href = url;
                 a.download = `receipt-${orderId}.pdf`;
                 a.click();
-                toast.info("PDF struk sudah diunduh");
+                gooeyToast.info("PDF struk sudah diunduh");
             }
 
             setTimeout(() => URL.revokeObjectURL(url), 60_000);
         } catch (error) {
             console.error("Failed to print receipt:", error);
-            toast.error("Gagal mencetak struk");
+            gooeyToast.error("Gagal mencetak struk");
         } finally {
             setIsPrinting(false);
         }
@@ -54,7 +54,7 @@ export const usePrint = () => {
             window.open(url, "_blank");
         } catch (error) {
             console.error("Failed to print tickets:", error);
-            toast.error("Gagal mencetak tiket");
+            gooeyToast.error("Gagal mencetak tiket");
         } finally {
             setIsPrinting(false);
         }

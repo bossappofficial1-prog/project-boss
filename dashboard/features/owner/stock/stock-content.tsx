@@ -8,7 +8,7 @@ import { useOutletStore } from "@/stores/outlet.store";
 import ProductSummaryCard from "@/features/owner/stock/product-summary-card";
 import HistoryTable from "@/features/owner/stock/history-table";
 import { stockApi } from "@/lib/apis/stock";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -187,9 +187,9 @@ export default function StockContent() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      toast.success("Berhasil mengexport data stok");
+      gooeyToast.success("Berhasil mengexport data stok");
     } catch {
-      toast.error("Gagal mengexport data stok");
+      gooeyToast.error("Gagal mengexport data stok");
     } finally {
       setIsExporting(false);
     }

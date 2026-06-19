@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { ReusableForm, FormFieldConfig } from "@/components/ui/reuseable-form";
 import { TableAvailabilityPicker } from "@/features/reservations";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { format, getDay } from "date-fns";
 import { useCreateReservation } from "@/hooks/api/use-reservations";
 import { useOperatingHours } from "@/hooks/use-operating-hours";
@@ -171,10 +171,10 @@ export function ReservationForm({
             };
 
             await createMutation.mutateAsync(payload);
-            toast.success("Reservasi berhasil dibuat");
+            gooeyToast.success("Reservasi berhasil dibuat");
             onSuccess?.();
         } catch (error: any) {
-            toast.error(error?.response?.data?.message || "Gagal membuat reservasi");
+            gooeyToast.error(error?.response?.data?.message || "Gagal membuat reservasi");
             throw error;
         }
     };

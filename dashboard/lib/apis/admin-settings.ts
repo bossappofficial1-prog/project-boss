@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient as api } from "./base";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 
 // Types
 export interface PlatformSettingValue {
@@ -47,11 +47,11 @@ export function useUpdatePlatformSettings() {
       return data;
     },
     onSuccess: (data) => {
-      toast.success(data.message || "Settings berhasil diupdate");
+      gooeyToast.success(data.message || "Settings berhasil diupdate");
       queryClient.invalidateQueries({ queryKey: ["admin", "settings"] });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal update settings");
+      gooeyToast.error(error.response?.data?.message || "Gagal update settings");
     },
   });
 }
@@ -76,11 +76,11 @@ export function useSetSetting() {
       return data;
     },
     onSuccess: (data) => {
-      toast.success(data.message || "Setting berhasil diupdate");
+      gooeyToast.success(data.message || "Setting berhasil diupdate");
       queryClient.invalidateQueries({ queryKey: ["admin", "settings"] });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal update setting");
+      gooeyToast.error(error.response?.data?.message || "Gagal update setting");
     },
   });
 }

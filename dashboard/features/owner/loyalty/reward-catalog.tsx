@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Plus, Pencil, Trash2, Gift, Tag, Percent, Package, Banknote, Ticket } from "lucide-react";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { DataTable } from "@/components/ui/data-table";
 import { ReusableForm, FormFieldConfig } from "@/components/ui/reuseable-form";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -87,8 +87,8 @@ export function RewardCatalog({ outletId }: RewardCatalogProps) {
     createReward(
       { outletId, data: values as any },
       {
-        onSuccess: () => { toast.success("Reward berhasil dibuat."); setIsCreateOpen(false); },
-        onError: (err: any) => toast.error(err.response?.data?.message ?? "Gagal membuat reward."),
+        onSuccess: () => { gooeyToast.success("Reward berhasil dibuat."); setIsCreateOpen(false); },
+        onError: (err: any) => gooeyToast.error(err.response?.data?.message ?? "Gagal membuat reward."),
       }
     );
   };
@@ -98,8 +98,8 @@ export function RewardCatalog({ outletId }: RewardCatalogProps) {
     updateReward(
       { outletId, rewardId: editingReward.id, data: values as any },
       {
-        onSuccess: () => { toast.success("Reward berhasil diperbarui."); setEditingReward(null); },
-        onError: (err: any) => toast.error(err.response?.data?.message ?? "Gagal memperbarui reward."),
+        onSuccess: () => { gooeyToast.success("Reward berhasil diperbarui."); setEditingReward(null); },
+        onError: (err: any) => gooeyToast.error(err.response?.data?.message ?? "Gagal memperbarui reward."),
       }
     );
   };
@@ -109,8 +109,8 @@ export function RewardCatalog({ outletId }: RewardCatalogProps) {
     deleteReward(
       { outletId, rewardId: deletingRewardId },
       {
-        onSuccess: () => { toast.success("Reward berhasil dihapus."); setDeletingRewardId(null); },
-        onError: (err: any) => toast.error(err.response?.data?.message ?? "Gagal menghapus reward."),
+        onSuccess: () => { gooeyToast.success("Reward berhasil dihapus."); setDeletingRewardId(null); },
+        onError: (err: any) => gooeyToast.error(err.response?.data?.message ?? "Gagal menghapus reward."),
       }
     );
   };

@@ -22,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DataTable } from '@/components/ui/data-table';
 import { useGetAdminBusinesses, useUpdateBusinessSuspend, useDeleteBusiness } from '@/hooks/api/use-admin-control';
 import BusinessDetailSheet from '@/features/admin/businesses/business-detail-sheet';
-import { toast } from 'sonner';
+import { gooeyToast } from "goey-toast";
 
 export default function BusinessManagement() {
   const [searchQuery, setSearchQuery] = useState('');

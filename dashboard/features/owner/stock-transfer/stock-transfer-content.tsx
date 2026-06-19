@@ -9,7 +9,7 @@ import {
   useCreateStockTransfer,
   useUpdateStockTransferStatus,
 } from "@/hooks/use-stock-transfer";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -174,17 +174,17 @@ export default function StockTransferContent() {
   const handleCreateTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!senderOutletId) return toast.error("Outlet pengirim wajib dipilih.");
-    if (!receiverOutletId) return toast.error("Outlet penerima wajib dipilih.");
+    if (!senderOutletId) return gooeyToast.error("Outlet pengirim wajib dipilih.");
+    if (!receiverOutletId) return gooeyToast.error("Outlet penerima wajib dipilih.");
     if (senderOutletId === receiverOutletId) {
-      return toast.error("Outlet pengirim dan penerima tidak boleh sama.");
+      return gooeyToast.error("Outlet pengirim dan penerima tidak boleh sama.");
     }
-    if (!shippingDate) return toast.error("Tanggal pengiriman wajib diisi.");
+    if (!shippingDate) return gooeyToast.error("Tanggal pengiriman wajib diisi.");
 
     // Validate items
     const validItems = formItems.filter((i) => i.productId && i.quantity > 0);
     if (validItems.length === 0) {
-      return toast.error(
+      return gooeyToast.error(
         "Pilih minimal satu produk dengan kuantitas yang valid.",
       );
     }
@@ -194,13 +194,13 @@ export default function StockTransferContent() {
       const prod = senderProducts.find((p) => p.id === item.productId);
       const stock = prod?.goods?.currentStock || 0;
       if (item.quantity > stock) {
-        return toast.error(
+        return gooeyToast.error(
           `Kuantitas transfer untuk ${prod?.name} (${item.quantity}) melebihi stok yang tersedia (${stock}).`,
         );
       }
     }
 
-    toast.promise(
+    gooeyToast.promise(
       createTransfer.mutateAsync({
         senderOutletId,
         receiverOutletId,
@@ -235,7 +235,7 @@ export default function StockTransferContent() {
     if (status === "RECEIVED") actionText = "Menerima transfer...";
     if (status === "CANCELLED") actionText = "Membatalkan transfer...";
 
-    toast.promise(updateStatus.mutateAsync({ id, status }), {
+    gooeyToast.promise(updateStatus.mutateAsync({ id, status }), {
       loading: actionText,
       success: "Status transfer berhasil diperbarui.",
       error: (err: any) =>

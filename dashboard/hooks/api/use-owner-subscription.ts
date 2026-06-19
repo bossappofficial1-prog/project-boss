@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { gooeyToast } from "goey-toast";
 import {
   ownerSubscriptionApi,
   type OwnerInvoiceListParams,
@@ -44,14 +44,14 @@ export function useRenewSubscription() {
   return useMutation<RenewSubscriptionResponse, Error, RenewSubscriptionPayload | undefined>({
     mutationFn: (payload) => ownerSubscriptionApi.renew(payload ?? {}),
     onSuccess: async (data) => {
-      toast.success(data?.message ?? 'Invoice perpanjangan berhasil dibuat');
+      gooeyToast.success(data?.message ?? 'Invoice perpanjangan berhasil dibuat');
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: OVERVIEW_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: ['owner-subscription', 'invoices'] }),
       ]);
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data.message ?? 'Gagal membuat invoice perpanjangan');
+      gooeyToast.error(error?.response?.data.message ?? 'Gagal membuat invoice perpanjangan');
     },
   });
 }
@@ -62,14 +62,14 @@ export function useCancelSubscriptionInvoice() {
   return useMutation<{ message: string }, Error, string>({
     mutationFn: (invoiceId) => ownerSubscriptionApi.cancelInvoice(invoiceId),
     onSuccess: async (data) => {
-      toast.success(data?.message ?? 'Invoice berhasil dibatalkan');
+      gooeyToast.success(data?.message ?? 'Invoice berhasil dibatalkan');
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: OVERVIEW_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: ['owner-subscription', 'invoices'] }),
       ]);
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message ?? 'Gagal membatalkan invoice');
+      gooeyToast.error(error?.response?.data?.message ?? 'Gagal membatalkan invoice');
     },
   });
 }
@@ -80,13 +80,13 @@ export function useSwitchBillingCycle() {
   return useMutation<SwitchBillingCycleResponse, Error, SwitchBillingCyclePayload>({
     mutationFn: (payload) => ownerSubscriptionApi.switchBillingCycle(payload),
     onSuccess: async (data) => {
-      toast.success(data?.message ?? 'Billing cycle berhasil diubah');
+      gooeyToast.success(data?.message ?? 'Billing cycle berhasil diubah');
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: OVERVIEW_QUERY_KEY }),
       ]);
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message ?? 'Gagal mengubah billing cycle');
+      gooeyToast.error(error?.response?.data?.message ?? 'Gagal mengubah billing cycle');
     },
   });
 }

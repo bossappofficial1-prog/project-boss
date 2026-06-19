@@ -5,7 +5,7 @@ import { outletTransferApi } from '@/lib/api'
 import { DataTable } from '@/components/ui/data-table'
 import { ColumnDef } from '@tanstack/react-table'
 import { Badge } from '@/components/ui/badge'
-import { toast } from 'sonner'
+import { gooeyToast } from "goey-toast"
 import { format } from 'date-fns'
 import { Check, X, Ban, Clock, ArrowRightLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -27,29 +27,29 @@ export function TransferRequestsList() {
   const { mutate: accept } = useMutation({
     mutationFn: (id: string) => outletTransferApi.accept(id),
     onSuccess: () => {
-      toast.success('Transfer outlet berhasil diterima')
+      gooeyToast.success('Transfer outlet berhasil diterima')
       queryClient.invalidateQueries({ queryKey: ['outlet-transfers'] })
       queryClient.invalidateQueries({ queryKey: ['outlets'] })
     },
-    onError: (err: any) => toast.error(err.response.data.message || 'Gagal menerima transfer'),
+    onError: (err: any) => gooeyToast.error(err.response.data.message || 'Gagal menerima transfer'),
   })
 
   const { mutate: reject } = useMutation({
     mutationFn: (id: string) => outletTransferApi.reject(id),
     onSuccess: () => {
-      toast.success('Transfer outlet ditolak')
+      gooeyToast.success('Transfer outlet ditolak')
       queryClient.invalidateQueries({ queryKey: ['outlet-transfers'] })
     },
-    onError: (err: any) => toast.error(err.message || 'Gagal menolak transfer'),
+    onError: (err: any) => gooeyToast.error(err.message || 'Gagal menolak transfer'),
   })
 
   const { mutate: cancel } = useMutation({
     mutationFn: (id: string) => outletTransferApi.cancel(id),
     onSuccess: () => {
-      toast.success('Permintaan transfer dibatalkan')
+      gooeyToast.success('Permintaan transfer dibatalkan')
       queryClient.invalidateQueries({ queryKey: ['outlet-transfers'] })
     },
-    onError: (err: any) => toast.error(err.message || 'Gagal membatalkan transfer'),
+    onError: (err: any) => gooeyToast.error(err.message || 'Gagal membatalkan transfer'),
   })
 
   const incomingColumns: ColumnDef<any>[] = [

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import {
   Plus,
   Trash2,
@@ -151,9 +151,9 @@ export function RecipeContent() {
     if (!selectedProductId) return;
     try {
       await createRecipeMutation.mutateAsync({ productId: selectedProductId });
-      toast.success("Resep menu berhasil diinisialisasi");
+      gooeyToast.success("Resep menu berhasil diinisialisasi");
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Gagal membuat resep");
+      gooeyToast.error(err?.response?.data?.message || "Gagal membuat resep");
     }
   };
 
@@ -175,11 +175,11 @@ export function RecipeContent() {
           quantity: Number(quantity),
         },
       });
-      toast.success("Bahan baku ditambahkan ke resep");
+      gooeyToast.success("Bahan baku ditambahkan ke resep");
       setSelectedIngredientId("");
       setQuantity("");
     } catch (err: any) {
-      toast.error(
+      gooeyToast.error(
         err?.response?.data?.message || "Gagal menambahkan bahan ke resep",
       );
     }
@@ -192,9 +192,9 @@ export function RecipeContent() {
         recipeId: activeRecipe.id,
         ingredientId,
       });
-      toast.success("Bahan baku dihapus dari resep");
+      gooeyToast.success("Bahan baku dihapus dari resep");
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Gagal menghapus bahan");
+      gooeyToast.error(err?.response?.data?.message || "Gagal menghapus bahan");
     }
   };
 
@@ -202,9 +202,9 @@ export function RecipeContent() {
     if (!activeRecipe) return;
     try {
       await deleteRecipeMutation.mutateAsync(activeRecipe.id);
-      toast.success("Resep menu berhasil dihapus");
+      gooeyToast.success("Resep menu berhasil dihapus");
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Gagal menghapus resep");
+      gooeyToast.error(err?.response?.data?.message || "Gagal menghapus resep");
     }
   };
 

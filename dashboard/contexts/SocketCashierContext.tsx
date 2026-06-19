@@ -11,7 +11,7 @@ import React, {
   useState,
 } from "react";
 import { Socket } from "socket.io-client";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { SOCKET_EVENT, type SocketEvents } from "@/types/socket";
 
 const SocketCashierContext = createContext<Socket | null>(null);
@@ -98,7 +98,7 @@ export const SocketCashierProvider = ({
       if (!payload) return;
       qc.invalidateQueries({ queryKey: ["orders-v2"] });
       qc.invalidateQueries({ queryKey: ["queue-v2"] });
-      toast.info(`Pembayaran baru: ${payload.customerName}`, {
+      gooeyToast.info(`Pembayaran baru: ${payload.customerName}`, {
         description: `${formatCurrency(payload.amount)} via ${payload.paymentMethod?.replace(/_/g, " ")}`,
       });
     };

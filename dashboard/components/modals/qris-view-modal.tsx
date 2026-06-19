@@ -9,7 +9,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { outletApi } from "@/lib/apis/outlet";
 
 interface QRISViewModalProps {
@@ -60,7 +60,7 @@ export default function QRISViewModal({
       setQrisData(data);
     } catch (error: any) {
       console.error("Error fetching QRIS:", error);
-      toast.error(error.message || "Gagal memuat QRIS");
+      gooeyToast.error(error.message || "Gagal memuat QRIS");
     } finally {
       setIsLoading(false);
     }

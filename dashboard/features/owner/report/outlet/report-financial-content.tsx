@@ -17,7 +17,7 @@ import {
   ArrowDownRight,
   HelpCircle,
 } from "lucide-react";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -205,9 +205,9 @@ export default function ReportFinancialContent() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      toast.success("Berhasil mengexport laporan keuangan");
+      gooeyToast.success("Berhasil mengexport laporan keuangan");
     } catch {
-      toast.error("Gagal mengexport laporan keuangan");
+      gooeyToast.error("Gagal mengexport laporan keuangan");
     } finally {
       setIsExporting(false);
     }
@@ -228,9 +228,9 @@ export default function ReportFinancialContent() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      toast.success("Berhasil mengexport laporan staff");
+      gooeyToast.success("Berhasil mengexport laporan staff");
     } catch {
-      toast.error("Gagal mengexport laporan staff");
+      gooeyToast.error("Gagal mengexport laporan staff");
     } finally {
       setIsExporting(false);
     }

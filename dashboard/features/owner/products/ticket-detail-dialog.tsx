@@ -19,7 +19,7 @@ import { cn, formatCurrency } from "@/lib/utils";
 import { resolveUploadImageUrl } from "@/lib/url";
 import type { ProductItem } from "@/hooks/use-products-data";
 import { useTicketCodesByProduct, type TicketCodeItem } from "@/hooks/api/use-ticket-codes";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 
 interface TicketDetailDialogProps {
     product: ProductItem | null;
@@ -95,7 +95,7 @@ export default function TicketDetailDialog({ product, open, onOpenChange }: Tick
         
         // Trigger download
         window.open(exportUrl, "_blank");
-        toast.success("Mengekspor data tiket ke file CSV...");
+        gooeyToast.success("Mengekspor data tiket ke file CSV...");
     };
 
     if (!product || product.type !== "TICKET" || !product.ticket) return null;

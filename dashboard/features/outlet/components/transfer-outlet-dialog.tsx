@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { ReusableForm, FormFieldConfig } from '@/components/ui/reuseable-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { outletTransferApi } from '@/lib/api'
-import { toast } from 'sonner'
+import { gooeyToast } from "goey-toast"
 import { useOutletStore } from '@/stores/outlet.store'
 
 const transferSchema = z.object({
@@ -31,12 +31,12 @@ export function TransferOutletDialog({ isOpen, onOpenChange }: TransferOutletDia
       return outletTransferApi.createRequest(outletId, data)
     },
     onSuccess: (res) => {
-      toast.success(res.message || 'Permintaan transfer berhasil dikirim')
+      gooeyToast.success(res.message || 'Permintaan transfer berhasil dikirim')
       queryClient.invalidateQueries({ queryKey: ['outlet-transfers', 'outgoing'] })
       onOpenChange(false)
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.message || 'Gagal mengirim permintaan transfer')
+      gooeyToast.error(err.response?.data?.message || 'Gagal mengirim permintaan transfer')
     },
   })
 

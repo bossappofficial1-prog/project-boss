@@ -6,7 +6,7 @@ import { format, subDays } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { Loader2, RefreshCcw, MapPin, ExternalLink, Download, FileSpreadsheet } from "lucide-react";
 import type { DateRange } from "react-day-picker";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 
 import { useOutletStore } from "@/stores/outlet.store";
 import { DataTable } from "@/components/ui/data-table";
@@ -53,9 +53,9 @@ export default function LaporanAbsensiPage() {
       link.download = `laporan-absensi-${outletId}-${startDate}-${endDate}.${extension}`;
       link.click();
       window.URL.revokeObjectURL(url);
-      toast.success(`Laporan absensi berhasil diekspor (${extension.toUpperCase()})`);
+      gooeyToast.success(`Laporan absensi berhasil diekspor (${extension.toUpperCase()})`);
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Gagal mengekspor laporan");
+      gooeyToast.error(err.response?.data?.message || "Gagal mengekspor laporan");
     } finally {
       setIsExporting(false);
     }

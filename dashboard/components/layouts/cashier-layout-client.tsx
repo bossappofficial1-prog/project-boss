@@ -2,8 +2,8 @@
 
 import React, { useEffect, createContext, useContext } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { Toaster } from "sonner";
+import { gooeyToast } from "goey-toast";
+import { GooeyToaster } from "goey-toast";
 import { LogOut, ShoppingBag } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -90,7 +90,7 @@ export default function CashierLayoutClient({
         const orders = JSON.parse(raw);
         if (orders.length === 0) return;
 
-        toast.info(
+        gooeyToast.info(
           `Koneksi kembali terhubung! Sinkronisasi ${orders.length} transaksi offline sedang berjalan... 📡`,
         );
 
@@ -123,7 +123,7 @@ export default function CashierLayoutClient({
         }
 
         if (successCount > 0) {
-          toast.success(
+          gooeyToast.success(
             `Sukses! ${successCount} transaksi offline berhasil disinkronisasikan ke server. 🎉`,
           );
           queryClient.invalidateQueries({ queryKey: ["pos-v2"] });
@@ -153,11 +153,11 @@ export default function CashierLayoutClient({
         localStorage.removeItem(CASHIER_SESSION_CACHE_KEY);
       }
       queryClient.removeQueries({ queryKey: ["cashier-auth"] });
-      toast.success("Logout berhasil");
+      gooeyToast.success("Logout berhasil");
       router.push("/auth/login/cashier");
     } catch (error) {
       console.error("Logout error:", error);
-      toast.error("Gagal logout");
+      gooeyToast.error("Gagal logout");
     }
   };
 
@@ -179,7 +179,7 @@ export default function CashierLayoutClient({
     if (typeof window !== "undefined") {
       // Jangan redirect jika sedang offline
       if (!navigator.onLine) {
-        toast.warning(
+        gooeyToast.warning(
           "Koneksi internet terputus. Menggunakan sesi kasir lokal.",
         );
         return;
@@ -191,7 +191,7 @@ export default function CashierLayoutClient({
 
       // Jika error bukan karena 401/403 (misalnya Network Error / DNS Error / Server down), jangan paksa logout
       if (status && status !== 401 && status !== 403) {
-        toast.warning(
+        gooeyToast.warning(
           "Gagal memperbarui sesi kasir dari server. Menggunakan sesi lokal.",
         );
         return;
@@ -199,13 +199,13 @@ export default function CashierLayoutClient({
 
       // Jika memang tidak ada status (misal Axios Network Error karena putus koneksi di tengah jalan), jangan paksa redirect
       if (!status && err?.message?.toLowerCase().includes("network error")) {
-        toast.warning(
+        gooeyToast.warning(
           "Gagal memperbarui sesi kasir karena masalah jaringan. Menggunakan sesi lokal.",
         );
         return;
       }
 
-      toast.error("Sesi login tidak valid, silakan login kembali");
+      gooeyToast.error("Sesi login tidak valid, silakan login kembali");
       window.location.href = "/auth/login/cashier";
     }
   }, [isCashierAuthError]);
@@ -246,11 +246,7 @@ export default function CashierLayoutClient({
           <div className="h-full w-full animate-[loading_1.5s_ease-in-out_infinite] rounded-full bg-primary" />
         </div>
 
-        <Toaster
-          position="top-right"
-          richColors
-          toastOptions={{ duration: 5000 }}
-        />
+        <GooeyToaster position="top-right" />
       </div>
     );
   }
@@ -297,7 +293,7 @@ export default function CashierLayoutClient({
             Hubungi owner untuk mengatur akun kasir Anda.
           </p>
         </div>
-        <Toaster position="top-right" toastOptions={{ duration: 5000 }} />
+        <GooeyToaster position="top-right" toastOptions={{ duration: 5000 }} />
       </div>
     );
   }
@@ -316,7 +312,7 @@ export default function CashierLayoutClient({
             />
             <main>{children}</main>
           </div>
-          <Toaster position="top-right" toastOptions={{ duration: 5000 }} />
+          <GooeyToaster position="top-right" toastOptions={{ duration: 5000 }} />
         </CashierContext.Provider>
       </SocketCashierProvider>
     </>

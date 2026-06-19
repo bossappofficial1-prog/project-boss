@@ -11,7 +11,7 @@ import {
     ShieldCheck,
     XCircle,
 } from "lucide-react";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -285,13 +285,13 @@ export default function PaymentConfirmContent() {
         setProcessingId(selected.orderId);
         try {
             await manualPaymentApi.verify(selected.orderId);
-            toast.success("Pembayaran berhasil diverifikasi");
+            gooeyToast.success("Pembayaran berhasil diverifikasi");
             setVerifyOpen(false);
             setSelected(null);
             await fetchData();
         } catch (err) {
             const msg = err instanceof Error ? err.message : "Gagal memverifikasi";
-            toast.error(msg);
+            gooeyToast.error(msg);
         } finally {
             setProcessingId(null);
         }
@@ -307,14 +307,14 @@ export default function PaymentConfirmContent() {
         setProcessingId(selected.orderId);
         try {
             await manualPaymentApi.reject(selected.orderId, reason);
-            toast.warning("Pembayaran ditolak");
+            gooeyToast.warning("Pembayaran ditolak");
             setRejectOpen(false);
             setSelected(null);
             setRejectReason("");
             await fetchData();
         } catch (err) {
             const msg = err instanceof Error ? err.message : "Gagal menolak";
-            toast.error(msg);
+            gooeyToast.error(msg);
         } finally {
             setProcessingId(null);
         }

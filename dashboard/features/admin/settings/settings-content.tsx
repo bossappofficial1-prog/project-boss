@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { usePlatformSettings, useUpdatePlatformSettings, PlatformSettingValue } from '@/lib/apis/admin-settings';
-import { toast } from 'sonner';
+import { gooeyToast } from "goey-toast";
 import { Settings, Save, RefreshCw, Building2, CreditCard, Bell, Shield, Loader2 } from 'lucide-react';
 
 export function SettingsContent() {

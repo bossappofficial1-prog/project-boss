@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { Calendar, MessageSquare, CheckCircle2, AlertCircle, RefreshCw, Loader2 } from "lucide-react";
 import { useIntegrations, useGoogleConnect, useDisconnectGoogle, useInitiateWhatsApp, useWhatsAppStatus, useDisconnectWhatsApp, useSendTestWhatsApp } from "@/hooks/api/use-integrations";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -40,18 +40,18 @@ export function IntegrationsCard({ subscriptionPlan }: IntegrationsCardProps) {
     // Watch for success state in WhatsApp status polling
     useEffect(() => {
         if (isWhatsAppOpen && waStatus?.status === "CONNECTED") {
-            toast.success("WhatsApp API berhasil terhubung");
+            gooeyToast.success("WhatsApp API berhasil terhubung");
             setIsWhatsAppOpen(false);
             queryClient.invalidateQueries({ queryKey: ["integrations"] });
         }
     }, [waStatus?.status, isWhatsAppOpen, queryClient]);
 
     const handleGoogleConnect = () => {
-        toast.loading("Mengarahkan ke Google...");
+        gooeyToast("Mengarahkan ke Google...", { duration: Infinity });
         connectGoogle(undefined, {
             onError: (err: any) => {
-                toast.dismiss();
-                toast.error(err?.response?.data?.message || "Gagal menghubungkan Google Calendar");
+                gooeyToast.dismiss();
+                gooeyToast.error(err?.response?.data?.message || "Gagal menghubungkan Google Calendar");
             },
         });
     };
@@ -59,11 +59,11 @@ export function IntegrationsCard({ subscriptionPlan }: IntegrationsCardProps) {
     const handleGoogleDisconnect = () => {
         disconnectGoogle(undefined, {
             onSuccess: () => {
-                toast.success("Google Calendar berhasil diputus");
+                gooeyToast.success("Google Calendar berhasil diputus");
                 setIsConfirmGoogleOpen(false);
             },
             onError: (err: any) => {
-                toast.error(err?.response?.data?.message || "Gagal memutuskan koneksi");
+                gooeyToast.error(err?.response?.data?.message || "Gagal memutuskan koneksi");
             },
         });
     };
@@ -72,7 +72,7 @@ export function IntegrationsCard({ subscriptionPlan }: IntegrationsCardProps) {
         setIsWhatsAppOpen(true);
         initiateWhatsApp(undefined, {
             onError: (err: any) => {
-                toast.error(err?.response?.data?.message || "Gagal memulai inisialisasi WhatsApp");
+                gooeyToast.error(err?.response?.data?.message || "Gagal memulai inisialisasi WhatsApp");
                 setIsWhatsAppOpen(false);
             },
         });
@@ -81,18 +81,18 @@ export function IntegrationsCard({ subscriptionPlan }: IntegrationsCardProps) {
     const handleWhatsAppDisconnect = () => {
         disconnectWhatsApp(undefined, {
             onSuccess: () => {
-                toast.success("Integrasi WhatsApp berhasil diputus");
+                gooeyToast.success("Integrasi WhatsApp berhasil diputus");
                 setIsConfirmWhatsAppOpen(false);
             },
             onError: (err: any) => {
-                toast.error(err?.response?.data?.message || "Gagal memutuskan WhatsApp");
+                gooeyToast.error(err?.response?.data?.message || "Gagal memutuskan WhatsApp");
             },
         });
     };
 
     const handleSendTest = () => {
         if (!testPhone.trim()) return;
-        toast.loading("Mengirim pesan uji coba...");
+        gooeyToast("Mengirim pesan uji coba...", { duration: Infinity });
         sendTest(
             {
                 phoneNumber: testPhone,
@@ -100,13 +100,13 @@ export function IntegrationsCard({ subscriptionPlan }: IntegrationsCardProps) {
             },
             {
                 onSuccess: () => {
-                    toast.dismiss();
-                    toast.success("Pesan uji coba berhasil dikirim!");
+                    gooeyToast.dismiss();
+                    gooeyToast.success("Pesan uji coba berhasil dikirim!");
                     setTestPhone("");
                 },
                 onError: (err: any) => {
-                    toast.dismiss();
-                    toast.error(err?.response?.data?.message || "Gagal mengirim pesan uji coba");
+                    gooeyToast.dismiss();
+                    gooeyToast.error(err?.response?.data?.message || "Gagal mengirim pesan uji coba");
                 },
             }
         );

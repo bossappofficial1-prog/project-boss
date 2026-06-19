@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useLoyaltyConfig, useUpsertLoyaltyConfig } from "@/hooks/api/use-loyalty";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { Loader2, Calculator, Trophy, Gift, Clock, Percent, ShieldCheck, Sparkles } from "lucide-react";
 import { ReusableForm, type FormFieldConfig } from "@/components/ui/reuseable-form";
 import * as z from "zod";
@@ -130,9 +130,9 @@ export function LoyaltySettings({ outletId }: { outletId: string }) {
       };
       delete (payload as any).expiryEnabled;
       await upsertConfig.mutateAsync({ outletId, data: payload as any });
-      toast.success("Pengaturan loyalty berhasil disimpan!");
+      gooeyToast.success("Pengaturan loyalty berhasil disimpan!");
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Gagal menyimpan");
+      gooeyToast.error(err?.response?.data?.message || "Gagal menyimpan");
     }
   };
 

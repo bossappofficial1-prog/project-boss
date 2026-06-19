@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { apiClient, ApiResponse } from "@/lib/apis/base";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 
 // Request payload
 export interface ExportTransactionReportRequest {
@@ -21,12 +21,12 @@ export const useExportTransactionReport = () => {
     return useMutation({
         mutationFn: exportTransactionReport,
         onSuccess: (data) => {
-            toast.success(data.message || "E-statement sedang diproses. Akan dikirim ke email Anda.");
+            gooeyToast.success(data.message || "E-statement sedang diproses. Akan dikirim ke email Anda.");
         },
         onError: (error: any) => {
             const message =
                 error?.response?.data?.message || "Gagal memproses permintaan e-statement";
-            toast.error(message);
+            gooeyToast.error(message);
         },
     });
 };

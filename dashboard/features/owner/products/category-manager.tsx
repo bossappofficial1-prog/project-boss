@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, Package } from "lucide-react";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 
 import { productCategoryApi, type ProductCategory } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -36,12 +36,12 @@ export function CategoryManager({ outletId }: { outletId: string }) {
       productCategoryApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["product-categories", outletId] });
-      toast.success("Kategori berhasil ditambahkan");
+      gooeyToast.success("Kategori berhasil ditambahkan");
       setDialogOpen(false);
       setName("");
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message || "Gagal menambahkan kategori");
+      gooeyToast.error(err?.response?.data?.message || "Gagal menambahkan kategori");
     },
   });
 
@@ -50,13 +50,13 @@ export function CategoryManager({ outletId }: { outletId: string }) {
       productCategoryApi.update(id, { name }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["product-categories", outletId] });
-      toast.success("Kategori berhasil diubah");
+      gooeyToast.success("Kategori berhasil diubah");
       setDialogOpen(false);
       setEditing(null);
       setName("");
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message || "Gagal mengubah kategori");
+      gooeyToast.error(err?.response?.data?.message || "Gagal mengubah kategori");
     },
   });
 
@@ -64,11 +64,11 @@ export function CategoryManager({ outletId }: { outletId: string }) {
     mutationFn: (id: string) => productCategoryApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["product-categories", outletId] });
-      toast.success("Kategori berhasil dihapus");
+      gooeyToast.success("Kategori berhasil dihapus");
       setDeleteTarget(null);
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message || "Gagal menghapus kategori");
+      gooeyToast.error(err?.response?.data?.message || "Gagal menghapus kategori");
     },
   });
 

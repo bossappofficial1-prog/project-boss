@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { ArrowDownToLine, Undo2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -89,7 +89,7 @@ export function PobV2Content() {
   // Handlers
   const handleAddToCart = React.useCallback((product: POBProduct) => {
     if (!product.goods) {
-      toast.error("Produk ini tidak memiliki data barang");
+      gooeyToast.error("Produk ini tidak memiliki data barang");
       return;
     }
 
@@ -114,7 +114,7 @@ export function PobV2Content() {
       if (found) {
         handleAddToCart(found);
       } else {
-        toast.error(`Barang dengan barcode "${barcode}" tidak ditemukan`);
+        gooeyToast.error(`Barang dengan barcode "${barcode}" tidak ditemukan`);
       }
     },
     [products, handleAddToCart],
@@ -213,7 +213,7 @@ export function PobV2Content() {
       errors.faktur = "Faktur wajib diupload";
     }
     if (cartItems.length === 0) {
-      toast.error("Pilih minimal 1 barang");
+      gooeyToast.error("Pilih minimal 1 barang");
       return false;
     }
     if (isPurchase) {
@@ -221,7 +221,7 @@ export function PobV2Content() {
         (i) => !i.hppPerUnit || i.hppPerUnit <= 0,
       );
       if (missingHpp) {
-        toast.error(`HPP untuk "${missingHpp.product.name}" belum diisi`);
+        gooeyToast.error(`HPP untuk "${missingHpp.product.name}" belum diisi`);
         return false;
       }
     }
@@ -274,7 +274,7 @@ export function PobV2Content() {
         error?.response?.data?.message ??
         error?.message ??
         "Gagal menyimpan data stok";
-      toast.error(msg);
+      gooeyToast.error(msg);
     }
   }, [
     validate,

@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import MapPicker from "@/components/ui/map-picker";
 import OperatingHoursManager from "@/components/ui/operating-hours-manager";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { useUpsertOperatingHours } from "@/hooks/use-operating-hours";
 import { outletManagementApi, uploadApi } from "@/lib/api";
 import { useUserData } from "@/hooks/use-user-data";
@@ -265,13 +265,13 @@ export default function AddOutletModal({
           })),
         });
       } catch {
-        toast.warning("Outlet disimpan, tapi jam operasional gagal disimpan");
+        gooeyToast.warning("Outlet disimpan, tapi jam operasional gagal disimpan");
       }
 
       return result;
     },
     onSuccess: async () => {
-      toast.success(
+      gooeyToast.success(
         mode === "edit" ? "Outlet diperbarui!" : "Outlet berhasil ditambahkan!",
       );
       await Promise.all([
@@ -302,7 +302,7 @@ export default function AddOutletModal({
       onOpenChange(false);
     },
     onError: (e: any) => {
-      toast.error(
+      gooeyToast.error(
         ((e as AxiosError).response?.data as any)?.message ||
           "Gagal menyimpan outlet",
       );

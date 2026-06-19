@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import {
   Plus,
   Search,
@@ -153,10 +153,10 @@ export function IngredientContent() {
 
     try {
       await deleteMutation.mutateAsync(deleteTarget.id);
-      toast.success(`Bahan baku "${deleteTarget.name}" berhasil dihapus`);
+      gooeyToast.success(`Bahan baku "${deleteTarget.name}" berhasil dihapus`);
       setDeleteTarget(null);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Gagal menghapus bahan baku");
+      gooeyToast.error(err?.response?.data?.message || "Gagal menghapus bahan baku");
     }
   };
 
@@ -172,10 +172,10 @@ export function IngredientContent() {
         minStock: values.minStock ? Number(values.minStock) : undefined,
         outletId: selectedOutletId,
       });
-      toast.success("Bahan baku berhasil didaftarkan");
+      gooeyToast.success("Bahan baku berhasil didaftarkan");
       setCreateOpen(false);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Gagal membuat bahan baku");
+      gooeyToast.error(err?.response?.data?.message || "Gagal membuat bahan baku");
     }
   };
 
@@ -193,10 +193,10 @@ export function IngredientContent() {
           minStock: values.minStock ? Number(values.minStock) : null,
         },
       });
-      toast.success("Bahan baku berhasil diperbarui");
+      gooeyToast.success("Bahan baku berhasil diperbarui");
       setEditOpen(false);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Gagal memperbarui bahan baku");
+      gooeyToast.error(err?.response?.data?.message || "Gagal memperbarui bahan baku");
     }
   };
 
@@ -212,10 +212,10 @@ export function IngredientContent() {
           notes: values.notes || undefined,
         },
       });
-      toast.success("Stok baru berhasil masuk (FIFO batch terdaftar)");
+      gooeyToast.success("Stok baru berhasil masuk (FIFO batch terdaftar)");
       setStockOpen(false);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Gagal memasukkan stok");
+      gooeyToast.error(err?.response?.data?.message || "Gagal memasukkan stok");
     }
   };
 
@@ -230,10 +230,10 @@ export function IngredientContent() {
           notes: values.notes,
         },
       });
-      toast.success("Stok berhasil disesuaikan");
+      gooeyToast.success("Stok berhasil disesuaikan");
       setAdjustOpen(false);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Gagal menyesuaikan stok");
+      gooeyToast.error(err?.response?.data?.message || "Gagal menyesuaikan stok");
     }
   };
 

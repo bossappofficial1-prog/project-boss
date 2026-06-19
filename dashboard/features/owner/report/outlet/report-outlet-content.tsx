@@ -16,7 +16,7 @@ import {
   BarChart3,
   Loader2,
 } from "lucide-react";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { useReportOutlet, useCompareOutletsReport } from "@/hooks/use-report";
 import { useOutletStore } from "@/stores/outlet.store";
 import { ReportOutleTable, Totals } from "./report-outlet-table";
@@ -123,9 +123,9 @@ export default function ReportOutlerContent() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      toast.success("Berhasil mengexport laporan outlet");
+      gooeyToast.success("Berhasil mengexport laporan outlet");
     } catch {
-      toast.error("Gagal mengexport laporan outlet");
+      gooeyToast.error("Gagal mengexport laporan outlet");
     } finally {
       setIsExporting(false);
     }

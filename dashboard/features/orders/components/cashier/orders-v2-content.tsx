@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { RefreshCw, Plus, AlertCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -73,7 +73,7 @@ export function OrdersV2Content({ outletId }: OrdersV2ContentProps) {
       setPrintingType("receipt");
       await handlePrintReceipt(entry.id)
     } catch {
-      toast.error("Gagal mencetak struk");
+      gooeyToast.error("Gagal mencetak struk");
       setPrintingId(null);
       setPrintingType(null);
     }
@@ -85,7 +85,7 @@ export function OrdersV2Content({ outletId }: OrdersV2ContentProps) {
       setPrintingType("ticket");
       await handlePrintTicket(entry.id)
     } catch {
-      toast.error("Gagal mencetak tiket");
+      gooeyToast.error("Gagal mencetak tiket");
     } finally {
       setPrintingId(null);
       setPrintingType(null);
@@ -143,14 +143,14 @@ export function OrdersV2Content({ outletId }: OrdersV2ContentProps) {
         });
 
         const label = STATUS_LABELS[confirmState.nextStatus] ?? confirmState.nextStatus;
-        toast.success(`Pesanan #${confirmState.entry.id.slice(-8)} → ${label}`);
+        gooeyToast.success(`Pesanan #${confirmState.entry.id.slice(-8)} → ${label}`);
         setConfirmOpen(false);
         setConfirmState(null);
         setDetailOpen(false);
       } catch (error: any) {
         const message =
           error?.response?.data?.message ?? error?.message ?? "Gagal mengubah status pesanan";
-        toast.error(message);
+        gooeyToast.error(message);
       }
     },
     [confirmState, updateStatus],

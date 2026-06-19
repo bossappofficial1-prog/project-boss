@@ -3,7 +3,7 @@
 import React from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Download, QrCode, Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { gooeyToast } from "goey-toast"
 import JSZip from 'jszip'
 import {
     Dialog,
@@ -109,10 +109,10 @@ export function TableQrDialog({ table, outletSlug, onOpenChange }: TableQrDialog
             downloadLink.download = `QR-Table-${table.name}.png`
             downloadLink.href = pngFile
             downloadLink.click()
-            toast.success('QR Code berhasil diunduh')
+            gooeyToast.success('QR Code berhasil diunduh')
         } catch (error) {
             console.error(error)
-            toast.error('Gagal mengunduh QR Code')
+            gooeyToast.error('Gagal mengunduh QR Code')
         }
     }
 
@@ -208,7 +208,7 @@ export function BulkQrDownload({ tables, outletSlug, outletName, isLoading, onCo
 
     const handleBulkDownload = async () => {
         if (tables.length === 0) {
-            toast.error('Tidak ada meja untuk diunduh')
+            gooeyToast.error('Tidak ada meja untuk diunduh')
             return
         }
 
@@ -216,7 +216,7 @@ export function BulkQrDownload({ tables, outletSlug, outletName, isLoading, onCo
         const zip = new JSZip()
         const folder = zip.folder(`QR-Codes-${outletName.replace(/\s+/g, '-')}`)
         
-        toast.info(`Menyiapkan ${tables.length} QR Code...`)
+        gooeyToast.info(`Menyiapkan ${tables.length} QR Code...`)
 
         try {
             // Sequential generation to avoid browser hanging
@@ -232,11 +232,11 @@ export function BulkQrDownload({ tables, outletSlug, outletName, isLoading, onCo
             downloadLink.download = `QR-Codes-${outletName.replace(/\s+/g, '-')}.zip`
             downloadLink.href = URL.createObjectURL(content)
             downloadLink.click()
-            toast.success('Semua QR Code berhasil diunduh dalam format ZIP')
+            gooeyToast.success('Semua QR Code berhasil diunduh dalam format ZIP')
             onComplete?.()
         } catch (error) {
             console.error(error)
-            toast.error('Gagal mengunduh paket QR Code')
+            gooeyToast.error('Gagal mengunduh paket QR Code')
         } finally {
             setIsGenerating(false)
         }

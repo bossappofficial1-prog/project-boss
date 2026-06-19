@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import {
   RefreshCw,
   Settings,
@@ -40,7 +40,7 @@ export function StaffListScreen({
     staffApi
       .listPublicByOutlet(config.outletId)
       .then((d) => setStaffList(d.filter((s) => s.status === "ACTIVE")))
-      .catch(() => toast.error("Gagal memuat daftar staf. Periksa koneksi."))
+      .catch(() => gooeyToast.error("Gagal memuat daftar staf. Periksa koneksi."))
       .finally(() => setLoading(false));
   }, [config.outletId]);
 

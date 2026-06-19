@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { format, isBefore, startOfToday } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { CalendarIcon, Clock, Timer } from "lucide-react";
 
 import {
@@ -100,12 +100,12 @@ export function RescheduleDialog({ entry, open, onOpenChange, onSuccess }: Resch
                 newStartTime: selectedSlot.startTime,
                 newEndTime: selectedSlot.endTime,
             });
-            toast.success(`Jadwal antrian #${entry.position} berhasil diperbarui.`);
+            gooeyToast.success(`Jadwal antrian #${entry.position} berhasil diperbarui.`);
             onOpenChange(false);
             onSuccess?.();
         } catch (error: any) {
             const message = error?.response?.data?.message ?? error?.message ?? "Gagal memperbarui jadwal.";
-            toast.error(message);
+            gooeyToast.error(message);
         }
     };
 

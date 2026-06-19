@@ -30,7 +30,7 @@ import {
   useRejectDeleteRequest,
 } from "@/hooks/api/use-transaction-delete";
 import type { TransactionDeleteRequest } from "@/lib/apis/transaction-delete";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import { usePathname } from "next/navigation";
 import { useOutletStore } from "@/stores/outlet.store";
 
@@ -106,12 +106,12 @@ export default function TransactionDeletesPage() {
     if (!selectedRequest) return;
     approveMutation.mutate(selectedRequest.id, {
       onSuccess: () => {
-        toast.success("Permintaan penghapusan disetujui. Transaksi telah dihapus.");
+        gooeyToast.success("Permintaan penghapusan disetujui. Transaksi telah dihapus.");
         setApproveDialogOpen(false);
         setSelectedRequest(null);
       },
       onError: (error: any) => {
-        toast.error(error?.response?.data?.message || error?.message || "Gagal menyetujui permintaan");
+        gooeyToast.error(error?.response?.data?.message || error?.message || "Gagal menyetujui permintaan");
       },
     });
   };
@@ -119,20 +119,20 @@ export default function TransactionDeletesPage() {
   const confirmReject = () => {
     if (!selectedRequest) return;
     if (!rejectionNote.trim()) {
-      toast.error("Catatan penolakan wajib diisi");
+      gooeyToast.error("Catatan penolakan wajib diisi");
       return;
     }
     rejectMutation.mutate(
       { requestId: selectedRequest.id, rejectionNote: rejectionNote.trim() },
       {
         onSuccess: () => {
-          toast.success("Permintaan penghapusan ditolak.");
+          gooeyToast.success("Permintaan penghapusan ditolak.");
           setRejectDialogOpen(false);
           setSelectedRequest(null);
           setRejectionNote("");
         },
         onError: (error: any) => {
-          toast.error(error?.response?.data?.message || error?.message || "Gagal menolak permintaan");
+          gooeyToast.error(error?.response?.data?.message || error?.message || "Gagal menolak permintaan");
         },
       },
     );

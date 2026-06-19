@@ -41,7 +41,7 @@ import {
   useUpdateOutletForceClose,
   useDeleteOutlet,
 } from "@/hooks/api/use-admin-control";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 import ConfirmationModal from "@/components/ui/confirmation-modal";
 import {
   Map as MapComponent,
@@ -82,7 +82,7 @@ export default function OutletManagement() {
         outletId: selectedOutlet.id,
         isClosed: selectedOutlet.isOpen,
       });
-      toast.success(
+      gooeyToast.success(
         `Outlet berhasil di${selectedOutlet.isOpen ? "tutup" : "buka"} secara paksa`,
       );
       // Update local state for immediate feedback
@@ -91,7 +91,7 @@ export default function OutletManagement() {
         isOpen: !selectedOutlet.isOpen,
       });
     } catch (error) {
-      toast.error("Gagal mengubah status outlet");
+      gooeyToast.error("Gagal mengubah status outlet");
     }
   };
 
@@ -99,11 +99,11 @@ export default function OutletManagement() {
     if (!selectedOutlet) return;
     try {
       await deleteOutlet.mutateAsync(selectedOutlet.id);
-      toast.success("Outlet berhasil dihapus");
+      gooeyToast.success("Outlet berhasil dihapus");
       setIsSheetOpen(false);
       setIsDeleteOpen(false);
     } catch (error) {
-      toast.error("Gagal menghapus outlet");
+      gooeyToast.error("Gagal menghapus outlet");
     }
   };
 

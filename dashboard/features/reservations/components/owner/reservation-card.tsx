@@ -7,7 +7,7 @@ import { Reservation } from "@/lib/apis/reservation";
 import { format } from "date-fns";
 import { Clock, Phone, User, Users, CheckCircle, XCircle, Play } from "lucide-react";
 import { useUpdateReservationStatus } from "@/hooks/api/use-reservations";
-import { toast } from "sonner";
+import { gooeyToast } from "goey-toast";
 
 const STATUS_ACTIONS: Record<string, { label: string; icon: typeof Play; nextStatus: string; variant?: "default" | "destructive" | "outline" }[]> = {
   RESERVED: [
@@ -43,8 +43,8 @@ export function ReservationCard({ reservation, outletId }: { reservation: Reserv
     updateMutation.mutate(
       { id: reservation.id, status, outletId: outletId! },
       {
-        onSuccess: (res) => toast.success(res.message),
-        onError: (err: any) => toast.error(err?.response?.data?.message ?? "Gagal mengubah status"),
+        onSuccess: (res) => gooeyToast.success(res.message),
+        onError: (err: any) => gooeyToast.error(err?.response?.data?.message ?? "Gagal mengubah status"),
       }
     );
   };
