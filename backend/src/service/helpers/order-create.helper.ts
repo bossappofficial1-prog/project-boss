@@ -336,7 +336,21 @@ export async function createOrderRecord(data: CreateOrderInput): Promise<OrderCr
         });
       }
 
-      // 6.5 Handle Bill integration if tableId is provided
+      // 6.5 Validate table belongs to this outlet
+      if (tableId) {
+        const table = await tx.outletTable.findUnique({
+          where: { id: tableId },
+          select: { outletId: true },
+        });
+        if (!table) {
+          throw new AppError("Meja tidak ditemukan.", HttpStatus.BAD_REQUEST);
+        }
+        if (table.outletId !== outletId) {
+          throw new AppError("Meja tidak tersedia di outlet ini.", HttpStatus.BAD_REQUEST);
+        }
+      }
+
+      // 6.6 Handle Bill integration if tableId is provided
       let billId: string | undefined = undefined;
       if (tableId) {
         const activeBill = await tx.bill.findFirst({

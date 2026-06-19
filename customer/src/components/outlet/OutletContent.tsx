@@ -860,14 +860,30 @@ export function OutletContent({
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 bg-white/15 px-3 py-1 rounded-full border border-white/10">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
-              </span>
-              <span className="text-[10px] font-bold uppercase tracking-wider">
-                {t("active")}
-              </span>
+            <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2 bg-white/15 px-3 py-1 rounded-full border border-white/10">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-wider">
+                  {t("active")}
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  setTableId(null, null, null);
+                  const params = new URLSearchParams(searchParams.toString());
+                  params.delete("tableId");
+                  params.delete("tableName");
+                  const qs = params.toString();
+                  router.replace(qs ? `${window.location.pathname}?${qs}` : window.location.pathname, { scroll: false });
+                }}
+                className="bg-white/15 hover:bg-white/25 transition-colors p-1.5 rounded-full border border-white/10"
+                aria-label="Hapus meja"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
         </div>
