@@ -136,7 +136,8 @@ export default function LoginContent() {
     }
   };
 
-  const handleVerify2fa = async () => {
+  const handleVerify2fa = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (twoFactorCode.length !== 6) return;
     setIsVerifying2fa(true);
     setError("");
