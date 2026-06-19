@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Shield, KeyRound, AlertTriangle } from "lucide-react";
+import { Shield, KeyRound } from "lucide-react";
 import { PasswordForm } from "../password-form";
 import { SessionsSection } from "./sessions-section";
 import { AuthenticatorSection } from "./authenticator-section";
@@ -28,7 +28,7 @@ export function SecuritySection({ userId, provider }: SecuritySectionProps) {
           Keamanan Akun
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Lindungi akun Anda dengan kata sandi yang kuat.
+          Kelola keamanan akun Anda.
         </p>
       </div>
 
@@ -52,26 +52,6 @@ export function SecuritySection({ userId, provider }: SecuritySectionProps) {
                 newPassword: "",
               }}
             />
-          </CardContent>
-        </Card>
-      )}
-
-      {!isLocalAuth && (
-        <Card className="shadow-sm gap-0 border-border/60">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40">
-              <AlertTriangle className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
-                  Login via Google
-                </p>
-                <p className="text-xs text-blue-700/70 dark:text-blue-400/70 mt-1">
-                  Anda masuk menggunakan akun Google. Kata sandi dikelola oleh
-                  Google. Untuk mengubah kata sandi, silakan melalui pengaturan
-                  akun Google Anda.
-                </p>
-              </div>
-            </div>
           </CardContent>
         </Card>
       )}
