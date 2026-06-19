@@ -28,13 +28,15 @@ import { securityApi } from "@/features/auth/services/security";
 import { gooeyToast } from "goey-toast";
 import Image from "next/image";
 
-export function AuthenticatorSection() {
+export function AuthenticatorSection({ provider }: { provider?: string }) {
   const queryClient = useQueryClient();
+  const isGoogleAuth = provider === "google";
   const [step, setStep] = useState<"idle" | "setup" | "verify" | "codes">(
     "idle",
   );
   const [verificationCode, setVerificationCode] = useState("");
   const [disablePassword, setDisablePassword] = useState("");
+  const [disableCode, setDisableCode] = useState("");
   const [showDisablePassword, setShowDisablePassword] = useState(false);
   const [qrCode, setQrCode] = useState("");
   const [secret, setSecret] = useState("");
@@ -79,11 +81,13 @@ export function AuthenticatorSection() {
   });
 
   const disableMutation = useMutation({
-    mutationFn: (password: string) => securityApi.disable2fa(password),
+    mutationFn: ({ password, token }: { password?: string; token?: string }) =>
+      securityApi.disable2fa(password, token),
     onSuccess: () => {
       gooeyToast.success("2FA berhasil dinonaktifkan");
       setStep("idle");
       setDisablePassword("");
+      setDisableCode("");
       setQrCode("");
       setSecret("");
       setBackupCodes([]);
@@ -97,7 +101,8 @@ export function AuthenticatorSection() {
   });
 
   const regenerateMutation = useMutation({
-    mutationFn: (password: string) => securityApi.regenerateBackupCodes(password),
+    mutationFn: ({ password, token }: { password?: string; token?: string }) =>
+      securityApi.regenerateBackupCodes(password, token),
     onSuccess: (res: any) => {
       setBackupCodes(res?.backupCodes ?? []);
       gooeyToast.success("Kode cadangan baru berhasil dibuat");
@@ -234,7 +239,11 @@ export function AuthenticatorSection() {
               className="text-xs"
               onClick={() => {
                 setStep("codes");
-                regenerateMutation.mutate(disablePassword || "placeholder");
+                if (isGoogleAuth) {
+                  regenerateMutation.mutate({ token: disableCode });
+                } else {
+                  regenerateMutation.mutate({ password: disablePassword });
+                }
               }}
               disabled={regenerateMutation.isPending}
             >
@@ -244,40 +253,66 @@ export function AuthenticatorSection() {
 
             <div className="border-t border-border/60 pt-3">
               <Label
-                htmlFor="disable-password"
+                htmlFor={isGoogleAuth ? "disable-code" : "disable-password"}
                 className="text-xs text-muted-foreground"
               >
-                Masukkan password untuk menonaktifkan 2FA
+                {isGoogleAuth
+                  ? "Masukkan kode 2FA untuk menonaktifkan"
+                  : "Masukkan password untuk menonaktifkan 2FA"}
               </Label>
               <div className="flex items-center gap-2 mt-1">
-                <div className="relative flex-1">
+                {isGoogleAuth ? (
                   <Input
-                    id="disable-password"
-                    type={showDisablePassword ? "text" : "password"}
-                    placeholder="Password saat ini"
-                    value={disablePassword}
-                    onChange={(e) => setDisablePassword(e.target.value)}
-                    className="text-sm pr-8"
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setShowDisablePassword(!showDisablePassword)
+                    id="disable-code"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="000000"
+                    maxLength={6}
+                    value={disableCode}
+                    onChange={(e) =>
+                      setDisableCode(e.target.value.replace(/\D/g, ""))
                     }
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showDisablePassword ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
+                    className="text-sm text-center tracking-[0.3em] font-mono"
+                  />
+                ) : (
+                  <div className="relative flex-1">
+                    <Input
+                      id="disable-password"
+                      type={showDisablePassword ? "text" : "password"}
+                      placeholder="Password saat ini"
+                      value={disablePassword}
+                      onChange={(e) => setDisablePassword(e.target.value)}
+                      className="text-sm pr-8"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowDisablePassword(!showDisablePassword)
+                      }
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showDisablePassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                )}
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => disableMutation.mutate(disablePassword)}
-                  disabled={isDisabling || !disablePassword}
+                  onClick={() =>
+                    disableMutation.mutate(
+                      isGoogleAuth
+                        ? { token: disableCode }
+                        : { password: disablePassword },
+                    )
+                  }
+                  disabled={
+                    isDisabling ||
+                    (isGoogleAuth ? disableCode.length !== 6 : !disablePassword)
+                  }
                 >
                   <ShieldOff className="w-4 h-4 mr-1" />
                   {isDisabling ? "Menonaktifkan..." : "Nonaktifkan"}

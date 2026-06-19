@@ -43,13 +43,9 @@ class TwoFactorController extends BaseController {
 
   disable = this.handler(async (req: Request, res: Response) => {
     const userId = req.storedUser!.id;
-    const { password } = req.body;
+    const { password, token } = req.body;
 
-    if (!password) {
-      return this.error(res, "Password wajib diisi", undefined, HttpStatus.BAD_REQUEST);
-    }
-
-    await TwoFactorService.disable(userId, password);
+    await TwoFactorService.disable(userId, password, token);
     return this.success(res, { message: "2FA berhasil dinonaktifkan" });
   });
 
@@ -127,13 +123,9 @@ class TwoFactorController extends BaseController {
 
   regenerateBackupCodes = this.handler(async (req: Request, res: Response) => {
     const userId = req.storedUser!.id;
-    const { password } = req.body;
+    const { password, token } = req.body;
 
-    if (!password) {
-      return this.error(res, "Password wajib diisi", undefined, HttpStatus.BAD_REQUEST);
-    }
-
-    const codes = await TwoFactorService.regenerateBackupCodes(userId, password);
+    const codes = await TwoFactorService.regenerateBackupCodes(userId, password, token);
     return this.success(res, { backupCodes: codes });
   });
 

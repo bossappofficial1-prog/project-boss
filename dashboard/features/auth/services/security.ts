@@ -53,10 +53,10 @@ export const securityApi = {
       body: JSON.stringify({ token }),
     }),
 
-  disable2fa: (password: string) =>
+  disable2fa: (password?: string, token?: string) =>
     apiCall<{ message: string }>("/auth/2fa/disable", {
       method: "POST",
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ password, token }),
     }),
 
   authenticate2fa: (tempToken: string, token: string) =>
@@ -65,10 +65,10 @@ export const securityApi = {
       body: JSON.stringify({ tempToken, token }),
     }),
 
-  regenerateBackupCodes: (password: string) =>
+  regenerateBackupCodes: (password?: string, token?: string) =>
     apiCall<{ backupCodes: string[] }>("/auth/2fa/regenerate-codes", {
       method: "POST",
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ password, token }),
     }),
 
   verifyAction: (token: string) =>

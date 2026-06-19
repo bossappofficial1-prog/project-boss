@@ -56,7 +56,7 @@ export function SecuritySection({ userId, provider }: SecuritySectionProps) {
         </Card>
       )}
 
-      <AuthenticatorSection />
+      <AuthenticatorSection provider={provider} />
       <SessionsSection />
     </div>
   );

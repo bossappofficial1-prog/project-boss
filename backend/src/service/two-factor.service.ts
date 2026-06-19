@@ -60,13 +60,21 @@ export class TwoFactorService extends BaseService {
     return { backupCodes };
   }
 
-  static async disable(userId: string, password: string) {
+  static async disable(userId: string, password?: string, token?: string) {
     const user = await UserRepository.findById(userId);
     if (!user) this.notFound("User tidak ditemukan");
     if (!user.twoFactorEnabled) this.badRequest("2FA belum aktif");
 
-    const isValid = await BcryptUtil.compare(password, user.password);
-    if (!isValid) this.unauthorized("Password salah");
+    const hasPassword = !!user.password;
+    if (hasPassword) {
+      if (!password) this.badRequest("Password wajib diisi");
+      const isValid = await BcryptUtil.compare(password, user.password);
+      if (!isValid) this.unauthorized("Password salah");
+    } else {
+      if (!token) this.badRequest("Kode verifikasi wajib diisi");
+      const isTokenValid = await this.verifyToken(userId, token!);
+      if (!isTokenValid) this.unauthorized("Kode verifikasi tidak valid");
+    }
 
     await UserRepository.update(userId, {
       twoFactorEnabled: false,
@@ -92,13 +100,21 @@ export class TwoFactorService extends BaseService {
     }
   }
 
-  static async regenerateBackupCodes(userId: string, password: string) {
+  static async regenerateBackupCodes(userId: string, password?: string, token?: string) {
     const user = await UserRepository.findById(userId);
     if (!user) this.notFound("User tidak ditemukan");
     if (!user.twoFactorEnabled) this.badRequest("2FA belum aktif");
 
-    const isValid = await BcryptUtil.compare(password, user.password);
-    if (!isValid) this.unauthorized("Password salah");
+    const hasPassword = !!user.password;
+    if (hasPassword) {
+      if (!password) this.badRequest("Password wajib diisi");
+      const isValid = await BcryptUtil.compare(password, user.password);
+      if (!isValid) this.unauthorized("Password salah");
+    } else {
+      if (!token) this.badRequest("Kode verifikasi wajib diisi");
+      const isTokenValid = await this.verifyToken(userId, token!);
+      if (!isTokenValid) this.unauthorized("Kode verifikasi tidak valid");
+    }
 
     const backupCodes: string[] = [];
     const hashedBackupCodes: string[] = [];
