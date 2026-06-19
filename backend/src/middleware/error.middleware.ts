@@ -7,7 +7,13 @@ import { ZodError } from "zod";
 import { MulterError } from "multer";
 import { HttpStatus } from "../constants/http-status";
 import { config } from "../config";
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
+import {
+  PrismaClientKnownRequestError,
+  PrismaClientUnknownRequestError,
+  PrismaClientValidationError,
+  PrismaClientInitializationError,
+  PrismaClientRustPanicError,
+} from "@prisma/client/runtime/client";
 
 export const notFound = (req: Request, res: Response): void => {
   ResponseUtil.notFound(res, `Route ${req.originalUrl} not found`);
@@ -50,11 +56,18 @@ export const errorHandler = (
         break;
       case "P2025":
         statusCode = HttpStatus.NOT_FOUND;
-        message = "Record not found";
+        message = "Data tidak ditemukan";
         break;
       default:
-        message = `Database error: ${err.message}`;
+        message = "Terjadi kesalahan database";
     }
+  } else if (
+    err instanceof PrismaClientUnknownRequestError ||
+    err instanceof PrismaClientValidationError ||
+    err instanceof PrismaClientInitializationError ||
+    err instanceof PrismaClientRustPanicError
+  ) {
+    message = "Terjadi kesalahan database";
   } else if (err instanceof AppError) {
     statusCode = err.statusCode ?? HttpStatus.INTERNAL_SERVER_ERROR;
     message = err.message;
