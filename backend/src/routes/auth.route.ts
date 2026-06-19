@@ -141,4 +141,7 @@ authRouter.post("/2fa/regenerate-codes", protect, twoFactorController.regenerate
 // 2FA login (no protect - uses tempToken)
 authRouter.post("/2fa/authenticate", twoFactorController.authenticate);
 
+// 2FA action verification (requires login session)
+authRouter.post("/2fa/verify-action", protect, twoFactorController.verifyAction);
+
 export default authRouter;

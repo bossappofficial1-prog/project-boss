@@ -16,9 +16,12 @@ import { EmptyOutletState } from "@/components/ui/empty-outlet";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { SectionHeader } from "@/components/ui/section-header";
+import { useTwoFactorGate } from "@/hooks/use-two-factor-gate";
+import { TwoFactorVerifyDialog } from "@/components/ui/two-factor-verify-dialog";
 
 export default function StaffManagementPage() {
   const { selectedOutlet } = useOutletStore();
+  const { is2faEnabled, showVerify, require2FA, handleVerified, handleOpenChange } = useTwoFactorGate();
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const router = useRouter();
   const [, setIsLoading] = useState(false);
@@ -119,21 +122,22 @@ export default function StaffManagementPage() {
     if (!deletingStaff) {
       return false;
     }
-
-    try {
-      setIsDeleting(true);
-      await staffApi.delete(deletingStaff.id);
-      gooeyToast.success("Staff berhasil dihapus");
-      setDeletingStaff(null);
-      await loadStaff();
-      return true;
-    } catch (error) {
-      console.error("Failed to delete staff", error);
-      gooeyToast.error((error as Error).message ?? "Gagal menghapus staff");
-      return false;
-    } finally {
-      setIsDeleting(false);
-    }
+    require2FA(async () => {
+      try {
+        setIsDeleting(true);
+        await staffApi.delete(deletingStaff.id);
+        gooeyToast.success("Staff berhasil dihapus");
+        setDeletingStaff(null);
+        await loadStaff();
+        return true;
+      } catch (error) {
+        console.error("Failed to delete staff", error);
+        gooeyToast.error((error as Error).message ?? "Gagal menghapus staff");
+        return false;
+      } finally {
+        setIsDeleting(false);
+      }
+    });
   };
 
   const activeStaffCount = useMemo(
@@ -250,6 +254,14 @@ export default function StaffManagementPage() {
         onOpenChange={setIsImportModalOpen}
         outletId={selectedOutlet?.id}
         onImported={loadStaff}
+      />
+
+      <TwoFactorVerifyDialog
+        open={showVerify}
+        onOpenChange={handleOpenChange}
+        onVerified={handleVerified}
+        title="Verifikasi Hapus Staff"
+        description="Masukkan kode 2FA untuk menghapus akun staff ini."
       />
 
       <ConfirmDialog

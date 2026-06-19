@@ -7,6 +7,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { outletTransferApi } from '@/lib/api'
 import { gooeyToast } from "goey-toast"
 import { useOutletStore } from '@/stores/outlet.store'
+import { useTwoFactorGate } from '@/hooks/use-two-factor-gate'
+import { TwoFactorVerifyDialog } from '@/components/ui/two-factor-verify-dialog'
 
 const transferSchema = z.object({
   outletId: z.string().min(1, 'Outlet wajib dipilih'),
@@ -24,6 +26,7 @@ interface TransferOutletDialogProps {
 export function TransferOutletDialog({ isOpen, onOpenChange }: TransferOutletDialogProps) {
   const queryClient = useQueryClient()
   const { outlets } = useOutletStore()
+  const { is2faEnabled, showVerify, require2FA, handleVerified, handleOpenChange } = useTwoFactorGate()
 
   const { mutateAsync: createTransfer } = useMutation({
     mutationFn: (values: TransferFormValues) => {
@@ -68,18 +71,27 @@ export function TransferOutletDialog({ isOpen, onOpenChange }: TransferOutletDia
   ], [outlets])
 
   return (
-    <ReusableForm
-      schema={transferSchema}
-      defaultValues={{ outletId: '', receiverEmail: '', note: '' }}
-      fields={fields}
-      onSubmit={createTransfer}
-      withDialog
-      isDialogOpen={isOpen}
-      onDialogOpenChange={onOpenChange}
-      dialogTitle="Transfer Kepemilikan Outlet"
-      dialogDescription="Kirim permintaan transfer outlet ke pengguna lain. Setelah diterima oleh penerima, Anda akan kehilangan akses ke outlet tersebut secara permanen."
-      submitText="Kirim Permintaan"
-      loadingText="Mengirim..."
-    />
+    <>
+      <TwoFactorVerifyDialog
+        open={showVerify}
+        onOpenChange={handleOpenChange}
+        onVerified={handleVerified}
+        title="Verifikasi Transfer Outlet"
+        description="Masukkan kode 2FA untuk melakukan transfer kepemilikan outlet."
+      />
+      <ReusableForm
+        schema={transferSchema}
+        defaultValues={{ outletId: '', receiverEmail: '', note: '' }}
+        fields={fields}
+        onSubmit={(values) => require2FA(() => createTransfer(values))}
+        withDialog
+        isDialogOpen={isOpen}
+        onDialogOpenChange={onOpenChange}
+        dialogTitle="Transfer Kepemilikan Outlet"
+        dialogDescription="Kirim permintaan transfer outlet ke pengguna lain. Setelah diterima oleh penerima, Anda akan kehilangan akses ke outlet tersebut secara permanen."
+        submitText="Kirim Permintaan"
+        loadingText="Mengirim..."
+      />
+    </>
   )
 }

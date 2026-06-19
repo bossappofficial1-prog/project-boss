@@ -9,6 +9,8 @@ import { outletManagementApi } from '@/lib/api'
 import { GooeyToaster, gooeyToast } from "goey-toast"
 import type { Outlet } from '@/types/dashboard'
 import { AxiosError } from 'axios'
+import { useTwoFactorGate } from '@/hooks/use-two-factor-gate'
+import { TwoFactorVerifyDialog } from '@/components/ui/two-factor-verify-dialog'
 
 type Props = {
     open: boolean
@@ -19,6 +21,7 @@ type Props = {
 
 export default function DeleteOutletModal({ open, onOpenChange, outlet, onSuccess }: Props) {
     const [confirmText, setConfirmText] = useState('')
+    const { is2faEnabled, showVerify, require2FA, handleVerified, handleOpenChange } = useTwoFactorGate()
 
     const { mutateAsync, isPending: isDeleting } = useMutation({
         mutationFn: async () => {
@@ -40,11 +43,11 @@ export default function DeleteOutletModal({ open, onOpenChange, outlet, onSucces
     })
 
     const handleDelete = async () => {
-        if (confirmText === outlet?.name) {
-            await mutateAsync()
-        } else {
+        if (confirmText !== outlet?.name) {
             gooeyToast.error('Konfirmasi nama outlet tidak sesuai')
+            return
         }
+        require2FA(() => mutateAsync())
     }
 
     const handleClose = () => {
@@ -56,6 +59,13 @@ export default function DeleteOutletModal({ open, onOpenChange, outlet, onSucces
 
     return (
         <>
+            <TwoFactorVerifyDialog
+                open={showVerify}
+                onOpenChange={handleOpenChange}
+                onVerified={handleVerified}
+                title="Verifikasi Hapus Outlet"
+                description="Masukkan kode 2FA untuk menghapus outlet ini secara permanen."
+            />
             <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
                 <DialogContent className="max-w-md">
                     <DialogHeader>

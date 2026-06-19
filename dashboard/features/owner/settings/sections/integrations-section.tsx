@@ -34,6 +34,8 @@ import {
 } from "@/components/ui/dialog";
 import { QRCodeSVG } from "qrcode.react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTwoFactorGate } from "@/hooks/use-two-factor-gate";
+import { TwoFactorVerifyDialog } from "@/components/ui/two-factor-verify-dialog";
 
 interface IntegrationsSectionProps {
   subscriptionPlan: string;
@@ -155,6 +157,7 @@ function cn(...classes: (string | boolean | undefined)[]) {
 
 export function IntegrationsSection({ subscriptionPlan }: IntegrationsSectionProps) {
   const queryClient = useQueryClient();
+  const { is2faEnabled, showVerify, require2FA, handleVerified, handleOpenChange } = useTwoFactorGate();
   const { data: integrations, isLoading, error } = useIntegrations();
   const { mutate: connectGoogle, isPending: isGoogleConnecting } =
     useGoogleConnect();
@@ -198,12 +201,14 @@ export function IntegrationsSection({ subscriptionPlan }: IntegrationsSectionPro
   };
 
   const handleGoogleDisconnect = () => {
-    disconnectGoogle(undefined, {
-      onSuccess: () => gooeyToast.success("Google Calendar berhasil diputus"),
-      onError: (err: any) =>
-        gooeyToast.error(
-          err?.response?.data?.message || "Gagal memutuskan koneksi"
-        ),
+    require2FA(() => {
+      disconnectGoogle(undefined, {
+        onSuccess: () => gooeyToast.success("Google Calendar berhasil diputus"),
+        onError: (err: any) =>
+          gooeyToast.error(
+            err?.response?.data?.message || "Gagal memutuskan koneksi"
+          ),
+      });
     });
   };
 
@@ -221,12 +226,14 @@ export function IntegrationsSection({ subscriptionPlan }: IntegrationsSectionPro
   };
 
   const handleWhatsAppDisconnect = () => {
-    disconnectWhatsApp(undefined, {
-      onSuccess: () => gooeyToast.success("Integrasi WhatsApp berhasil diputus"),
-      onError: (err: any) =>
-        gooeyToast.error(
-          err?.response?.data?.message || "Gagal memutuskan WhatsApp"
-        ),
+    require2FA(() => {
+      disconnectWhatsApp(undefined, {
+        onSuccess: () => gooeyToast.success("Integrasi WhatsApp berhasil diputus"),
+        onError: (err: any) =>
+          gooeyToast.error(
+            err?.response?.data?.message || "Gagal memutuskan WhatsApp"
+          ),
+      });
     });
   };
 
@@ -299,6 +306,13 @@ export function IntegrationsSection({ subscriptionPlan }: IntegrationsSectionPro
 
   return (
     <div className="space-y-6">
+      <TwoFactorVerifyDialog
+        open={showVerify}
+        onOpenChange={handleOpenChange}
+        onVerified={handleVerified}
+        title="Verifikasi Putuskan Integrasi"
+        description="Masukkan kode 2FA untuk memutuskan koneksi integrasi ini."
+      />
       <div>
         <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2">
           <Plug className="w-5 h-5 text-primary" />

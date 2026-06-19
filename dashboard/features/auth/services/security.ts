@@ -70,4 +70,10 @@ export const securityApi = {
       method: "POST",
       body: JSON.stringify({ password }),
     }),
+
+  verifyAction: (token: string) =>
+    apiCall<{ verified: boolean }>("/auth/2fa/verify-action", {
+      method: "POST",
+      body: JSON.stringify({ token }),
+    }),
 };

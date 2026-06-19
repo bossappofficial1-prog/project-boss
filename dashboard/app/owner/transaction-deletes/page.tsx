@@ -33,6 +33,8 @@ import type { TransactionDeleteRequest } from "@/lib/apis/transaction-delete";
 import { gooeyToast } from "goey-toast";
 import { usePathname } from "next/navigation";
 import { useOutletStore } from "@/stores/outlet.store";
+import { useTwoFactorGate } from "@/hooks/use-two-factor-gate";
+import { TwoFactorVerifyDialog } from "@/components/ui/two-factor-verify-dialog";
 
 const STATUS_META: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
   PENDING: {
@@ -65,6 +67,7 @@ export default function TransactionDeletesPage() {
   const pathname = usePathname();
   const isManagerView = pathname?.startsWith("/manager") ?? false;
   const { selectedOutletId } = useOutletStore();
+  const { is2faEnabled, showVerify, require2FA, handleVerified, handleOpenChange } = useTwoFactorGate();
 
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -104,15 +107,17 @@ export default function TransactionDeletesPage() {
 
   const confirmApprove = () => {
     if (!selectedRequest) return;
-    approveMutation.mutate(selectedRequest.id, {
-      onSuccess: () => {
-        gooeyToast.success("Permintaan penghapusan disetujui. Transaksi telah dihapus.");
-        setApproveDialogOpen(false);
-        setSelectedRequest(null);
-      },
-      onError: (error: any) => {
-        gooeyToast.error(error?.response?.data?.message || error?.message || "Gagal menyetujui permintaan");
-      },
+    require2FA(() => {
+      approveMutation.mutate(selectedRequest.id, {
+        onSuccess: () => {
+          gooeyToast.success("Permintaan penghapusan disetujui. Transaksi telah dihapus.");
+          setApproveDialogOpen(false);
+          setSelectedRequest(null);
+        },
+        onError: (error: any) => {
+          gooeyToast.error(error?.response?.data?.message || error?.message || "Gagal menyetujui permintaan");
+        },
+      });
     });
   };
 
@@ -299,6 +304,14 @@ export default function TransactionDeletesPage() {
           )}
         </CardContent>
       </Card>
+
+      <TwoFactorVerifyDialog
+        open={showVerify}
+        onOpenChange={handleOpenChange}
+        onVerified={handleVerified}
+        title="Verifikasi Setujui Hapus Transaksi"
+        description="Masukkan kode 2FA untuk menyetujui penghapusan transaksi ini."
+      />
 
       <ConfirmDialog
         open={approveDialogOpen}

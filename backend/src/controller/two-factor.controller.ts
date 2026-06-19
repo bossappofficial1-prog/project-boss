@@ -136,6 +136,22 @@ class TwoFactorController extends BaseController {
     const codes = await TwoFactorService.regenerateBackupCodes(userId, password);
     return this.success(res, { backupCodes: codes });
   });
+
+  verifyAction = this.handler(async (req: Request, res: Response) => {
+    const userId = req.storedUser!.id;
+    const { token } = req.body;
+
+    if (!token) {
+      return this.error(res, "Kode verifikasi wajib diisi", undefined, HttpStatus.BAD_REQUEST);
+    }
+
+    const isValid = await TwoFactorService.verifyToken(userId, token);
+    if (!isValid) {
+      return this.error(res, "Kode verifikasi tidak valid", undefined, HttpStatus.UNAUTHORIZED);
+    }
+
+    return this.success(res, { verified: true });
+  });
 }
 
 export const twoFactorController = new TwoFactorController();

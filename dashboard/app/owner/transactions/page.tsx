@@ -27,10 +27,13 @@ import {
   ManualTransactionFormModal,
   TransactionDetailSheet,
 } from "@/features/transactions";
+import { useTwoFactorGate } from "@/hooks/use-two-factor-gate";
+import { TwoFactorVerifyDialog } from "@/components/ui/two-factor-verify-dialog";
 
 export default function TransactionsPage() {
   const pathname = usePathname();
   const isManagerView = pathname?.startsWith("/manager") ?? false;
+  const { is2faEnabled, showVerify, require2FA, handleVerified, handleOpenChange } = useTwoFactorGate();
 
   const { outlets, selectedOutletId } = useOutletStore();
   const {
@@ -183,42 +186,46 @@ export default function TransactionsPage() {
 
   const handleDeleteManualConfirm = () => {
     if (!deletingManualTransaction) return;
-    deleteManualTransactionMutation.mutate(deletingManualTransaction.id, {
-      onSuccess: () => {
-        gooeyToast.success("Transaksi manual berhasil dihapus.");
-        setShowDeleteManualConfirm(false);
-        setDeletingManualTransaction(null);
-        refetch();
-      },
-      onError: (err: any) => {
-        gooeyToast.error(
-          err?.response?.data?.message ||
-            err?.message ||
-            "Gagal menghapus transaksi manual",
-        );
-      },
-    });
-  };
-
-  const handleDeleteConfirm = (reason: string) => {
-    if (!transactionToDelete) return;
-    directDeleteMutation.mutate(
-      { transactionId: transactionToDelete.id, reason: reason || undefined },
-      {
+    require2FA(() => {
+      deleteManualTransactionMutation.mutate(deletingManualTransaction.id, {
         onSuccess: () => {
-          gooeyToast.success("Transaksi berhasil dihapus secara langsung.");
-          setTransactionToDelete(null);
+          gooeyToast.success("Transaksi manual berhasil dihapus.");
+          setShowDeleteManualConfirm(false);
+          setDeletingManualTransaction(null);
           refetch();
         },
         onError: (err: any) => {
           gooeyToast.error(
             err?.response?.data?.message ||
               err?.message ||
-              "Gagal menghapus transaksi",
+              "Gagal menghapus transaksi manual",
           );
         },
-      },
-    );
+      });
+    });
+  };
+
+  const handleDeleteConfirm = (reason: string) => {
+    if (!transactionToDelete) return;
+    require2FA(() => {
+      directDeleteMutation.mutate(
+        { transactionId: transactionToDelete.id, reason: reason || undefined },
+        {
+          onSuccess: () => {
+            gooeyToast.success("Transaksi berhasil dihapus secara langsung.");
+            setTransactionToDelete(null);
+            refetch();
+          },
+          onError: (err: any) => {
+            gooeyToast.error(
+              err?.response?.data?.message ||
+                err?.message ||
+                "Gagal menghapus transaksi",
+            );
+          },
+        },
+      );
+    });
   };
 
   const handleExportPDF = (start: string, end: string) => {
@@ -431,6 +438,14 @@ export default function TransactionsPage() {
           actionViewType="dropdown"
         />
       </div>
+
+      <TwoFactorVerifyDialog
+        open={showVerify}
+        onOpenChange={handleOpenChange}
+        onVerified={handleVerified}
+        title="Verifikasi Hapus Transaksi"
+        description="Masukkan kode 2FA untuk menghapus transaksi ini secara permanen."
+      />
 
       <DeleteTransactionDialog
         transaction={transactionToDelete}
