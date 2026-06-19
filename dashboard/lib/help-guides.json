@@ -5,7 +5,8 @@
     { "id": "outlets", "label": "Outlet & Staff", "icon": "Building2" },
     { "id": "products", "label": "Inventori & Stok", "icon": "ShoppingBag" },
     { "id": "reports", "label": "Keuangan & Laporan", "icon": "TrendingUp" },
-    { "id": "loyalty", "label": "CRM & Loyalitas", "icon": "Gift" }
+    { "id": "loyalty", "label": "CRM & Loyalitas", "icon": "Gift" },
+    { "id": "security", "label": "Keamanan Akun", "icon": "Shield" }
   ],
   "cashierCategories": [
     { "id": "all", "label": "Semua Panduan", "icon": "BookOpen" },
@@ -1163,6 +1164,88 @@
         }
       ],
       "warning": "Setelah transfer berhasil, Anda tidak lagi memiliki akses ke outlet tersebut. Semua data produk, staf, dan transaksi akan berpindah ke akun penerima."
+    },
+    {
+      "id": "enable-2fa",
+      "role": "owner",
+      "category": "security",
+      "title": "Mengaktifkan Autentikasi Dua Faktor (2FA)",
+      "description": "Lindungi akun Anda dengan lapisan keamanan ekstra menggunakan aplikasi authenticator seperti Google Authenticator atau Authy.",
+      "icon": "ShieldCheck",
+      "steps": [
+        {
+          "title": "Buka Pengaturan Keamanan",
+          "desc": "Klik menu 'Pengaturan' di bagian paling bawah menu sebelah kiri, lalu pilih tab 'Keamanan'."
+        },
+        {
+          "title": "Klik Aktifkan 2FA",
+          "desc": "Pada bagian 'Autentikasi Dua Faktor', klik tombol 'Aktifkan 2FA'. Sistem akan menampilkan QR code."
+        },
+        {
+          "title": "Scan QR Code",
+          "desc": "Buka aplikasi Google Authenticator atau Authy di HP Anda, lalu scan QR code yang muncul di layar. Anda juga bisa memasukkan kode manual jika tidak bisa scan."
+        },
+        {
+          "title": "Masukkan Kode Verifikasi",
+          "desc": "Masukkan kode 6 digit yang muncul di aplikasi authenticator ke kolom verifikasi, lalu klik 'Verifikasi'."
+        },
+        {
+          "title": "Simpan Kode Cadangan",
+          "desc": "Sistem akan menampilkan 8 kode cadangan. Simpan kode ini di tempat aman. Kode cadangan bisa digunakan jika Anda kehilangan akses ke aplikasi authenticator."
+        }
+      ],
+      "tip": "Aktifkan checkbox 'Percayai perangkat ini selama 30 hari' saat login agar tidak perlu memasukkan kode 2FA setiap kali login dari perangkat yang sama.",
+      "warning": "Jika Anda kehilangan aplikasi authenticator DAN kode cadangan, satu-satunya cara memulihkan akun adalah dengan menghubungi support BOSS."
+    },
+    {
+      "id": "disable-2fa",
+      "role": "owner",
+      "category": "security",
+      "title": "Menonaktifkan Autentikasi Dua Faktor (2FA)",
+      "description": "Cara menonaktifkan 2FA jika Anda tidak lagi ingin menggunakan lapisan keamanan tambahan.",
+      "icon": "ShieldOff",
+      "steps": [
+        {
+          "title": "Buka Pengaturan Keamanan",
+          "desc": "Klik menu 'Pengaturan' > tab 'Keamanan'."
+        },
+        {
+          "title": "Masukkan Password atau Kode 2FA",
+          "desc": "Jika Anda login dengan email & password, masukkan password saat ini. Jika login dengan Google, masukkan kode 6 digit dari aplikasi authenticator."
+        },
+        {
+          "title": "Klik Nonaktifkan",
+          "desc": "Klik tombol 'Nonaktifkan' untuk mematikan 2FA. Anda tidak akan lagi diminta memasukkan kode saat login."
+        }
+      ],
+      "warning": "Menonaktifkan 2FA mengurangi keamanan akun Anda. Kami sangat menyarankan untuk tetap mengaktifkan 2FA."
+    },
+    {
+      "id": "manage-sessions",
+      "role": "owner",
+      "category": "security",
+      "title": "Mengelola Sesi Login Perangkat",
+      "description": "Lihat dan cabut sesi login dari berbagai perangkat yang terhubung ke akun Anda.",
+      "icon": "Monitor",
+      "steps": [
+        {
+          "title": "Buka Pengaturan Keamanan",
+          "desc": "Klik menu 'Pengaturan' > tab 'Keamanan', lalu scroll ke bagian 'Sesi Login Aktif'."
+        },
+        {
+          "title": "Lihat Daftar Perangkat",
+          "desc": "Sistem menampilkan semua perangkat yang sedang login ke akun Anda, termasuk jenis perangkat, browser, OS, dan lokasi IP."
+        },
+        {
+          "title": "Cabut Sesi Mencurigakan",
+          "desc": "Jika ada perangkat yang tidak Anda kenali, klik ikon tempat sampah di sebelah kanan perangkat tersebut untuk mencabut sesinya."
+        },
+        {
+          "title": "Cabut Semua Sesi Lain",
+          "desc": "Klik tombol 'Cabut Semua' untuk logout dari semua perangkat lain sekaligus. Hanya perangkat ini yang tetap login."
+        }
+      ],
+      "tip": "Jika Anda login dari perangkat baru dan mencentang 'Percayai perangkat ini', perangkat tersebut akan ditandai sebagai trusted device dan tidak perlu 2FA lagi selama 30 hari."
     }
   ]
 }
