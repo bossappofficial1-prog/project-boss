@@ -4,8 +4,7 @@ on:
   push:
     branches:
       # - develop
-      # - main  # Disabled: customer deployed to Vercel
-      - disabled-deploy
+      - main # Disabled: customer deployed to Vercel
     paths:
       - "customer/**"
       - ".github/workflows/deploy-customer.yml"

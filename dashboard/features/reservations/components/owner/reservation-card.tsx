@@ -43,7 +43,7 @@ export function ReservationCard({ reservation, outletId }: { reservation: Reserv
     updateMutation.mutate(
       { id: reservation.id, status, outletId: outletId! },
       {
-        onSuccess: (res) => gooeyToast.success(res.message),
+        onSuccess: (res) => gooeyToast.success(res.message ?? "Berhasil mengubah status"),
         onError: (err: any) => gooeyToast.error(err?.response?.data?.message ?? "Gagal mengubah status"),
       }
     );
