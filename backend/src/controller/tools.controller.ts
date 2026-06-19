@@ -9,11 +9,10 @@ export class ToolsController {
   /**
    * Handler untuk Profit Per Product
    */
-  public getProfitPerProduct = async (req: Request, res: Response) => {
-    try {
+  public getProfitPerProduct = asyncHandler(
+    async (req: Request, res: Response) => {
       const { outletId, startDate, endDate } = req.query;
 
-      // Validasi input
       if (!outletId || !startDate || !endDate) {
         return ResponseUtil.badRequest(
           res,
@@ -28,81 +27,61 @@ export class ToolsController {
       );
 
       return ResponseUtil.success(res, result);
-    } catch (error: any) {
-      return ResponseUtil.error(res, error.message || "Internal Server Error");
-    }
-  };
+    },
+  );
 
   /**
    * Handler untuk Business Health
    */
   public getBusinessHealth = asyncHandler(
     async (req: Request, res: Response) => {
-      try {
-        const { outletId, startDate, endDate } = req.query;
-
-        if (!outletId || !startDate || !endDate) {
-          return ResponseUtil.badRequest(res, "Parameter tidak lengkap.");
-        }
-
-        const result = await this.toolsService.getBusinessHealth(
-          outletId as string,
-          new Date(startDate as string),
-          new Date(endDate as string),
-        );
-
-        return ResponseUtil.success(res, result);
-      } catch (error: any) {
-        return ResponseUtil.error(
-          res,
-          error.message || "Internal Server Error",
-        );
-      }
-    },
-  );
-
-  public getIncomeStatement = asyncHandler(
-    async (req: Request, res: Response) => {
-      try {
-        const { outletId, startDate, endDate } = req.query;
-
-        if (!outletId || !startDate || !endDate) {
-          return ResponseUtil.badRequest(res, "Parameter tidak lengkap.");
-        }
-
-        const result = await this.toolsService.getIncomeStatement(
-          outletId as string,
-          new Date(startDate as string),
-          new Date(endDate as string),
-        );
-
-        return ResponseUtil.success(res, result);
-      } catch (error: any) {
-        return ResponseUtil.error(
-          res,
-          error.message || "Internal Server Error",
-        );
-      }
-    },
-  );
-
-  public getPeakHours = asyncHandler(async (req: Request, res: Response) => {
-    try {
       const { outletId, startDate, endDate } = req.query;
 
       if (!outletId || !startDate || !endDate) {
         return ResponseUtil.badRequest(res, "Parameter tidak lengkap.");
       }
 
-      const result = await this.toolsService.getPeakHours(
+      const result = await this.toolsService.getBusinessHealth(
         outletId as string,
         new Date(startDate as string),
         new Date(endDate as string),
       );
 
       return ResponseUtil.success(res, result);
-    } catch (error: any) {
-      return ResponseUtil.error(res, error.message || "Internal Server Error");
+    },
+  );
+
+  public getIncomeStatement = asyncHandler(
+    async (req: Request, res: Response) => {
+      const { outletId, startDate, endDate } = req.query;
+
+      if (!outletId || !startDate || !endDate) {
+        return ResponseUtil.badRequest(res, "Parameter tidak lengkap.");
+      }
+
+      const result = await this.toolsService.getIncomeStatement(
+        outletId as string,
+        new Date(startDate as string),
+        new Date(endDate as string),
+      );
+
+      return ResponseUtil.success(res, result);
+    },
+  );
+
+  public getPeakHours = asyncHandler(async (req: Request, res: Response) => {
+    const { outletId, startDate, endDate } = req.query;
+
+    if (!outletId || !startDate || !endDate) {
+      return ResponseUtil.badRequest(res, "Parameter tidak lengkap.");
     }
+
+    const result = await this.toolsService.getPeakHours(
+      outletId as string,
+      new Date(startDate as string),
+      new Date(endDate as string),
+    );
+
+    return ResponseUtil.success(res, result);
   });
 }

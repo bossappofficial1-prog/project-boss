@@ -284,7 +284,7 @@ export class SubscriptionService {
         try {
             return await SubscriptionRepository.cancelInvoice(invoiceId, businessId);
         } catch (error: any) {
-            throw new AppError(error.message || 'Gagal membatalkan invoice', HttpStatus.BAD_REQUEST);
+            throw new AppError('Gagal membatalkan invoice', HttpStatus.BAD_REQUEST);
         }
     }
 }

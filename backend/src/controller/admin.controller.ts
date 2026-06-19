@@ -470,7 +470,7 @@ export class AdminController extends BaseController {
                 results.success++;
             } catch (error: any) {
                 results.failed++;
-                results.errors.push(`${businessId}: ${error.message}`);
+                results.errors.push(`${businessId}: Gagal`);
             }
         }
         return this.success(res, {
@@ -491,7 +491,7 @@ export class AdminController extends BaseController {
                 results.success++;
             } catch (error: any) {
                 results.failed++;
-                results.errors.push(`${businessId}: ${error.message}`);
+                results.errors.push(`${businessId}: Gagal`);
             }
         }
         return this.success(res, {
@@ -512,7 +512,7 @@ export class AdminController extends BaseController {
                 results.success++;
             } catch (error: any) {
                 results.failed++;
-                results.errors.push(`${businessId}: ${error.message}`);
+                results.errors.push(`${businessId}: Gagal`);
             }
         }
         return this.success(res, {
@@ -533,7 +533,7 @@ export class AdminController extends BaseController {
                 results.success++;
             } catch (error: any) {
                 results.failed++;
-                results.errors.push(`${outletId}: ${error.message}`);
+                results.errors.push(`${outletId}: Gagal`);
             }
         }
         return this.success(res, {
@@ -554,7 +554,7 @@ export class AdminController extends BaseController {
                 results.success++;
             } catch (error: any) {
                 results.failed++;
-                results.errors.push(`${invoiceId}: ${error.message}`);
+                results.errors.push(`${invoiceId}: Gagal`);
             }
         }
         return this.success(res, {
@@ -578,7 +578,7 @@ export class AdminController extends BaseController {
                 results.success++;
             } catch (error: any) {
                 results.failed++;
-                results.errors.push(`${invoiceId}: ${error.message}`);
+                results.errors.push(`${invoiceId}: Gagal`);
             }
         }
         return this.success(res, {

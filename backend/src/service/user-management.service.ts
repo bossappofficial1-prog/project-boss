@@ -110,7 +110,7 @@ export class UserManagementService extends BaseService {
         results.success++;
       } catch (error: any) {
         results.failed++;
-        results.errors.push(`${userId}: ${error.message}`);
+        results.errors.push(`${userId}: Gagal`);
       }
     }
 
@@ -129,7 +129,7 @@ export class UserManagementService extends BaseService {
         results.success++;
       } catch (error: any) {
         results.failed++;
-        results.errors.push(`${userId}: ${error.message}`);
+        results.errors.push(`${userId}: Gagal`);
       }
     }
 

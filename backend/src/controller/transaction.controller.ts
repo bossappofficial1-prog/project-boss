@@ -52,24 +52,13 @@ export const getTransactionListController = asyncHandler(async (req: Request, re
 /**
  * Get transaction by ID
  */
-export const getTransactionByIdController = async (req: Request, res: Response) => {
-    try {
-        const userId = (req as any).storedUser?.id;
-        const { id } = req.params;
+export const getTransactionByIdController = asyncHandler(async (req: Request, res: Response) => {
+    const userId = (req as any).storedUser?.id;
+    const { id } = req.params;
 
-        if (!userId) {
-            return ResponseUtil.unauthorized(res, "Unauthorized");
-        }
-
-        // This would need a service function - simplified for now
-        return ResponseUtil.success(res, { id }, HttpStatus.OK, "Transaction details");
-    } catch (error: any) {
-        console.error("Error in getTransactionByIdController:", error);
-        return ResponseUtil.error(
-            res,
-            error.message || "Gagal mengambil detail transaksi",
-            undefined,
-            error.statusCode || HttpStatus.INTERNAL_SERVER_ERROR
-        );
+    if (!userId) {
+        return ResponseUtil.unauthorized(res, "Unauthorized");
     }
-};
+
+    return ResponseUtil.success(res, { id }, HttpStatus.OK, "Transaction details");
+});

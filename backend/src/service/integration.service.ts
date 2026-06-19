@@ -95,7 +95,7 @@ export class IntegrationService extends BaseService {
                 settings: { email, calendarId: "primary" },
             });
         } catch (error: any) {
-            this.badRequest(`Gagal menyambungkan ke Google Calendar: ${error.message}`);
+            this.badRequest("Gagal menyambungkan ke Google Calendar");
         }
     }
 

@@ -209,7 +209,7 @@ export async function importStaffFromCSV(
       result.failed++;
       result.errors.push({
         row: rowNum,
-        message: err.message,
+        message: "Gagal",
         data: row,
       });
     }
