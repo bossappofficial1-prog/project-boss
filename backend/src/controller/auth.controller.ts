@@ -211,8 +211,6 @@ class AuthController extends BaseController {
       }
     }
 
-    clearAuthCookie(res, AUTH_COOKIE_NAMES.trustDevice!);
-
     if (!roleHint) {
       clearAuthCookie(res, AUTH_COOKIE_NAMES.owner);
       clearAuthCookie(res, AUTH_COOKIE_NAMES.admin);

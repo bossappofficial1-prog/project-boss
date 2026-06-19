@@ -9,12 +9,27 @@ export class SessionService extends BaseService {
   static async create(
     userId: string,
     req: { headers: Record<string, string | string[] | undefined>; ip?: string },
-  ) {
-    const sessionId = randomUUID();
+  ): Promise<string> {
     const userAgent = (req.headers["user-agent"] as string) || "Unknown";
     const ip = req.ip || (req.headers["x-forwarded-for"] as string) || "Unknown";
     const parsed = SessionService.parseUserAgent(userAgent);
 
+    const existingSessions = await SessionRepository.findActiveByUserId(userId);
+    const matched = existingSessions.find(
+      (s) => s.browser === parsed.browser && s.os === parsed.os && s.deviceType === parsed.deviceType,
+    );
+
+    if (matched) {
+      await SessionRepository.updateLastActive(matched.id);
+      await redis.setex(
+        `session:${matched.id}`,
+        SESSION_TTL_SECONDS,
+        JSON.stringify({ userId, sessionId: matched.id }),
+      );
+      return matched.id;
+    }
+
+    const sessionId = randomUUID();
     const expiresAt = new Date(Date.now() + SESSION_TTL_SECONDS * 1000);
 
     await SessionRepository.create({

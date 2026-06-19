@@ -31,14 +31,18 @@ export const getUserCookieName = (role: UserRole): string => {
   return role === "ADMIN" ? AUTH_COOKIE_NAMES.admin : AUTH_COOKIE_NAMES.owner;
 };
 
-const getCookieOptions = (maxAgeMs?: number) => ({
-  httpOnly: true,
-  secure: !!config.COOKIES_DOMAIN,
-  sameSite: (!!config.COOKIES_DOMAIN ? "none" : "lax") as "none" | "lax",
-  domain: config.COOKIES_DOMAIN,
-  path: "/",
-  ...(maxAgeMs ? { maxAge: maxAgeMs } : {}),
-});
+const getCookieOptions = (maxAgeMs?: number) => {
+  const domain = config.COOKIES_DOMAIN;
+  const isLocalhost = !domain || domain === "localhost" || domain.startsWith("localhost:");
+  return {
+    httpOnly: true,
+    secure: !isLocalhost,
+    sameSite: (isLocalhost ? "lax" : "none") as "none" | "lax",
+    domain: domain || undefined,
+    path: "/",
+    ...(maxAgeMs ? { maxAge: maxAgeMs } : {}),
+  };
+};
 
 export const setAuthCookie = (
   res: Response,
