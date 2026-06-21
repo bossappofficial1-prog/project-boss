@@ -1,0 +1,74 @@
+{
+  "expo": {
+    "name": "BossApp",
+    "slug": "customer-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/boss-icon.png",
+    "scheme": "bossapp",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "id.bossapp.customer"
+    },
+    "android": {
+      "package": "id.bossapp.customer",
+      "adaptiveIcon": {
+        "backgroundColor": "#eb2525",
+        "foregroundImage": "./assets/images/boss-icon.png"
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "category": [
+            "DEFAULT",
+            "BROWSABLE"
+          ],
+          "data": {
+            "scheme": "https",
+            "host": "customer.bossapp.id",
+            "pathPrefix": "/"
+          }
+        },
+        {
+          "action": "VIEW",
+          "category": [
+            "DEFAULT",
+            "BROWSABLE"
+          ],
+          "data": {
+            "scheme": "bossapp"
+          }
+        }
+      ],
+      "predictiveBackGestureEnabled": false,
+      "statusBarColor": "#eb2525"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/logo.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#eb2525"
+        }
+      ],
+      "@maplibre/maplibre-react-native"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "166712d9-0a83-4cd7-b435-7e919c6ae6a3"
+      }
+    }
+  }
+}
