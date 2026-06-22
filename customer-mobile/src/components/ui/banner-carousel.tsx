@@ -11,7 +11,7 @@ import {
   ViewToken,
 } from "react-native";
 
-const LOGO_IMG = require("../../assets/images/logo.png");
+const LOGO_IMG = require("../../../assets/images/logo.png");
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const BANNER_HEIGHT = 180;
 

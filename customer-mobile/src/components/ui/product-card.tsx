@@ -42,8 +42,8 @@ export function ProductCard({ item, rank, onPress }: ProductCardProps) {
       {rank != null && (
         <View
           style={{
-            width: 24,
-            height: 24,
+            width: 18,
+            height: 18,
             borderRadius: 12,
             alignItems: "center",
             justifyContent: "center",
@@ -66,8 +66,8 @@ export function ProductCard({ item, rank, onPress }: ProductCardProps) {
           item.image?.startsWith("/") ? defaultProduct : { uri: item.image }
         }
         style={{
-          width: 56,
-          height: 56,
+          width: 48,
+          height: 48,
           borderRadius: 10,
           backgroundColor: c.skeleton,
         }}

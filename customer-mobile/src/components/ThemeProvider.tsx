@@ -10,6 +10,7 @@ interface ThemeContextValue {
   colors: ThemeColors;
   toggleTheme: () => void;
   setColorScheme: (scheme: ColorScheme) => void;
+  resetColorScheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
@@ -17,6 +18,7 @@ const ThemeContext = createContext<ThemeContextValue>({
   colors: colors.light,
   toggleTheme: () => {},
   setColorScheme: () => {},
+  resetColorScheme: () => {},
 });
 
 const THEME_KEY = "app-theme";
@@ -47,9 +49,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     AsyncStorage.setItem(THEME_KEY, scheme);
   };
 
+  const resetColorScheme = () => {
+    setManualScheme(null);
+    AsyncStorage.removeItem(THEME_KEY);
+  };
+
   const value = useMemo(
-    () => ({ colorScheme, colors: themeColors, toggleTheme, setColorScheme }),
-    [colorScheme, themeColors, toggleTheme, setColorScheme]
+    () => ({ colorScheme, colors: themeColors, toggleTheme, setColorScheme, resetColorScheme }),
+    [colorScheme, themeColors, toggleTheme, setColorScheme, resetColorScheme]
   );
 
   return (

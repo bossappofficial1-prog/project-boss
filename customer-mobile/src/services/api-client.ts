@@ -16,11 +16,16 @@ class ApiClient {
     options: RequestOptions = {}
   ): Promise<T> {
     const { token, ...fetchOptions } = options;
+    const isFormData = fetchOptions.body instanceof FormData;
 
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      ...((fetchOptions.headers as Record<string, string>) || {}),
-    };
+    const headers: Record<string, string> = {};
+
+    if (!isFormData) {
+      headers["Content-Type"] = "application/json";
+    }
+
+    const existingHeaders = (fetchOptions.headers as Record<string, string>) || {};
+    Object.assign(headers, existingHeaders);
 
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
@@ -49,9 +54,10 @@ class ApiClient {
     body: unknown,
     token?: string
   ): Promise<T> {
+    const isFormData = body instanceof FormData;
     return this.request<T>(endpoint, {
       method: "POST",
-      body: JSON.stringify(body),
+      body: isFormData ? body : JSON.stringify(body),
       token,
     });
   }
@@ -61,9 +67,10 @@ class ApiClient {
     body: unknown,
     token?: string
   ): Promise<T> {
+    const isFormData = body instanceof FormData;
     return this.request<T>(endpoint, {
       method: "PUT",
-      body: JSON.stringify(body),
+      body: isFormData ? body : JSON.stringify(body),
       token,
     });
   }

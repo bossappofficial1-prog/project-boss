@@ -12,7 +12,7 @@ import {
   Timer,
   Trash2,
 } from "lucide-react-native";
-import { useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { Image, Pressable, Text, View } from "react-native";
 
 function formatPrice(price: number): string {
@@ -35,7 +35,7 @@ function formatScheduleDate(dateStr: string): string {
   return `${dayNames[d.getDay()]}, ${d.getDate()} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-export function CartItemCard({
+export const CartItemCard = memo(function CartItemCard({
   item,
   onUpdateQuantity,
   onRemoveItem,
@@ -304,4 +304,4 @@ export function CartItemCard({
       )}
     </View>
   );
-}
+})

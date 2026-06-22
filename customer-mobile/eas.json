@@ -8,11 +8,19 @@
       "android": {
         "buildType": "apk"
       },
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.bossapp.id/api/v1",
+        "EXPO_PUBLIC_SOCKET_URL": "https://api.bossapp.id"
+      }
     },
     "production": {
       "android": {
         "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.bossapp.id/api/v1",
+        "EXPO_PUBLIC_SOCKET_URL": "https://api.bossapp.id"
       }
     }
   }

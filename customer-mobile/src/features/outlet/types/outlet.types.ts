@@ -41,32 +41,9 @@ export interface OutletProduct {
   outletId: string;
   taxPercentage?: number;
   taxName?: string;
-  goods?: {
-    sellingPrice: number;
-    currentStock: number;
-    unit?: string;
-    barcode?: string;
-    sku?: string;
-  } | null;
-  service?: {
-    sellingPrice: number;
-    durationMinutes?: number;
-    bookingSlots?: BookingSlot[];
-  } | null;
-  ticket?: {
-    sellingPrice: number;
-    eventDate?: string;
-    eventEndDate?: string | null;
-    venue: string;
-    venueAddress?: string | null;
-    mapUrl?: string | null;
-    totalQuota?: number;
-    soldCount?: number;
-    maxPerOrder?: number;
-    saleStartDate?: string | null;
-    saleEndDate?: string | null;
-    terms?: string | null;
-  } | null;
+  goods?: Goods;
+  service?: Service;
+  ticket?: Ticket;
   media?: ProductMedia[];
 }
 
@@ -75,40 +52,17 @@ export interface ProductDetail extends OutletProduct {
     id: string;
     name: string;
   } | null;
-  goods?: {
-    sellingPrice: number;
-    currentStock: number;
-    unit?: string;
-    barcode?: string;
-    sku?: string;
-  } | null;
-  service?: {
-    sellingPrice: number;
-    durationMinutes?: number;
-    bookingSlots?: BookingSlot[];
-  } | null;
-  ticket?: {
-    sellingPrice: number;
-    eventDate?: string;
-    eventEndDate?: string | null;
-    venue: string;
-    venueAddress?: string | null;
-    mapUrl?: string | null;
-    totalQuota?: number;
-    soldCount?: number;
-    maxPerOrder?: number;
-    saleStartDate?: string | null;
-    saleEndDate?: string | null;
-    terms?: string | null;
-    capacity?: number;
-  } | null;
+  categoryId: string;
+  image: string;
+  taxPercentage: number;
+  taxName: string;
 }
 
 export interface ProductMedia {
   id: string;
   url: string;
-  type: "image" | "video";
-  source?: string;
+  type: "IMAGE" | "VIDEO";
+  source?: "UPLOAD" | "EMBED";
 }
 
 export interface BookingSlot {
@@ -129,4 +83,57 @@ export interface OutletProductsResponse {
     limit: number;
     totalPages: number;
   };
+}
+
+export interface Goods {
+  id: string;
+  productId: string;
+  currentStock: number;
+  minStock: number;
+  maxStock: number;
+  unit: string;
+  averageHpp: number;
+  sellingPrice: number;
+  createdAt: string;
+  sku?: string;
+  updatedAt: string;
+}
+
+export interface Media {
+  id: string;
+  url: string;
+  type: string;
+  source: string;
+  order: number;
+  thumbnailUrl?: string;
+}
+
+export interface Ticket {
+  id: string;
+  productId: string;
+  sellingPrice: number;
+  eventDate: string;
+  eventEndDate: string;
+  venue: string;
+  venueAddress: string;
+  mapUrl?: string;
+  totalQuota: number;
+  soldCount: number;
+  maxPerOrder: number;
+  saleStartDate: string;
+  saleEndDate: string;
+  terms: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Service {
+  id: string;
+  productId: string;
+  durationMinutes: number;
+  sellingPrice: number;
+  bookingInWorkHours: boolean;
+  providerName: string;
+  providerPhone: string;
+  providerEmail: string;
 }

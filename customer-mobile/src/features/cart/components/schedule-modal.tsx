@@ -107,14 +107,6 @@ export function ScheduleModal({
 }: ScheduleModalProps) {
   const c = useThemeColors();
   const insets = useSafeAreaInsets();
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedSlot, setSelectedSlot] = useState<BookingSlot | null>(null);
-
-  const { data: fetchedSlots, isLoading: isSlotsLoading } = useGetSlotProduct(
-    productId,
-    selectedDate,
-  );
-
   const existingServiceInCart = useCartStore((s) =>
     s.items.find(
       (item) =>
@@ -123,10 +115,26 @@ export function ScheduleModal({
         item.productId === productId,
     ),
   );
+  const [selectedDate, setSelectedDate] = useState<Date | null>(() => {
+    if (!!existingServiceInCart?.slotDate)
+      return new Date(existingServiceInCart.slotDate);
+    return null;
+  });
+  const [selectedSlot, setSelectedSlot] = useState<BookingSlot | null>(null);
+
+  const { data: fetchedSlots, isLoading: isSlotsLoading } = useGetSlotProduct(
+    productId,
+    selectedDate,
+  );
+
   const getSelectedSlot = useCartStore((s) => s.getItemById);
   const checkTimeConflict = useCartStore((s) => s.checkTimeConflict);
 
   const isReplaceMode = !!existingServiceInCart;
+  const selectedSlotInCart = existingServiceInCart?.selectedSlot;
+  const selectedDateInCart = new Date(
+    existingServiceInCart?.slotDate || "",
+  ).toDateString();
 
   const selectedSlotIdInCart = selectedSlot?.id
     ? getSelectedSlot(selectedSlot.id)
@@ -192,7 +200,7 @@ export function ScheduleModal({
 
   const handleSlotSelect = (slot: BookingSlot & { computedStatus: string }) => {
     if (["BOOKED", "BLOCKED", "PAST"].includes(slot.computedStatus)) return;
-    if (slot.id === selectedSlotIdInCart?.id) return;
+    if (slot.id === selectedSlotInCart) return;
 
     setSelectedSlot(slot);
   };
@@ -403,6 +411,8 @@ export function ScheduleModal({
                     selectedDate?.toDateString() === date.toDateString();
                   const today = startOfTodayFn();
                   const disabled = isBeforeDate(date, today);
+                  const isCurrentSlotDate =
+                    date.toDateString() === selectedDateInCart;
 
                   return (
                     <Pressable
@@ -416,11 +426,13 @@ export function ScheduleModal({
                         paddingVertical: 10,
                         paddingHorizontal: 16,
                         borderRadius: 12,
-                        backgroundColor: isSelected
-                          ? c.primary
-                          : disabled
-                            ? c.muted
-                            : `${c.primary}10`,
+                        backgroundColor: isCurrentSlotDate
+                          ? `${c.destructive}50`
+                          : isSelected
+                            ? c.primary
+                            : disabled
+                              ? c.muted
+                              : `${c.primary}10`,
                         alignItems: "center",
                         minWidth: 70,
                         opacity: disabled ? 0.4 : 1,
@@ -429,11 +441,13 @@ export function ScheduleModal({
                       <Text
                         style={{
                           fontSize: 10,
-                          color: isSelected
+                          color: isCurrentSlotDate
                             ? c.primaryForeground
-                            : disabled
-                              ? c.mutedForeground
-                              : c.primary,
+                            : isSelected
+                              ? c.primaryForeground
+                              : disabled
+                                ? c.mutedForeground
+                                : c.primary,
                           fontWeight: "500",
                           textTransform: "uppercase",
                         }}
@@ -508,8 +522,7 @@ export function ScheduleModal({
                   >
                     {processedSlots.map((slot) => {
                       const isSelected = selectedSlot?.id === slot.id;
-                      const isCurrentCartItem =
-                        slot.id === selectedSlotIdInCart?.id;
+                      const isCurrentCartItem = slot.id === selectedSlotInCart;
                       const isDisabled =
                         ["BOOKED", "BLOCKED", "PAST"].includes(
                           slot.computedStatus,
@@ -556,7 +569,11 @@ export function ScheduleModal({
                             borderRadius: 10,
                             backgroundColor: bgColor,
                             borderWidth: 1,
-                            borderColor: isSelected ? c.primary : borderColor,
+                            borderColor: isCurrentCartItem
+                              ? "red"
+                              : isSelected
+                                ? c.primary
+                                : borderColor,
                             opacity: isDisabled ? 0.5 : 1,
                             minWidth: "30%",
                             flex: 1,

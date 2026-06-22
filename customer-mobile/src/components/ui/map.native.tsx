@@ -7,6 +7,7 @@ import {
   Layer,
   Map as MapLibreMap,
   Marker,
+  UserLocation,
   type CameraRef,
   type MapRef,
   type StyleSpecification,
@@ -64,6 +65,7 @@ type MapProps = {
   zoom?: number;
   className?: string;
   showLoader?: boolean;
+  showUserLocation?: boolean;
   onRegionDidChange?: (event: NativeSyntheticEvent<ViewStateChangeEvent>) => void;
 };
 
@@ -80,6 +82,7 @@ function Map({
   zoom = 10,
   className,
   showLoader = true,
+  showUserLocation = false,
   onRegionDidChange,
 }: MapProps) {
   const mapRef = useRef<MapRef | null>(null);
@@ -117,6 +120,7 @@ function Map({
             zoom={zoom}
             center={center}
           />
+          {showUserLocation && <UserLocation animated heading />}
           {children}
         </MapLibreMap>
         {showLoader && !isLoaded && <DefaultLoader />}
