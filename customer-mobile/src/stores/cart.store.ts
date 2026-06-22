@@ -3,11 +3,19 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import type { CartItem, CartState, SelectedSchedule } from "@/features/cart";
+import { debouncedAsyncStorage } from "@/lib/storage";
 
 export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
+      tableId: null,
+      tableName: null,
+      tableOutletId: null,
+
+      setTableId: (tableId, tableName = null, tableOutletId = null) => {
+        set({ tableId, tableName, tableOutletId });
+      },
 
       addItem: (outletId, outletName, slug, product, quantity = 1, selectedSchedule?) => {
         const { items } = get();
@@ -236,9 +244,12 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: "cart-storage",
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => debouncedAsyncStorage(300)),
       partialize: (state) => ({
         items: state.items,
+        tableId: state.tableId,
+        tableName: state.tableName,
+        tableOutletId: state.tableOutletId,
       }),
     },
   ),

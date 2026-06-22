@@ -4,22 +4,24 @@
     "slug": "customer-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/boss-icon.png",
+    "icon": "./assets/images/logo.png",
     "scheme": "bossapp",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "id.bossapp.customer"
+      "bundleIdentifier": "id.bossapp.customer",
+      "associatedDomains": ["applinks:customer.bossapp.id"]
     },
     "android": {
       "package": "id.bossapp.customer",
       "adaptiveIcon": {
-        "backgroundColor": "#eb2525",
-        "foregroundImage": "./assets/images/boss-icon.png"
+        "backgroundColor": "#ffffff",
+        "foregroundImage": "./assets/images/adaptive-icon-foreground.png"
       },
       "intentFilters": [
         {
           "action": "VIEW",
+          "autoVerify": true,
           "category": [
             "DEFAULT",
             "BROWSABLE"
@@ -56,10 +58,12 @@
         {
           "image": "./assets/images/logo.png",
           "resizeMode": "contain",
-          "backgroundColor": "#eb2525"
+          "backgroundColor": "#ffffff"
         }
       ],
-      "@maplibre/maplibre-react-native"
+      "@maplibre/maplibre-react-native",
+      "expo-video",
+      "./plugins/with-abi-split"
     ],
     "experiments": {
       "typedRoutes": true

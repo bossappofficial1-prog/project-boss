@@ -40,6 +40,14 @@ export interface SelectedSchedule {
 
 export interface CartState {
   items: CartItem[];
+  tableId: string | null;
+  tableName: string | null;
+  tableOutletId: string | null;
+  setTableId: (
+    tableId: string | null,
+    tableName?: string | null,
+    tableOutletId?: string | null,
+  ) => void;
   addItem: (
     outletId: string,
     outletName: string,
