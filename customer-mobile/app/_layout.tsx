@@ -51,6 +51,8 @@ function RootLayoutInner() {
     });
   }, [loaded]);
 
+  if (!onboardingChecked) return null;
+
   if (!loaded) return null;
 
   return (
