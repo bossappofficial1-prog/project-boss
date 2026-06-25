@@ -5,8 +5,27 @@
       "namespace": "android_app",
       "package": "id.bossapp.customer",
       "sha256_cert_fingerprints": [
-        "FA:C6:17:45:DC:09:03:78:6F:B9:ED:E6:2A:96:2B:39:9F:73:48:F0:BB:6F:89:9B:83:32:66:75:91:03:3B:9C",
         "0A:52:7D:1C:23:9C:89:E3:FF:B4:DE:B5:DB:1E:3C:ED:CA:13:31:C7:23:61:50:84:9E:A3:6D:0D:5D:E8:FC:7A"
+      ]
+    }
+  },
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package": "id.bossapp.customer.preview",
+      "sha256_cert_fingerprints": [
+        "3C:C0:61:AB:02:FB:6C:19:97:E6:D0:7E:B9:F5:E6:9A:A4:9E:72:D2:6B:18:C4:FD:46:FA:AD:FB:12:FC:89:61"
+      ]
+    }
+  },
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package": "id.bossapp.customer.debug",
+      "sha256_cert_fingerprints": [
+        "FA:C6:17:45:DC:09:03:78:6F:B9:ED:E6:2A:96:2B:39:9F:73:48:F0:BB:6F:89:9B:83:32:66:75:91:03:3B:9C"
       ]
     }
   }

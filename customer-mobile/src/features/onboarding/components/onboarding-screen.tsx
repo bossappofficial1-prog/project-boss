@@ -1,4 +1,5 @@
 import { useThemeColors } from "@/src/hooks/use-theme-colors";
+import { useRouter } from "expo-router";
 import {
   ArrowLeft,
   ArrowRight,
@@ -7,18 +8,11 @@ import {
   Store,
 } from "lucide-react-native";
 import { useCallback, useRef, useState } from "react";
-import {
-  Animated,
-  Dimensions,
-  Pressable,
-  Text,
-  View,
-} from "react-native";
+import { Animated, Dimensions, Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 
-import { useOnboarding } from "../hooks/use-onboarding";
 import * as Location from "expo-location";
+import { useOnboarding } from "../hooks/use-onboarding";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -103,8 +97,19 @@ export default function OnboardingScreen() {
     }
 
     goNext();
-    scrollRef.current?.scrollToIndex({ index: currentStep + 1, animated: true });
-  }, [isLastStep, step, geoStatus, handleComplete, goNext, currentStep, requestGeoPermission]);
+    scrollRef.current?.scrollToIndex({
+      index: currentStep + 1,
+      animated: true,
+    });
+  }, [
+    isLastStep,
+    step,
+    geoStatus,
+    handleComplete,
+    goNext,
+    currentStep,
+    requestGeoPermission,
+  ]);
 
   const onMomentumEnd = useCallback(
     (e: any) => {
@@ -220,7 +225,7 @@ export default function OnboardingScreen() {
     <View style={{ flex: 1, backgroundColor: c.background }}>
       <View
         style={{
-          paddingTop: insets.top + 8,
+          paddingTop: 8,
           paddingHorizontal: 20,
           flexDirection: "row",
           justifyContent: "space-between",
@@ -237,8 +242,7 @@ export default function OnboardingScreen() {
                 width: i === currentStep ? 20 : 6,
                 height: 6,
                 borderRadius: 3,
-                backgroundColor:
-                  i === currentStep ? s.color : c.border,
+                backgroundColor: i === currentStep ? s.color : c.border,
               }}
             />
           ))}
@@ -298,7 +302,7 @@ export default function OnboardingScreen() {
             <ArrowLeft size={20} color={c.foreground} />
           </Pressable>
         ) : (
-          <View style={{ width: 48 }} />
+          <View style={{ display: "none" }} />
         )}
 
         <Pressable
