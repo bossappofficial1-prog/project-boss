@@ -1,14 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { Download, X, Smartphone } from 'lucide-react'
+import { Download, X, Smartphone, Check } from 'lucide-react'
 import { useStoreState } from '@/stores/use-store-state'
 
 const APK_URL = process.env.NEXT_PUBLIC_APK_URL || '/downloads/app.apk'
-
-const LS_APK_DOWNLOADED = 'boss_apk_downloaded'
-const LS_APK_CHECKED = 'boss_apk_checked_scheme'
+const LS_APK_INSTALLED = 'boss_apk_installed'
+const DETECTION_TIMEOUT = 4000
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[]
@@ -25,119 +24,113 @@ declare global {
   }
 }
 
-function checkNativeAppInstalled(): Promise<boolean> {
-  return new Promise((resolve) => {
-    if (sessionStorage.getItem(LS_APK_CHECKED)) {
-      resolve(localStorage.getItem(LS_APK_DOWNLOADED) === 'true')
-      return
-    }
-    sessionStorage.setItem(LS_APK_CHECKED, 'true')
-
-    let done = false
-
-    const timeout = setTimeout(() => {
-      document.removeEventListener('visibilitychange', onVisibility)
-      if (!done) resolve(false)
-    }, 600)
-
-    const onVisibility = () => {
-      if (document.hidden) {
-        done = true
-        clearTimeout(timeout)
-        localStorage.setItem(LS_APK_DOWNLOADED, 'true')
-        document.removeEventListener('visibilitychange', onVisibility)
-        resolve(true)
-      }
-    }
-    document.addEventListener('visibilitychange', onVisibility)
-
-    setTimeout(() => {
-      if (!done) {
-        try { window.location.href = 'bossapp://' } catch { resolve(false) }
-      }
-    }, 200)
-  })
-}
-
 export default function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
-  const { dismissInstallTimeout, setDismissInstallTimeout } = useStoreState()
-  const [showInstallPrompt, setShowInstallPrompt] = useState(false)
+  const [showPwaPrompt, setShowPwaPrompt] = useState(false)
   const [showApkPrompt, setShowApkPrompt] = useState(false)
-  const [isInstalled, setIsInstalled] = useState(false)
+  const [isPwaInstalled, setIsPwaInstalled] = useState(false)
   const [isAndroid, setIsAndroid] = useState(false)
-  const [apkReady, setApkReady] = useState(false)
+
+  const { dismissInstallTimeout, setDismissInstallTimeout } = useStoreState()
+  const isAndroidRef = useRef(false)
 
   useEffect(() => {
     const ua = navigator.userAgent
     const android = /Android/i.test(ua)
+    isAndroidRef.current = android
     setIsAndroid(android)
 
-    const appInstalled =
+    const standalone =
       window.matchMedia('(display-mode: standalone)').matches ||
       (window.navigator as any).standalone === true
 
-    if (appInstalled) {
-      setIsInstalled(true)
+    if (standalone) {
+      setIsPwaInstalled(true)
       return
     }
 
     if (!android) return
 
-    const alreadyDownloaded = localStorage.getItem(LS_APK_DOWNLOADED) === 'true'
-    if (alreadyDownloaded) {
-      setApkReady(true)
-      return
+    const apkInstalled = localStorage.getItem(LS_APK_INSTALLED) === 'true'
+    if (apkInstalled) return
+
+    if (sessionStorage.getItem('bossapp_detected')) return
+    sessionStorage.setItem('bossapp_detected', 'true')
+
+    let cleanup: (() => void) | null = null
+
+    const done = () => {
+      if (cleanup) cleanup()
+      localStorage.setItem(LS_APK_INSTALLED, 'true')
+      setShowApkPrompt(false)
     }
 
-    checkNativeAppInstalled().then((installed) => {
-      if (!installed) {
-        setApkReady(true)
+    const onVisibility = () => {
+      if (document.hidden) done()
+    }
+    const onPageHide = () => done()
+
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener('pagehide', onPageHide)
+
+    cleanup = () => {
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('pagehide', onPageHide)
+    }
+
+    const timeout = setTimeout(() => {
+      if (cleanup) cleanup()
+      cleanup = null
+      const installed = localStorage.getItem(LS_APK_INSTALLED) === 'true'
+      if (!installed && Date.now() > dismissInstallTimeout) {
+        setShowApkPrompt(true)
       }
-    })
-  }, [])
+    }, DETECTION_TIMEOUT)
 
-  useEffect(() => {
-    if (isAndroid && apkReady && !isInstalled && Date.now() > dismissInstallTimeout) {
-      setShowApkPrompt(true)
+    const origCleanup = cleanup
+    cleanup = () => {
+      clearTimeout(timeout)
+      if (origCleanup) origCleanup()
     }
-  }, [isAndroid, apkReady, isInstalled, dismissInstallTimeout])
+
+    setTimeout(() => {
+      try { window.location.href = 'bossapp://' } catch { /* ignore */ }
+    }, 100)
+  }, [dismissInstallTimeout])
 
   useEffect(() => {
-    const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
+    const handler = (e: BeforeInstallPromptEvent) => {
       e.preventDefault()
       setDeferredPrompt(e)
-      if (!isAndroid && !isInstalled) {
-        setShowInstallPrompt(true)
+      if (!isAndroidRef.current && !isPwaInstalled) {
+        setShowPwaPrompt(true)
       }
     }
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    window.addEventListener('beforeinstallprompt', handler)
     window.addEventListener('appinstalled', () => {
-      setIsInstalled(true)
-      setShowInstallPrompt(false)
+      setIsPwaInstalled(true)
+      setShowPwaPrompt(false)
       setShowApkPrompt(false)
       setDeferredPrompt(null)
     })
 
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
-    }
-  }, [isAndroid, isInstalled])
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [isPwaInstalled])
 
   const handleInstallPwa = async () => {
     if (!deferredPrompt) return
     deferredPrompt.prompt()
     const { outcome } = await deferredPrompt.userChoice
     if (outcome === 'accepted') {
-      console.log('User accepted the PWA prompt')
+      console.log('PWA installed')
     }
     setDeferredPrompt(null)
-    setShowInstallPrompt(false)
+    setShowPwaPrompt(false)
   }
 
   const handleDownloadApk = () => {
-    localStorage.setItem(LS_APK_DOWNLOADED, 'true')
+    localStorage.setItem(LS_APK_INSTALLED, 'true')
     setShowApkPrompt(false)
     const a = document.createElement('a')
     a.href = APK_URL
@@ -145,16 +138,20 @@ export default function PWAInstallPrompt() {
     a.click()
   }
 
-  const handleDismiss = () => {
-    const ONE_DAY = 24 * 60 * 60 * 1000
-    setDismissInstallTimeout(Date.now() + ONE_DAY)
-    setShowInstallPrompt(false)
+  const handleAlreadyInstalled = () => {
+    localStorage.setItem(LS_APK_INSTALLED, 'true')
     setShowApkPrompt(false)
   }
 
-  if (isInstalled) return null
+  const handleDismiss = () => {
+    setDismissInstallTimeout(Date.now() + 86400000)
+    setShowPwaPrompt(false)
+    setShowApkPrompt(false)
+  }
 
-  if (!isAndroid && showInstallPrompt && deferredPrompt) {
+  if (isPwaInstalled) return null
+
+  if (!isAndroid && showPwaPrompt && deferredPrompt) {
     return (
       <div
         className="fixed left-4 right-4 z-50 md:left-auto md:right-4 md:max-w-sm"
@@ -231,17 +228,31 @@ export default function PWAInstallPrompt() {
               <X className="w-4 h-4" />
             </Button>
           </div>
-          <div className="flex space-x-2">
+          <div className="flex flex-col space-y-2">
             <Button
               onClick={handleDownloadApk}
-              className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+              className="w-full bg-green-500 hover:bg-green-600 text-white"
             >
               <Download className="w-4 h-4 mr-2" />
               Download APK
             </Button>
-            <Button variant="outline" onClick={handleDismiss} className="px-4">
-              Nanti
-            </Button>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                onClick={handleAlreadyInstalled}
+                className="flex-1 text-xs"
+              >
+                <Check className="w-3 h-3 mr-1" />
+                Saya sudah install
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={handleDismiss}
+                className="text-xs text-gray-500"
+              >
+                Nanti
+              </Button>
+            </div>
           </div>
         </div>
       </div>
