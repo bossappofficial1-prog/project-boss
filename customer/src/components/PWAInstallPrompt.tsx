@@ -76,7 +76,11 @@ export default function PWAInstallPrompt() {
     document.addEventListener("visibilitychange", onVisibilityChange);
 
     const tryOpen = setTimeout(() => {
-      window.location.href = APP_LINK_URL;
+      const iframe = document.createElement("iframe");
+      iframe.style.display = "none";
+      iframe.src = `intent://${APP_LINK_URL.replace("https://", "")}#Intent;scheme=https;package=id.bossapp.customer;end`;
+      document.body.appendChild(iframe);
+      setTimeout(() => document.body.removeChild(iframe), 1000);
     }, 300);
 
     const fallback = setTimeout(() => {
