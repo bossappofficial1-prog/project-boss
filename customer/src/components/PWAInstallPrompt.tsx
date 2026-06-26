@@ -66,8 +66,8 @@ export default function PWAInstallPrompt() {
       return
     }
 
-    if (sessionStorage.getItem('bossapp_detected')) return
-    sessionStorage.setItem('bossapp_detected', 'true')
+    if (sessionStorage.getItem('bossapp_custom_tried')) return
+    sessionStorage.setItem('bossapp_custom_tried', 'true')
 
     const onPageHide = () => {
       localStorage.setItem(LS_APK_INSTALLED, 'true')
@@ -83,10 +83,9 @@ export default function PWAInstallPrompt() {
     document.addEventListener('visibilitychange', onVisibility)
     window.addEventListener('pagehide', onPageHide)
 
+    // Custom scheme — pagehide hanya fire saat user tap Open di Chrome dialog
     setTimeout(() => {
-      try {
-        window.location.href = window.location.origin + '/verify-install'
-      } catch { /* ignore */ }
+      try { window.location.href = 'bossapp://' } catch { /* ignore */ }
     }, 200)
 
     return () => {
@@ -133,9 +132,7 @@ export default function PWAInstallPrompt() {
   }
 
   const handleOpenApp = () => {
-    try {
-      window.location.href = window.location.origin + '/verify-install'
-    } catch { /* ignore */ }
+    try { window.location.href = 'bossapp://' } catch { /* ignore */ }
   }
 
   const handleDismissAndroid = () => {
