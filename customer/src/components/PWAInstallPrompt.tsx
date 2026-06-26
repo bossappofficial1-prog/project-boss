@@ -6,10 +6,10 @@ import { Download, X, Smartphone, ExternalLink } from "lucide-react";
 import { useStoreState } from "@/stores/use-store-state";
 
 const APK_URL = process.env.NEXT_PUBLIC_APK_URL || "/downloads/app.apk";
-const APP_LINK_URL = "https://customer.bossapp.id";
+const ANDROID_PACKAGE = "id.bossapp.customer";
 const ANDROID_DISMISS_KEY = "boss_android_dismiss_until";
 const ANDROID_DISMISS_MS = 15 * 60 * 1000;
-const DETECT_TIMEOUT_MS = 1800;
+const FALLBACK_TIMEOUT_MS = 1800;
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -20,9 +20,20 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
+interface RelatedApplication {
+  platform: string;
+  id?: string;
+  url?: string;
+  version?: string;
+}
+
 declare global {
   interface WindowEventMap {
     beforeinstallprompt: BeforeInstallPromptEvent;
+  }
+
+  interface Navigator {
+    getInstalledRelatedApps(): Promise<RelatedApplication[]>;
   }
 }
 
@@ -64,36 +75,54 @@ export default function PWAInstallPrompt() {
 
     localStorage.removeItem(ANDROID_DISMISS_KEY);
 
-    let appOpened = false;
+    let cancelled = false;
 
-    const onVisibilityChange = () => {
-      if (document.hidden) {
-        appOpened = true;
-        setAndroidState("app-found");
+    const run = async () => {
+      const hasApi = "getInstalledRelatedApps" in navigator;
+
+      if (hasApi) {
+        try {
+          const apps = await navigator.getInstalledRelatedApps();
+          if (cancelled) return;
+          const found = apps.some((app) => app.id === ANDROID_PACKAGE);
+          setAndroidState(found ? "app-found" : "show-download");
+          return;
+        } catch {
+          /* API threw — fall through to custom scheme */
+        }
       }
+
+      /* Fallback: custom scheme via intent:// + visibilitychange */
+      let appOpened = false;
+
+      const onVisibilityChange = () => {
+        if (document.hidden) {
+          appOpened = true;
+          setAndroidState("app-found");
+        }
+      };
+
+      document.addEventListener("visibilitychange", onVisibilityChange);
+
+      const tryOpen = setTimeout(() => {
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
+        iframe.src = `intent://customer.bossapp.id#Intent;scheme=https;package=${ANDROID_PACKAGE};end`;
+        document.body.appendChild(iframe);
+        setTimeout(() => document.body.removeChild(iframe), 1000);
+      }, 300);
+
+      const fallback = setTimeout(() => {
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+        if (cancelled) return;
+        if (!appOpened) setAndroidState("show-download");
+      }, FALLBACK_TIMEOUT_MS);
     };
 
-    document.addEventListener("visibilitychange", onVisibilityChange);
-
-    const tryOpen = setTimeout(() => {
-      const iframe = document.createElement("iframe");
-      iframe.style.display = "none";
-      iframe.src = `intent://${APP_LINK_URL.replace("https://", "")}#Intent;scheme=https;package=id.bossapp.customer;end`;
-      document.body.appendChild(iframe);
-      setTimeout(() => document.body.removeChild(iframe), 1000);
-    }, 300);
-
-    const fallback = setTimeout(() => {
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-      if (!appOpened) {
-        setAndroidState("show-download");
-      }
-    }, DETECT_TIMEOUT_MS);
+    run();
 
     return () => {
-      clearTimeout(tryOpen);
-      clearTimeout(fallback);
-      document.removeEventListener("visibilitychange", onVisibilityChange);
+      cancelled = true;
     };
   }, []);
 
@@ -139,7 +168,7 @@ export default function PWAInstallPrompt() {
   };
 
   const handleOpenApp = () => {
-    window.location.href = APP_LINK_URL;
+    window.location.href = "https://customer.bossapp.id";
   };
 
   const handleDismissAndroid = () => {

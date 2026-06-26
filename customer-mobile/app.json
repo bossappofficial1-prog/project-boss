@@ -63,7 +63,8 @@
       ],
       "@maplibre/maplibre-react-native",
       "expo-video",
-      "./plugins/with-abi-split"
+      "./plugins/with-abi-split",
+      "./plugins/with-asset-statements"
     ],
     "experiments": {
       "typedRoutes": true

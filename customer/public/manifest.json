@@ -47,6 +47,12 @@
             "purpose": "monochrome"
         }
     ],
+    "related_applications": [
+        {
+            "platform": "play",
+            "id": "id.bossapp.customer"
+        }
+    ],
     "shortcuts": [
         {
             "name": "Home",
