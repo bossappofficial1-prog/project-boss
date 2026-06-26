@@ -69,28 +69,33 @@ export default function PWAInstallPrompt() {
     if (sessionStorage.getItem('bossapp_custom_tried')) return
     sessionStorage.setItem('bossapp_custom_tried', 'true')
 
+    let pageHideAt = 0
+
     const onPageHide = () => {
-      localStorage.setItem(LS_APK_INSTALLED, 'true')
-      setNativeAppFound(true)
-      document.removeEventListener('visibilitychange', onVisibility)
-      window.removeEventListener('pagehide', onPageHide)
+      pageHideAt = Date.now()
     }
 
-    const onVisibility = () => {
-      if (document.hidden) onPageHide()
+    const onPageshow = () => {
+      if (pageHideAt > 0) {
+        const elapsed = Date.now() - pageHideAt
+        if (elapsed > 1000) {
+          localStorage.setItem(LS_APK_INSTALLED, 'true')
+          setNativeAppFound(true)
+        }
+        pageHideAt = 0
+      }
     }
 
-    document.addEventListener('visibilitychange', onVisibility)
     window.addEventListener('pagehide', onPageHide)
+    window.addEventListener('pageshow', onPageshow)
 
-    // Custom scheme — pagehide hanya fire saat user tap Open di Chrome dialog
     setTimeout(() => {
       try { window.location.href = 'bossapp://' } catch { /* ignore */ }
     }, 200)
 
     return () => {
-      document.removeEventListener('visibilitychange', onVisibility)
       window.removeEventListener('pagehide', onPageHide)
+      window.removeEventListener('pageshow', onPageshow)
     }
   }, [])
 
