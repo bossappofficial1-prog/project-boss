@@ -1,165 +1,159 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useRef } from 'react'
-import { Button } from '@/components/ui/button'
-import { Download, X, Smartphone, ExternalLink } from 'lucide-react'
-import { useStoreState } from '@/stores/use-store-state'
+import { useState, useEffect, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Download, X, Smartphone, ExternalLink } from "lucide-react";
+import { useStoreState } from "@/stores/use-store-state";
 
-const APK_URL = process.env.NEXT_PUBLIC_APK_URL || '/downloads/app.apk'
-const LS_APK_INSTALLED = 'boss_apk_installed'
-const ANDROID_DISMISS_UNTIL = 'boss_android_dismiss_until'
-const ANDROID_DISMISS_MS = 15 * 60 * 1000
+const APK_URL = process.env.NEXT_PUBLIC_APK_URL || "/downloads/app.apk";
+const APP_LINK_URL = "https://customer.bossapp.id";
+const ANDROID_DISMISS_KEY = "boss_android_dismiss_until";
+const ANDROID_DISMISS_MS = 15 * 60 * 1000;
+const DETECT_TIMEOUT_MS = 1800;
 
 interface BeforeInstallPromptEvent extends Event {
-  readonly platforms: string[]
+  readonly platforms: string[];
   readonly userChoice: Promise<{
-    outcome: 'accepted' | 'dismissed'
-    platform: string
-  }>
-  prompt(): Promise<void>
+    outcome: "accepted" | "dismissed";
+    platform: string;
+  }>;
+  prompt(): Promise<void>;
 }
 
 declare global {
   interface WindowEventMap {
-    beforeinstallprompt: BeforeInstallPromptEvent
+    beforeinstallprompt: BeforeInstallPromptEvent;
   }
 }
 
-export default function PWAInstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
-  const [showPwaPrompt, setShowPwaPrompt] = useState(false)
-  const [isPwaInstalled, setIsPwaInstalled] = useState(false)
-  const [isAndroid, setIsAndroid] = useState(false)
-  const [nativeAppFound, setNativeAppFound] = useState(false)
-  const [dismissed, setDismissed] = useState(false)
+type AndroidState = "detecting" | "app-found" | "show-download" | "dismissed";
 
-  const { dismissInstallTimeout, setDismissInstallTimeout } = useStoreState()
-  const isAndroidRef = useRef(false)
+export default function PWAInstallPrompt() {
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
+  const [showPwaPrompt, setShowPwaPrompt] = useState(false);
+  const [isPwaInstalled, setIsPwaInstalled] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
+  const [androidState, setAndroidState] = useState<AndroidState>("detecting");
+
+  const { dismissInstallTimeout, setDismissInstallTimeout } = useStoreState();
+  const isAndroidRef = useRef(false);
 
   useEffect(() => {
-    const ua = navigator.userAgent
-    const android = /Android/i.test(ua)
-    isAndroidRef.current = android
-    setIsAndroid(android)
+    const ua = navigator.userAgent;
+    const android = /Android/i.test(ua);
+    isAndroidRef.current = android;
+    setIsAndroid(android);
 
     const standalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as any).standalone === true;
 
     if (standalone) {
-      setIsPwaInstalled(true)
-      return
+      setIsPwaInstalled(true);
+      return;
     }
 
-    if (!android) return
+    if (!android) return;
 
-    const dismissUntil = localStorage.getItem(ANDROID_DISMISS_UNTIL)
+    const dismissUntil = localStorage.getItem(ANDROID_DISMISS_KEY);
     if (dismissUntil && Date.now() < Number(dismissUntil)) {
-      setDismissed(true)
-    } else {
-      localStorage.removeItem(ANDROID_DISMISS_UNTIL)
+      setAndroidState("dismissed");
+      return;
     }
 
-    const cached = localStorage.getItem(LS_APK_INSTALLED)
-    if (cached === 'true') {
-      setNativeAppFound(true)
-      return
-    }
+    localStorage.removeItem(ANDROID_DISMISS_KEY);
 
-    if (sessionStorage.getItem('bossapp_custom_tried')) return
-    sessionStorage.setItem('bossapp_custom_tried', 'true')
+    let appOpened = false;
 
-    let pageHideAt = 0
-
-    const onPageHide = () => {
-      pageHideAt = Date.now()
-    }
-
-    const onPageshow = () => {
-      if (pageHideAt > 0) {
-        const elapsed = Date.now() - pageHideAt
-        if (elapsed > 1000) {
-          localStorage.setItem(LS_APK_INSTALLED, 'true')
-          setNativeAppFound(true)
-        }
-        pageHideAt = 0
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        appOpened = true;
+        setAndroidState("app-found");
       }
-    }
+    };
 
-    window.addEventListener('pagehide', onPageHide)
-    window.addEventListener('pageshow', onPageshow)
+    document.addEventListener("visibilitychange", onVisibilityChange);
 
-    setTimeout(() => {
-      try { window.location.href = 'bossapp://' } catch { /* ignore */ }
-    }, 200)
+    const tryOpen = setTimeout(() => {
+      window.location.href = APP_LINK_URL;
+    }, 300);
+
+    const fallback = setTimeout(() => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      if (!appOpened) {
+        setAndroidState("show-download");
+      }
+    }, DETECT_TIMEOUT_MS);
 
     return () => {
-      window.removeEventListener('pagehide', onPageHide)
-      window.removeEventListener('pageshow', onPageshow)
-    }
-  }, [])
+      clearTimeout(tryOpen);
+      clearTimeout(fallback);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, []);
 
   useEffect(() => {
     const handler = (e: BeforeInstallPromptEvent) => {
-      e.preventDefault()
-      setDeferredPrompt(e)
+      e.preventDefault();
+      setDeferredPrompt(e);
       if (!isAndroidRef.current && !isPwaInstalled) {
-        setShowPwaPrompt(true)
+        setShowPwaPrompt(true);
       }
-    }
+    };
 
-    window.addEventListener('beforeinstallprompt', handler)
-    window.addEventListener('appinstalled', () => {
-      setIsPwaInstalled(true)
-      setShowPwaPrompt(false)
-      setDeferredPrompt(null)
-    })
+    const onAppInstalled = () => {
+      setIsPwaInstalled(true);
+      setShowPwaPrompt(false);
+      setDeferredPrompt(null);
+    };
 
-    return () => window.removeEventListener('beforeinstallprompt', handler)
-  }, [])
+    window.addEventListener("beforeinstallprompt", handler);
+    window.addEventListener("appinstalled", onAppInstalled);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("appinstalled", onAppInstalled);
+    };
+  }, [isPwaInstalled]);
 
   const handleInstallPwa = async () => {
-    if (!deferredPrompt) return
-    deferredPrompt.prompt()
-    const { outcome } = await deferredPrompt.userChoice
-    if (outcome === 'accepted') {
-      setIsPwaInstalled(true)
-    }
-    setDeferredPrompt(null)
-    setShowPwaPrompt(false)
-  }
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === "accepted") setIsPwaInstalled(true);
+    setDeferredPrompt(null);
+    setShowPwaPrompt(false);
+  };
 
   const handleDownloadApk = () => {
-    const a = document.createElement('a')
-    a.href = APK_URL
-    a.download = 'boss.apk'
-    a.click()
-  }
+    const a = document.createElement("a");
+    a.href = APK_URL;
+    a.download = "boss.apk";
+    a.click();
+    handleDismissAndroid();
+  };
 
   const handleOpenApp = () => {
-    try { window.location.href = 'bossapp://' } catch { /* ignore */ }
-  }
+    window.location.href = APP_LINK_URL;
+  };
 
   const handleDismissAndroid = () => {
-    const until = Date.now() + ANDROID_DISMISS_MS
-    localStorage.setItem(ANDROID_DISMISS_UNTIL, String(until))
-    setDismissed(true)
-    setTimeout(() => setDismissed(false), ANDROID_DISMISS_MS)
-  }
+    const until = Date.now() + ANDROID_DISMISS_MS;
+    localStorage.setItem(ANDROID_DISMISS_KEY, String(until));
+    setAndroidState("dismissed");
+  };
 
   const handleDismissPwa = () => {
-    setDismissInstallTimeout(Date.now() + 86400000)
-    setShowPwaPrompt(false)
-  }
+    setDismissInstallTimeout(Date.now() + 86400000);
+    setShowPwaPrompt(false);
+  };
 
-  if (isPwaInstalled) return null
+  if (isPwaInstalled) return null;
 
   if (!isAndroid && showPwaPrompt && deferredPrompt) {
     return (
-      <div
-        className="fixed left-4 right-4 z-50 md:left-auto md:right-4 md:max-w-sm"
-        style={{ bottom: 'calc(var(--bottomnav-height, 0px) + 1em)' }}
-      >
+      <PromptWrapper>
         <div className="bg-card rounded-lg shadow-lg border border-border p-4">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center space-x-3">
@@ -184,21 +178,22 @@ export default function PWAInstallPrompt() {
               <Download className="w-4 h-4 mr-2" />
               Install
             </Button>
-            <Button variant="outline" onClick={handleDismissPwa} className="px-4">
+            <Button
+              variant="outline"
+              onClick={handleDismissPwa}
+              className="px-4"
+            >
               Nanti
             </Button>
           </div>
         </div>
-      </div>
-    )
+      </PromptWrapper>
+    );
   }
 
-  if (isAndroid && !dismissed) {
+  if (isAndroid && androidState === "show-download") {
     return (
-      <div
-        className="fixed left-4 right-4 z-50 md:left-auto md:right-4 md:max-w-sm"
-        style={{ bottom: 'calc(var(--bottomnav-height, 0px) + 1em)' }}
-      >
+      <PromptWrapper>
         <div className="bg-card rounded-lg shadow-lg border border-border p-4">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center space-x-3">
@@ -207,12 +202,10 @@ export default function PWAInstallPrompt() {
               </div>
               <div>
                 <h3 className="font-semibold text-foreground">
-                  {nativeAppFound ? 'Buka Aplikasi BOSS' : 'Download Aplikasi Android'}
+                  Download Aplikasi Android
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  {nativeAppFound
-                    ? 'Dapatkan pengalaman terbaik dengan aplikasi Android BOSS'
-                    : 'Install aplikasi Android untuk pengalaman yang lebih optimal'}
+                  Install aplikasi Android untuk pengalaman yang lebih optimal
                 </p>
               </div>
             </div>
@@ -221,25 +214,73 @@ export default function PWAInstallPrompt() {
             </Button>
           </div>
           <div className="flex gap-2">
-            {nativeAppFound ? (
-              <Button onClick={handleOpenApp} className="flex-1">
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Open
-              </Button>
-            ) : (
-              <Button onClick={handleDownloadApk} className="flex-1">
-                <Download className="w-4 h-4 mr-2" />
-                Download APK
-              </Button>
-            )}
-            <Button variant="outline" onClick={handleDismissAndroid} className="px-4">
+            <Button onClick={handleDownloadApk} className="flex-1">
+              <Download className="w-4 h-4 mr-2" />
+              Download APK
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleDismissAndroid}
+              className="px-4"
+            >
               Nanti
             </Button>
           </div>
         </div>
-      </div>
-    )
+      </PromptWrapper>
+    );
   }
 
-  return null
+  if (isAndroid && androidState === "app-found") {
+    return (
+      <PromptWrapper>
+        <div className="bg-card rounded-lg shadow-lg border border-border p-4">
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center space-x-3">
+              <div className="bg-primary rounded-lg p-2">
+                <Smartphone className="w-6 h-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">
+                  Buka Aplikasi BOSS
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Dapatkan pengalaman terbaik dengan aplikasi Android BOSS
+                </p>
+              </div>
+            </div>
+            <Button variant="ghost" size="sm" onClick={handleDismissAndroid}>
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={handleOpenApp} className="flex-1">
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Buka Aplikasi
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleDismissAndroid}
+              className="px-4"
+            >
+              Nanti
+            </Button>
+          </div>
+        </div>
+      </PromptWrapper>
+    );
+  }
+
+  return null;
+}
+
+function PromptWrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="fixed left-4 right-4 z-50 md:left-auto md:right-4 md:max-w-sm"
+      style={{ bottom: "calc(var(--bottomnav-height, 0px) + 1em)" }}
+    >
+      {children}
+    </div>
+  );
 }
