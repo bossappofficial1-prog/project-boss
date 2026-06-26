@@ -8,25 +8,5 @@
         "8D:CA:D4:A5:D4:22:74:40:63:43:56:A6:21:38:E7:E8:93:B1:7C:F5:E4:EE:81:11:90:A5:4E:E3:F0:9C:C6:3B"
       ]
     }
-  },
-  {
-    "relation": ["delegate_permission/common.handle_all_urls"],
-    "target": {
-      "namespace": "android_app",
-      "package_name": "id.bossapp.customer.preview",
-      "sha256_cert_fingerprints": [
-        "3C:C0:61:AB:02:FB:6C:19:97:E6:D0:7E:B9:F5:E6:9A:A4:9E:72:D2:6B:18:C4:FD:46:FA:AD:FB:12:FC:89:61"
-      ]
-    }
-  },
-  {
-    "relation": ["delegate_permission/common.handle_all_urls"],
-    "target": {
-      "namespace": "android_app",
-      "package_name": "id.bossapp.customer.debug",
-      "sha256_cert_fingerprints": [
-        "FA:C6:17:45:DC:09:03:78:6F:B9:ED:E6:2A:96:2B:39:9F:73:48:F0:BB:6F:89:9B:83:32:66:75:91:03:3B:9C"
-      ]
-    }
   }
 ]
