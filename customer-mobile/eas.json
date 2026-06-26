@@ -24,6 +24,16 @@
         "EXPO_PUBLIC_API_URL": "https://api.bossapp.id/api/v1",
         "EXPO_PUBLIC_SOCKET_URL": "https://api.bossapp.id"
       }
+    },
+    "production-apk": {
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "APP_ENV": "production",
+        "EXPO_PUBLIC_API_URL": "https://api.bossapp.id/api/v1",
+        "EXPO_PUBLIC_SOCKET_URL": "https://api.bossapp.id"
+      }
     }
   }
 }

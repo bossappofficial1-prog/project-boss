@@ -7,7 +7,7 @@ import { useCartStore } from "@/src/stores/cart.store";
 import { useCheckoutStore } from "@/src/stores/checkout.store";
 import { useProfileStore } from "@/src/stores/profile.store";
 import type { PaymentDetailData } from "@/types/payment-detail";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { File, Paths } from "expo-file-system";
 import { router, useLocalSearchParams } from "expo-router";
 import * as Sharing from "expo-sharing";
@@ -716,6 +716,7 @@ function ManualDetails({ payment }: { payment: PaymentDetailData }) {
 export default function PaymentScreen() {
   const c = useThemeColors();
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
   const { orderId } = useLocalSearchParams<{ orderId: string }>();
   const isNewOrder = orderId === "new";
 
@@ -773,6 +774,17 @@ export default function PaymentScreen() {
     if (name !== profileName) setProfileName(name);
     if (phone !== profilePhone) setProfilePhone(phone);
   }, [name, phone]);
+
+  // Invalidate orders cache ketika status pembayaran sudah final
+  useEffect(() => {
+    const status = normalizeStatus(
+      paymentDetail?.payment?.status || paymentDetail?.status,
+    );
+    const finalStatuses = ["SUCCESS", "FAILED", "EXPIRED", "CANCELLED"];
+    if (finalStatuses.includes(status)) {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+    }
+  }, [paymentDetail?.payment?.status, paymentDetail?.status]);
 
   const validate = (): boolean => {
     const e: typeof errors = {};
@@ -931,7 +943,12 @@ export default function PaymentScreen() {
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
           <Pressable
             onPress={() =>
-              isPaymentDone ? router.replace("/(tabs)/orders") : router.back()
+              isPaymentDone
+                ? (() => {
+                    queryClient.invalidateQueries({ queryKey: ["orders"] });
+                    router.replace("/(tabs)/orders");
+                  })()
+                : router.back()
             }
             hitSlop={8}
           >

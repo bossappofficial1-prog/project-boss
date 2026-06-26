@@ -145,39 +145,42 @@ export default function CartScreen() {
       {/* Header */}
       <View
         style={{
-          paddingTop: 6,
-          paddingHorizontal: 16,
-          paddingBottom: 8,
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
+          paddingHorizontal: 16,
+          paddingVertical: 12,
           backgroundColor: c.card,
           borderBottomWidth: 1,
           borderBottomColor: c.border,
         }}
       >
-        <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
+        <View style={{ gap: 2 }}>
           <Text
-            style={{ fontSize: 17, fontWeight: "600", color: c.foreground }}
+            style={{ fontSize: 18, fontWeight: "700", color: c.foreground }}
           >
             Keranjang
           </Text>
-          <Text style={{ fontSize: 12, color: c.mutedForeground }}>
-            {totalItems} item · {outletGroups.length} outlet
-          </Text>
+          {totalItems > 0 && (
+            <Text style={{ fontSize: 11, color: c.mutedForeground }}>
+              {totalItems} item · {outletGroups.length} outlet
+            </Text>
+          )}
         </View>
-        <Pressable
-          onPress={clearCart}
-          hitSlop={8}
-          style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
-        >
-          <Trash2 size={13} color={c.destructive} />
-          <Text
-            style={{ fontSize: 12, fontWeight: "500", color: c.destructive }}
+        {items.length > 0 && (
+          <Pressable
+            onPress={clearCart}
+            hitSlop={8}
+            style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
           >
-            Hapus Semua
-          </Text>
-        </Pressable>
+            <Trash2 size={13} color={c.destructive} />
+            <Text
+              style={{ fontSize: 12, fontWeight: "600", color: c.destructive }}
+            >
+              Hapus Semua
+            </Text>
+          </Pressable>
+        )}
       </View>
 
       <ScrollView

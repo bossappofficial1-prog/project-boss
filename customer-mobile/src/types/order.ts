@@ -17,6 +17,29 @@ export const OrderStatus: Record<OrderStatusType, OrderStatusType> = {
   CANCELLED: "CANCELLED",
 };
 
+export type PaymentStatusType =
+  | "PENDING"
+  | "PROOF_SUBMITTED"
+  | "AWAITING_VERIFICATION"
+  | "SUCCESS"
+  | "FAILED"
+  | "REFUNDED"
+  | "EXPIRED"
+  | "CANCELLED"
+  | "REJECTED_MANUAL";
+
+export const PaymentStatus: Record<PaymentStatusType, PaymentStatusType> = {
+  PENDING: "PENDING",
+  PROOF_SUBMITTED: "PROOF_SUBMITTED",
+  AWAITING_VERIFICATION: "AWAITING_VERIFICATION",
+  SUCCESS: "SUCCESS",
+  FAILED: "FAILED",
+  REFUNDED: "REFUNDED",
+  EXPIRED: "EXPIRED",
+  CANCELLED: "CANCELLED",
+  REJECTED_MANUAL: "REJECTED_MANUAL",
+};
+
 export interface OrderItem {
   id: string;
   priceAtTimeOfOrder: number;
@@ -39,7 +62,7 @@ export interface OrderDetail {
   totalAmount: number;
   bookingDate: string | null;
   customerType: string;
-  paymentStatus: string;
+  paymentStatus: PaymentStatusType;
   paymentReminderSent: boolean;
   orderStatus: OrderStatusType;
   midtransFee: number;

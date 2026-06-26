@@ -1,5 +1,11 @@
 import { useSnackbar } from "@/components/ui/snackbar";
 import {
+  OrderCard,
+  OrderDetailModal,
+  SectionLabel,
+  StatusTabs,
+} from "@/features/orders";
+import {
   useCancelOrder,
   useConfirmOrder,
   useOrders,
@@ -7,6 +13,7 @@ import {
 import { useNotifications } from "@/src/hooks/use-notifications";
 import { useThemeColors } from "@/src/hooks/use-theme-colors";
 import { useSocket } from "@/src/lib/socket-context";
+import { useCartStore } from "@/src/stores/cart.store";
 import { useProfileStore } from "@/src/stores/profile.store";
 import type { OrderDetail } from "@/src/types/order";
 import { router } from "expo-router";
@@ -14,15 +21,9 @@ import {
   AlertCircle,
   ArrowUpDown,
   Bell,
-  CheckCircle,
-  Clock,
-  Hourglass,
   Phone,
-  Play,
-  RefreshCw,
   Search,
   ShoppingBag,
-  XCircle,
 } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -30,637 +31,30 @@ import {
   Alert,
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-function formatPrice(price: number): string {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(price);
-}
-
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function formatDateGroup(iso: string): string {
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "";
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const orderDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const diff = today.getTime() - orderDate.getTime();
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-  if (days === 0) return "Hari Ini";
-  if (days === 1) return "Kemarin";
-  if (days < 7) return d.toLocaleDateString("id-ID", { weekday: "long" });
-  return d.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-const STATUS_CONFIG: Record<
-  string,
-  {
-    color: string;
-    bg: string;
-    icon: typeof CheckCircle;
-    label: string;
-    accentBar: string;
-  }
-> = {
-  AWAITING_PAYMENT: {
-    color: "#d97706",
-    bg: "#fef3c7",
-    icon: Hourglass,
-    label: "Menunggu Pembayaran",
-    accentBar: "#f59e0b",
-  },
-  PROCESSING: {
-    color: "#2563eb",
-    bg: "#dbeafe",
-    icon: Clock,
-    label: "Diproses",
-    accentBar: "#3b82f6",
-  },
-  CONFIRMED: {
-    color: "#0891b2",
-    bg: "#cffafe",
-    icon: CheckCircle,
-    label: "Dikonfirmasi",
-    accentBar: "#06b6d4",
-  },
-  READY: {
-    color: "#0891b2",
-    bg: "#cffafe",
-    icon: CheckCircle,
-    label: "Siap",
-    accentBar: "#06b6d4",
-  },
-  ON_GOING: {
-    color: "#ea580c",
-    bg: "#fff7ed",
-    icon: Play,
-    label: "Sedang Berlangsung",
-    accentBar: "#f97316",
-  },
-  COMPLETED: {
-    color: "#16a34a",
-    bg: "#f0fdf4",
-    icon: CheckCircle,
-    label: "Selesai",
-    accentBar: "#22c55e",
-  },
-  CANCELLED: {
-    color: "#dc2626",
-    bg: "#fef2f2",
-    icon: XCircle,
-    label: "Dibatalkan",
-    accentBar: "#ef4444",
-  },
-};
+import { formatDateGroup, normalizePhone } from "../lib/utils";
 
 type SortOption = "newest" | "oldest" | "price-high" | "price-low";
 
-const TABS: Array<{ key: string; label: string }> = [
-  { key: "ALL", label: "Semua" },
-  { key: "AWAITING_PAYMENT", label: "Belum Bayar" },
-  { key: "PROCESSING", label: "Diproses" },
-  { key: "COMPLETED", label: "Selesai" },
-  { key: "CANCELLED", label: "Batal" },
-];
-
-function StatusTabs({
-  activeTab,
-  onTabChange,
-  counts,
-}: {
-  activeTab: string;
-  onTabChange: (tab: string) => void;
-  counts: Record<string, number>;
-}) {
-  const c = useThemeColors();
-
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ paddingHorizontal: 12, gap: 6 }}
-    >
-      {TABS.map((tab) => {
-        const isActive = activeTab === tab.key;
-        const count = counts[tab.key] || 0;
-        return (
-          <Pressable
-            key={tab.key}
-            onPress={() => onTabChange(tab.key)}
-            style={{
-              paddingVertical: 7,
-              paddingHorizontal: 14,
-              borderRadius: 20,
-              backgroundColor: isActive ? c.primary : `${c.primary}10`,
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 4,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 12,
-                fontWeight: "500",
-                color: isActive ? c.primaryForeground : c.primary,
-              }}
-            >
-              {tab.label}
-            </Text>
-            {count > 0 && (
-              <View
-                style={{
-                  backgroundColor: isActive ? c.primaryForeground : c.primary,
-                  borderRadius: 10,
-                  minWidth: 18,
-                  height: 18,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  paddingHorizontal: 5,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 10,
-                    fontWeight: "600",
-                    color: isActive ? c.primary : c.primaryForeground,
-                  }}
-                >
-                  {count}
-                </Text>
-              </View>
-            )}
-          </Pressable>
-        );
-      })}
-    </ScrollView>
-  );
-}
-
-function OrderCard({
-  order,
-  onPress,
-  onPay,
-  onCancel,
-  onConfirm,
-  onContact,
-  isBusy,
-}: {
-  order: OrderDetail;
-  onPress?: () => void;
-  onPay?: () => void;
-  onCancel?: () => void;
-  onConfirm?: () => void;
-  onContact?: () => void;
-  isBusy?: boolean;
-}) {
-  const c = useThemeColors();
-  const config = STATUS_CONFIG[order.orderStatus] || STATUS_CONFIG.PROCESSING;
-  const Icon = config.icon;
-  const isAwaitingVerification =
-    order.orderStatus === "AWAITING_PAYMENT" &&
-    (order.transaction?.status === "AWAITING_VERIFICATION" ||
-      order.transaction?.status === "PROOF_SUBMITTED");
-  const hasServiceProduct = order.items.some(
-    (i) => i.product.type === "SERVICE",
-  );
-
-  const formatDateStr = formatDate(order.createdAt);
-
-  return (
-    <View
-      style={{
-        backgroundColor: c.card,
-        borderRadius: 12,
-        overflow: "hidden",
-        borderWidth: 0.5,
-        borderColor: c.border,
-      }}
-    >
-      <View style={{ height: 3, backgroundColor: config.accentBar }} />
-
-      <Pressable
-        onPress={onPress}
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          paddingHorizontal: 14,
-          paddingTop: 12,
-          paddingBottom: 8,
-        }}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 10,
-            flex: 1,
-          }}
-        >
-          <View
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 10,
-              backgroundColor: config.bg,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Icon size={18} color={config.color} />
-          </View>
-          <View style={{ flex: 1, marginLeft: 4 }}>
-            <Text
-              style={{ fontSize: 14, fontWeight: "500", color: c.foreground }}
-              numberOfLines={1}
-            >
-              {order.outlet.name}
-            </Text>
-            <Text
-              style={{ fontSize: 11, color: c.mutedForeground, marginTop: 1 }}
-            >
-              {formatDateStr}
-            </Text>
-          </View>
-        </View>
-
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 4,
-            paddingVertical: 3,
-            paddingHorizontal: 8,
-            borderRadius: 12,
-            backgroundColor: config.bg,
-          }}
-        >
-          <View
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: 3,
-              backgroundColor: config.color,
-            }}
-          />
-          <Text
-            style={{ fontSize: 10, fontWeight: "500", color: config.color }}
-          >
-            {isAwaitingVerification ? "Verifikasi" : config.label}
-          </Text>
-        </View>
-      </Pressable>
-
-      <View
-        style={{
-          marginHorizontal: 14,
-          padding: 10,
-          borderRadius: 10,
-          backgroundColor: `${c.primary}06`,
-          borderWidth: 0.5,
-          borderColor: `${c.primary}15`,
-        }}
-      >
-        {order.items.slice(0, 3).map((item) => (
-          <View
-            key={item.id}
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              paddingVertical: 4,
-            }}
-          >
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 6,
-                flex: 1,
-              }}
-            >
-              <View
-                style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: 5,
-                  backgroundColor: c.background,
-                  borderWidth: 0.5,
-                  borderColor: c.border,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 10,
-                    fontWeight: "500",
-                    color: c.foreground,
-                  }}
-                >
-                  {item.quantity}
-                </Text>
-              </View>
-              <Text
-                style={{ fontSize: 12, color: c.foreground, flex: 1 }}
-                numberOfLines={1}
-              >
-                {item.product.name}
-              </Text>
-            </View>
-            <Text
-              style={{
-                fontSize: 12,
-                fontWeight: "500",
-                color: c.foreground,
-                marginLeft: 8,
-              }}
-            >
-              {formatPrice(item.priceAtTimeOfOrder * item.quantity)}
-            </Text>
-          </View>
-        ))}
-        {order.items.length > 3 && (
-          <Text
-            style={{ fontSize: 11, color: c.mutedForeground, marginTop: 4 }}
-          >
-            +{order.items.length - 3} item lainnya
-          </Text>
-        )}
-      </View>
-
-      {(order.cancellationReason || order.transaction?.rejectionNote) && (
-        <View
-          style={{
-            marginHorizontal: 14,
-            marginTop: 8,
-            padding: 8,
-            borderRadius: 8,
-            backgroundColor: `${c.destructive}12`,
-            flexDirection: "row",
-            alignItems: "flex-start",
-            gap: 6,
-          }}
-        >
-          <AlertCircle
-            size={14}
-            color={c.destructive}
-            style={{ marginTop: 1 }}
-          />
-          <Text
-            style={{
-              fontSize: 11,
-              color: c.destructive,
-              flex: 1,
-              lineHeight: 16,
-            }}
-          >
-            {order.cancellationReason ||
-              order.transaction?.rejectionNote ||
-              "Dibatalkan"}
-          </Text>
-        </View>
-      )}
-
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-          paddingHorizontal: 14,
-          paddingVertical: 10,
-          marginTop: 8,
-          borderTopWidth: 0.5,
-          borderTopColor: c.border,
-        }}
-      >
-        <Text
-          style={{
-            fontSize: 10,
-            color: c.mutedForeground,
-            fontFamily: "monospace",
-          }}
-        >
-          #{order.id.slice(0, 8)}
-        </Text>
-        <Text style={{ fontSize: 15, fontWeight: "500", color: c.primary }}>
-          {formatPrice(order.totalAmount)}
-        </Text>
-      </View>
-
-      <View
-        style={{
-          flexDirection: "row",
-          gap: 8,
-          paddingHorizontal: 14,
-          paddingBottom: 12,
-        }}
-      >
-        {order.orderStatus === "AWAITING_PAYMENT" &&
-          !isAwaitingVerification && (
-            <>
-              <Pressable
-                onPress={onPay}
-                disabled={isBusy}
-                style={{
-                  flex: 1,
-                  paddingVertical: 10,
-                  borderRadius: 10,
-                  backgroundColor: c.primary,
-                  alignItems: "center",
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 12,
-                    fontWeight: "500",
-                    color: c.primaryForeground,
-                  }}
-                >
-                  Bayar
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={onCancel}
-                disabled={isBusy}
-                style={{
-                  flex: 1,
-                  paddingVertical: 10,
-                  borderRadius: 10,
-                  borderWidth: 0.5,
-                  borderColor: c.border,
-                  alignItems: "center",
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 12,
-                    fontWeight: "500",
-                    color: c.foreground,
-                  }}
-                >
-                  Batalkan
-                </Text>
-              </Pressable>
-            </>
-          )}
-
-        {["PROCESSING", "CONFIRMED"].includes(order.orderStatus) && (
-          <>
-            <Pressable
-              onPress={onContact}
-              style={{
-                flex: 1,
-                paddingVertical: 10,
-                borderRadius: 10,
-                borderWidth: 0.5,
-                borderColor: c.border,
-                alignItems: "center",
-                flexDirection: "row",
-                justifyContent: "center",
-                gap: 4,
-              }}
-            >
-              <Phone size={14} color={c.foreground} />
-              <Text
-                style={{ fontSize: 12, fontWeight: "500", color: c.foreground }}
-              >
-                Hubungi
-              </Text>
-            </Pressable>
-            {!hasServiceProduct && (
-              <Pressable
-                onPress={onConfirm}
-                disabled={isBusy}
-                style={{
-                  flex: 1,
-                  paddingVertical: 10,
-                  borderRadius: 10,
-                  backgroundColor: c.primary,
-                  alignItems: "center",
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 12,
-                    fontWeight: "500",
-                    color: c.primaryForeground,
-                  }}
-                >
-                  Konfirmasi
-                </Text>
-              </Pressable>
-            )}
-          </>
-        )}
-
-        {order.orderStatus === "COMPLETED" && (
-          <Pressable
-            onPress={onContact}
-            style={{
-              flex: 1,
-              paddingVertical: 10,
-              borderRadius: 10,
-              borderWidth: 0.5,
-              borderColor: c.border,
-              alignItems: "center",
-              flexDirection: "row",
-              justifyContent: "center",
-              gap: 4,
-            }}
-          >
-            <RefreshCw size={14} color={c.foreground} />
-            <Text
-              style={{ fontSize: 12, fontWeight: "500", color: c.foreground }}
-            >
-              Pesan ulang
-            </Text>
-          </Pressable>
-        )}
-      </View>
-    </View>
-  );
-}
-
-function DetailRow({
-  label,
-  value,
-  c,
-  bold,
-  mono,
-}: {
-  label: string;
-  value: string;
-  c: ReturnType<typeof useThemeColors>;
-  bold?: boolean;
-  mono?: boolean;
-}) {
-  return (
-    <View
-      style={{
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-      }}
-    >
-      <Text style={{ fontSize: 12, color: c.mutedForeground }}>{label}</Text>
-      <Text
-        style={{
-          fontSize: 12,
-          fontWeight: bold ? "600" : "500",
-          color: c.foreground,
-          fontFamily: mono ? "monospace" : undefined,
-        }}
-      >
-        {value}
-      </Text>
-    </View>
-  );
-}
-
-function normalizePhone(phone?: string | null): string {
-  if (!phone) return "";
-  const digits = phone.replace(/\D/g, "");
-  if (digits.startsWith("62")) return digits;
-  if (digits.startsWith("0")) return `62${digits.slice(1)}`;
-  return digits;
-}
-
 export default function OrdersScreen() {
   const c = useThemeColors();
-  const insets = useSafeAreaInsets();
   const profilePhone = useProfileStore((s) => s.phone);
+  const cartItems = useCartStore((s) => s.items);
+  const addItem = useCartStore((s) => s.addItem);
+  const clearCart = useCartStore((s) => s.clearCart);
 
-  const { data: orders, isLoading, error, refetch } = useOrders();
+  const { data: orders, isLoading, error, refetch, isRefetching } = useOrders();
   const cancelMutation = useCancelOrder();
   const confirmMutation = useConfirmOrder();
 
-  const { isConnected, joinUserRoom } = useSocket();
+  const { isConnected, joinUserRoom, onOrderStatusChanged } = useSocket();
   const { unreadCount } = useNotifications();
+  const snackbar = useSnackbar();
 
   const [activeTab, setActiveTab] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
@@ -671,16 +65,10 @@ export default function OrdersScreen() {
   } | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
 
-  // Join user room for real-time order updates
   useEffect(() => {
-    if (profilePhone && isConnected) {
-      joinUserRoom(profilePhone);
-    }
+    if (profilePhone && isConnected) joinUserRoom(profilePhone);
   }, [profilePhone, isConnected, joinUserRoom]);
 
-  // Listen for real-time order status changes
-  const { onOrderStatusChanged } = useSocket();
-  const snackbar = useSnackbar();
   useEffect(() => {
     const unsub = onOrderStatusChanged((payload) => {
       refetch();
@@ -755,7 +143,6 @@ export default function OrdersScreen() {
         break;
     }
 
-    // Group by date
     const groups: Array<{ key: string; label: string; orders: OrderDetail[] }> =
       [];
     const groupMap = new Map<string, OrderDetail[]>();
@@ -829,7 +216,64 @@ export default function OrdersScreen() {
     router.push(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`);
   }, []);
 
-  // Missing phone
+  const handleReorder = useCallback(
+    (order: OrderDetail) => {
+      const performReorder = () => {
+        clearCart();
+        let allAdded = true;
+        for (const item of order.items) {
+          const added = addItem(
+            order.outletId,
+            order.outlet.name,
+            order.outlet.slug || "",
+            {
+              id: item.product.id,
+              name: item.product.name,
+              type: item.product.type,
+              image: item.product.image,
+              price: item.priceAtTimeOfOrder,
+            },
+            item.quantity,
+          );
+          if (!added) {
+            allAdded = false;
+          }
+        }
+        if (allAdded) {
+          snackbar.success(
+            "Berhasil memesan kembali. Keranjang belanja diperbarui.",
+          );
+        } else {
+          snackbar.success(
+            "Beberapa produk berhasil ditambahkan ke keranjang.",
+          );
+        }
+        router.push("/(tabs)/cart");
+      };
+
+      if (cartItems.length > 0) {
+        Alert.alert(
+          "Pesan Lagi",
+          "Apakah Anda ingin memesan kembali produk dari pesanan ini? Keranjang belanja Anda saat ini akan dikosongkan.",
+          [
+            { text: "Batal", style: "cancel" },
+            { text: "Ya, Pesan", onPress: performReorder },
+          ],
+        );
+      } else {
+        performReorder();
+      }
+    },
+    [cartItems, addItem, clearCart, snackbar],
+  );
+
+  const sortLabel: Record<SortOption, string> = {
+    newest: "Terbaru",
+    oldest: "Terlama",
+    "price-high": "Harga Tertinggi",
+    "price-low": "Harga Terendah",
+  };
+
   if (!profilePhone) {
     return (
       <View
@@ -841,16 +285,21 @@ export default function OrdersScreen() {
           paddingHorizontal: 32,
         }}
       >
-        <Phone size={40} color={c.mutedForeground} />
-        <Text
+        <View
           style={{
-            fontSize: 16,
-            fontWeight: "600",
-            color: c.foreground,
-            marginTop: 12,
+            width: 56,
+            height: 56,
+            borderRadius: 28,
+            backgroundColor: c.muted,
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: 12,
           }}
         >
-          Nomor Telepon Belum diatur
+          <Phone size={24} color={c.mutedForeground} strokeWidth={1.5} />
+        </View>
+        <Text style={{ fontSize: 15, fontWeight: "700", color: c.foreground }}>
+          Nomor Telepon Belum Diatur
         </Text>
         <Text
           style={{
@@ -858,6 +307,7 @@ export default function OrdersScreen() {
             color: c.mutedForeground,
             marginTop: 4,
             textAlign: "center",
+            lineHeight: 20,
           }}
         >
           Silakan atur nomor telepon di halaman profil terlebih dahulu.
@@ -866,17 +316,12 @@ export default function OrdersScreen() {
     );
   }
 
-  // Loading
   if (isLoading) {
     return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: c.background,
-          paddingTop: 12,
-        }}
-      >
-        <View style={{ paddingHorizontal: 14, marginBottom: 12 }}>
+      <View style={{ flex: 1, backgroundColor: c.background }}>
+        <View
+          style={{ paddingTop: 12, paddingHorizontal: 16, paddingBottom: 10 }}
+        >
           <Text
             style={{ fontSize: 20, fontWeight: "700", color: c.foreground }}
           >
@@ -897,7 +342,6 @@ export default function OrdersScreen() {
     );
   }
 
-  // Error
   if (error) {
     return (
       <View
@@ -909,16 +353,21 @@ export default function OrdersScreen() {
           paddingHorizontal: 32,
         }}
       >
-        <AlertCircle size={40} color={c.destructive} />
-        <Text
+        <View
           style={{
-            fontSize: 16,
-            fontWeight: "600",
-            color: c.foreground,
-            marginTop: 12,
+            width: 56,
+            height: 56,
+            borderRadius: 28,
+            backgroundColor: c.muted,
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: 12,
           }}
         >
-          Gagal memuat pesanan
+          <AlertCircle size={24} color={c.destructive} strokeWidth={1.5} />
+        </View>
+        <Text style={{ fontSize: 15, fontWeight: "700", color: c.foreground }}>
+          Gagal Memuat
         </Text>
         <Text
           style={{
@@ -934,15 +383,15 @@ export default function OrdersScreen() {
           onPress={() => refetch()}
           style={{
             marginTop: 16,
-            paddingVertical: 12,
-            paddingHorizontal: 32,
-            borderRadius: 12,
+            paddingVertical: 10,
+            paddingHorizontal: 28,
+            borderRadius: 10,
             backgroundColor: c.primary,
           }}
         >
           <Text
             style={{
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: "600",
               color: c.primaryForeground,
             }}
@@ -954,7 +403,6 @@ export default function OrdersScreen() {
     );
   }
 
-  // Empty
   if (!orders || orders.length === 0) {
     return (
       <View
@@ -964,7 +412,6 @@ export default function OrdersScreen() {
           alignItems: "center",
           justifyContent: "center",
           paddingHorizontal: 32,
-          paddingTop: insets.top,
         }}
       >
         <View
@@ -975,13 +422,13 @@ export default function OrdersScreen() {
             backgroundColor: c.muted,
             alignItems: "center",
             justifyContent: "center",
-            marginBottom: 16,
+            marginBottom: 14,
           }}
         >
           <ShoppingBag size={28} color={c.mutedForeground} strokeWidth={1.5} />
         </View>
-        <Text style={{ fontSize: 16, fontWeight: "600", color: c.foreground }}>
-          Belum ada pesanan
+        <Text style={{ fontSize: 15, fontWeight: "700", color: c.foreground }}>
+          Belum Ada Pesanan
         </Text>
         <Text
           style={{
@@ -989,6 +436,7 @@ export default function OrdersScreen() {
             color: c.mutedForeground,
             marginTop: 4,
             textAlign: "center",
+            lineHeight: 20,
           }}
         >
           Mulai belanja untuk melihat riwayat pesanan di sini.
@@ -1002,55 +450,55 @@ export default function OrdersScreen() {
       {/* Header */}
       <View
         style={{
-          paddingTop: 12,
-          paddingHorizontal: 14,
-          paddingBottom: 10,
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
+          paddingHorizontal: 16,
+          paddingVertical: 12,
+          backgroundColor: c.card,
+          borderBottomWidth: 1,
+          borderBottomColor: c.border,
         }}
       >
-        <View>
+        <View style={{ gap: 2 }}>
           <Text
-            style={{ fontSize: 20, fontWeight: "700", color: c.foreground }}
+            style={{ fontSize: 18, fontWeight: "700", color: c.foreground }}
           >
             Pesanan Saya
           </Text>
-          <Text
-            style={{ fontSize: 12, color: c.mutedForeground, marginTop: 2 }}
-          >
-            {orders.length} pesanan · Riwayat dan status
+          <Text style={{ fontSize: 11, color: c.mutedForeground }}>
+            {orders.length} pesanan
           </Text>
         </View>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <View style={{ position: "relative" }}>
-            <Bell size={20} color={c.foreground} />
-            {unreadCount > 0 && (
-              <View
-                style={{
-                  position: "absolute",
-                  top: -4,
-                  right: -4,
-                  minWidth: 16,
-                  height: 16,
-                  borderRadius: 8,
-                  backgroundColor: "#eb2525",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  paddingHorizontal: 4,
-                }}
-              >
-                <Text style={{ fontSize: 9, fontWeight: "700", color: "#fff" }}>
-                  {unreadCount > 99 ? "99+" : unreadCount}
-                </Text>
-              </View>
-            )}
-          </View>
+        <View style={{ position: "relative" }}>
+          <Pressable hitSlop={10}>
+            <Bell size={20} color={c.foreground} strokeWidth={1.8} />
+          </Pressable>
+          {unreadCount > 0 && (
+            <View
+              style={{
+                position: "absolute",
+                top: -4,
+                right: -4,
+                minWidth: 16,
+                height: 16,
+                borderRadius: 8,
+                backgroundColor: "#eb2525",
+                alignItems: "center",
+                justifyContent: "center",
+                paddingHorizontal: 3,
+              }}
+            >
+              <Text style={{ fontSize: 9, fontWeight: "700", color: "#fff" }}>
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </Text>
+            </View>
+          )}
         </View>
       </View>
 
       {/* Tabs */}
-      <View style={{ marginBottom: 8 }}>
+      <View style={{ marginBottom: 10, paddingTop: 14 }}>
         <StatusTabs
           activeTab={activeTab}
           onTabChange={setActiveTab}
@@ -1062,9 +510,9 @@ export default function OrdersScreen() {
       <View
         style={{
           flexDirection: "row",
-          paddingHorizontal: 12,
+          paddingHorizontal: 16,
           gap: 8,
-          marginBottom: 8,
+          marginBottom: 12,
         }}
       >
         <View
@@ -1072,9 +520,9 @@ export default function OrdersScreen() {
             flex: 1,
             flexDirection: "row",
             alignItems: "center",
-            gap: 6,
-            paddingHorizontal: 10,
-            paddingVertical: 8,
+            gap: 8,
+            paddingHorizontal: 12,
+            paddingVertical: 9,
             borderRadius: 10,
             borderWidth: 1,
             borderColor: c.border,
@@ -1087,7 +535,7 @@ export default function OrdersScreen() {
             onChangeText={setSearchQuery}
             placeholder="Cari pesanan..."
             placeholderTextColor={c.mutedForeground}
-            style={{ flex: 1, fontSize: 12, color: c.foreground, padding: 0 }}
+            style={{ flex: 1, fontSize: 13, color: c.foreground, padding: 0 }}
           />
         </View>
         <Pressable
@@ -1104,79 +552,73 @@ export default function OrdersScreen() {
           style={{
             flexDirection: "row",
             alignItems: "center",
-            gap: 4,
-            paddingHorizontal: 10,
-            paddingVertical: 8,
+            gap: 5,
+            paddingHorizontal: 12,
+            paddingVertical: 9,
             borderRadius: 10,
             borderWidth: 1,
             borderColor: c.border,
             backgroundColor: c.card,
           }}
         >
-          <ArrowUpDown size={14} color={c.mutedForeground} />
-          <Text style={{ fontSize: 11, color: c.mutedForeground }}>
-            {sortBy === "newest"
-              ? "Terbaru"
-              : sortBy === "oldest"
-                ? "Terlama"
-                : sortBy === "price-high"
-                  ? "Harga ↓"
-                  : "Harga ↑"}
+          <ArrowUpDown size={13} color={c.mutedForeground} />
+          <Text style={{ fontSize: 12, color: c.mutedForeground }}>
+            {sortLabel[sortBy]}
           </Text>
         </Pressable>
       </View>
 
-      {/* Orders */}
+      {/* Orders List */}
       <ScrollView
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={refetch}
+            tintColor={"red"}
+          />
+        }
         contentContainerStyle={{
-          paddingHorizontal: 12,
-          paddingBottom: 20,
-          gap: 10,
+          paddingHorizontal: 16,
+          paddingBottom: 24,
+          gap: 16,
         }}
       >
-        {groupedOrders.map((group) => (
-          <View style={{ display: "flex", gap: 6 }} key={group.key}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                paddingHorizontal: 4,
-                paddingVertical: 6,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 12,
-                  fontWeight: "600",
-                  color: c.mutedForeground,
-                }}
-              >
-                {group.label}
-              </Text>
-              <Text style={{ fontSize: 11, color: c.mutedForeground }}>
-                {group.orders.length} pesanan
-              </Text>
-            </View>
-
-            {group.orders.map((order) => (
-              <OrderCard
-                key={order.id}
-                order={order}
-                onPress={() => setSelectedOrder(order)}
-                onPay={() => handlePay(order)}
-                onCancel={() => handleCancel(order)}
-                onConfirm={() => handleConfirm(order)}
-                onContact={() => handleContact(order)}
-                isBusy={busyAction?.orderId === order.id}
-              />
-            ))}
+        {groupedOrders.length === 0 ? (
+          <View style={{ alignItems: "center", paddingTop: 48 }}>
+            <Text style={{ fontSize: 13, color: c.mutedForeground }}>
+              Tidak ada pesanan ditemukan
+            </Text>
           </View>
-        ))}
+        ) : (
+          groupedOrders.map((group) => (
+            <View key={group.key}>
+              <SectionLabel
+                label={group.label}
+                count={group.orders.length}
+                c={c}
+              />
+              <View style={{ gap: 10 }}>
+                {group.orders.map((order) => (
+                  <OrderCard
+                    key={order.id}
+                    order={order}
+                    onPress={() => setSelectedOrder(order)}
+                    onPay={() => handlePay(order)}
+                    onCancel={() => handleCancel(order)}
+                    onConfirm={() => handleConfirm(order)}
+                    onContact={() => handleContact(order)}
+                    onReorder={() => handleReorder(order)}
+                    isBusy={busyAction?.orderId === order.id}
+                  />
+                ))}
+              </View>
+            </View>
+          ))
+        )}
       </ScrollView>
 
-      {/* Order Detail Modal */}
+      {/* Detail Modal */}
       <Modal
         visible={!!selectedOrder}
         animationType="slide"
@@ -1184,327 +626,32 @@ export default function OrdersScreen() {
         onRequestClose={() => setSelectedOrder(null)}
       >
         {selectedOrder && (
-          <View style={{ flex: 1, backgroundColor: c.background }}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                paddingTop: 12,
-                paddingHorizontal: 16,
-                paddingBottom: 12,
-                borderBottomWidth: 0.5,
-                borderBottomColor: c.border,
-              }}
-            >
-              <Text
-                style={{ fontSize: 17, fontWeight: "600", color: c.foreground }}
-              >
-                Detail Pesanan
-              </Text>
-              <Pressable
-                onPress={() => setSelectedOrder(null)}
-                style={{
-                  paddingVertical: 6,
-                  paddingHorizontal: 12,
-                  borderRadius: 8,
-                  backgroundColor: c.muted,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontWeight: "500",
-                    color: c.foreground,
-                  }}
-                >
-                  Tutup
-                </Text>
-              </Pressable>
-            </View>
-
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ padding: 16, gap: 16 }}
-            >
-              {/* Status */}
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: 14,
-                  borderRadius: 12,
-                  backgroundColor:
-                    STATUS_CONFIG[selectedOrder.orderStatus]?.bg || c.muted,
-                }}
-              >
-                {(() => {
-                  const cfg =
-                    STATUS_CONFIG[selectedOrder.orderStatus] ||
-                    STATUS_CONFIG.PROCESSING;
-                  const StatusIcon = cfg.icon;
-                  return (
-                    <>
-                      <View
-                        style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: 12,
-                          backgroundColor: `${cfg.color}20`,
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <StatusIcon size={20} color={cfg.color} />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text
-                          style={{
-                            fontSize: 14,
-                            fontWeight: "600",
-                            color: cfg.color,
-                          }}
-                        >
-                          {cfg.label}
-                        </Text>
-                        <Text
-                          style={{
-                            fontSize: 11,
-                            color: c.mutedForeground,
-                            marginTop: 2,
-                          }}
-                        >
-                          {formatDate(selectedOrder.createdAt)}
-                        </Text>
-                      </View>
-                    </>
-                  );
-                })()}
-              </View>
-
-              {/* Cancellation reason */}
-              {(selectedOrder.cancellationReason ||
-                selectedOrder.transaction?.rejectionNote) && (
-                <View
-                  style={{
-                    padding: 12,
-                    borderRadius: 10,
-                    backgroundColor: `${c.destructive}10`,
-                    borderLeftWidth: 3,
-                    borderLeftColor: c.destructive,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      fontWeight: "600",
-                      color: c.destructive,
-                      marginBottom: 4,
-                    }}
-                  >
-                    Alasan
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      color: c.destructive,
-                      lineHeight: 18,
-                    }}
-                  >
-                    {selectedOrder.cancellationReason ||
-                      selectedOrder.transaction?.rejectionNote}
-                  </Text>
-                </View>
-              )}
-
-              {/* Outlet & Customer */}
-              <View style={{ gap: 8 }}>
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontWeight: "600",
-                    color: c.foreground,
-                  }}
-                >
-                  Informasi
-                </Text>
-                <View
-                  style={{
-                    padding: 12,
-                    borderRadius: 10,
-                    backgroundColor: c.card,
-                    gap: 10,
-                    borderWidth: 0.5,
-                    borderColor: c.border,
-                  }}
-                >
-                  <DetailRow
-                    label="Outlet"
-                    value={selectedOrder.outlet.name}
-                    c={c}
-                  />
-                  <DetailRow
-                    label="Pelanggan"
-                    value={selectedOrder.customerDetails.name}
-                    c={c}
-                  />
-                  <DetailRow
-                    label="Telepon"
-                    value={selectedOrder.customerDetails.phone}
-                    c={c}
-                  />
-                  <DetailRow
-                    label="ID Pesanan"
-                    value={`#${selectedOrder.id.slice(0, 8)}`}
-                    c={c}
-                    mono
-                  />
-                </View>
-              </View>
-
-              {/* Items */}
-              <View style={{ gap: 8 }}>
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontWeight: "600",
-                    color: c.foreground,
-                  }}
-                >
-                  Item Pesanan
-                </Text>
-                <View
-                  style={{
-                    padding: 12,
-                    borderRadius: 10,
-                    backgroundColor: c.card,
-                    gap: 8,
-                    borderWidth: 0.5,
-                    borderColor: c.border,
-                  }}
-                >
-                  {selectedOrder.items.map((item) => (
-                    <View
-                      key={item.id}
-                      style={{
-                        flexDirection: "row",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
-                      <View style={{ flex: 1, gap: 2 }}>
-                        <Text
-                          style={{ fontSize: 13, color: c.foreground }}
-                          numberOfLines={1}
-                        >
-                          {item.product.name}
-                        </Text>
-                        <Text
-                          style={{ fontSize: 11, color: c.mutedForeground }}
-                        >
-                          {item.quantity} x{" "}
-                          {formatPrice(item.priceAtTimeOfOrder)}
-                        </Text>
-                      </View>
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          fontWeight: "500",
-                          color: c.foreground,
-                          marginLeft: 12,
-                        }}
-                      >
-                        {formatPrice(item.priceAtTimeOfOrder * item.quantity)}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-
-              {/* Payment summary */}
-              <View style={{ gap: 8 }}>
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontWeight: "600",
-                    color: c.foreground,
-                  }}
-                >
-                  Ringkasan Pembayaran
-                </Text>
-                <View
-                  style={{
-                    padding: 12,
-                    borderRadius: 10,
-                    backgroundColor: c.card,
-                    gap: 8,
-                    borderWidth: 0.5,
-                    borderColor: c.border,
-                  }}
-                >
-                  <DetailRow
-                    label="Total"
-                    value={formatPrice(selectedOrder.totalAmount)}
-                    c={c}
-                    bold
-                  />
-                  {selectedOrder.paymentStatus && (
-                    <DetailRow
-                      label="Status Bayar"
-                      value={selectedOrder.paymentStatus}
-                      c={c}
-                    />
-                  )}
-                  {selectedOrder.transaction?.paymentMethod && (
-                    <DetailRow
-                      label="Metode"
-                      value={selectedOrder.transaction.paymentMethod}
-                      c={c}
-                    />
-                  )}
-                </View>
-              </View>
-
-              {/* Queue info */}
-              {selectedOrder.queueMeta && (
-                <View style={{ gap: 8 }}>
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      fontWeight: "600",
-                      color: c.foreground,
-                    }}
-                  >
-                    Informasi Antrian
-                  </Text>
-                  <View
-                    style={{
-                      padding: 12,
-                      borderRadius: 10,
-                      backgroundColor: c.card,
-                      gap: 8,
-                      borderWidth: 0.5,
-                      borderColor: c.border,
-                    }}
-                  >
-                    <DetailRow
-                      label="Posisi"
-                      value={`#${selectedOrder.queueMeta.position}`}
-                      c={c}
-                    />
-                    <DetailRow
-                      label="Total di depan"
-                      value={`${selectedOrder.queueMeta.totalAhead} orang`}
-                      c={c}
-                    />
-                  </View>
-                </View>
-              )}
-
-              <View style={{ height: 20 }} />
-            </ScrollView>
-          </View>
+          <OrderDetailModal
+            order={selectedOrder}
+            onClose={() => setSelectedOrder(null)}
+            c={c}
+            onPay={() => {
+              setSelectedOrder(null);
+              handlePay(selectedOrder);
+            }}
+            onCancel={() => {
+              setSelectedOrder(null);
+              handleCancel(selectedOrder);
+            }}
+            onConfirm={() => {
+              setSelectedOrder(null);
+              handleConfirm(selectedOrder);
+            }}
+            onContact={() => {
+              setSelectedOrder(null);
+              handleContact(selectedOrder);
+            }}
+            onReorder={() => {
+              setSelectedOrder(null);
+              handleReorder(selectedOrder);
+            }}
+            isBusy={busyAction?.orderId === selectedOrder.id}
+          />
         )}
       </Modal>
     </View>

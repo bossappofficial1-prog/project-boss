@@ -102,9 +102,9 @@ export default function HomeScreen() {
       {/* Top Bar */}
       <View
         style={{
-          backgroundColor: c.topBar.bg,
+          backgroundColor: c.card,
           borderBottomWidth: 1,
-          borderBottomColor: c.topBar.border,
+          borderBottomColor: c.border,
         }}
       >
         <View

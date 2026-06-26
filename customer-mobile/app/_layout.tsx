@@ -6,7 +6,7 @@ import { SocketProvider } from "@/src/lib/socket-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
-import { Stack, useRouter, useSegments } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -33,8 +33,8 @@ function RootLayoutInner() {
   });
 
   const [onboardingChecked, setOnboardingChecked] = useState(false);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const router = useRouter();
-  const segments = useSegments();
 
   useEffect(() => {
     if (error) throw error;
@@ -42,18 +42,24 @@ function RootLayoutInner() {
 
   useEffect(() => {
     if (!loaded) return;
-    SplashScreen.hideAsync();
+    // Jangan hideAsync dulu — tunggu sampai kita tahu route tujuan
     AsyncStorage.getItem(ONBOARDING_KEY).then((val) => {
+      setNeedsOnboarding(!val);
       setOnboardingChecked(true);
-      if (!val && segments[0] !== "onboarding") {
-        setTimeout(() => router.replace("/onboarding"), 500);
-      }
     });
   }, [loaded]);
 
-  if (!onboardingChecked) return null;
+  useEffect(() => {
+    if (!onboardingChecked) return;
+    if (needsOnboarding) {
+      router.replace("/onboarding");
+    } else {
+      router.replace("/(tabs)");
+    }
+    SplashScreen.hideAsync();
+  }, [onboardingChecked, needsOnboarding]);
 
-  if (!loaded) return null;
+  if (!loaded || !onboardingChecked) return null;
 
   return (
     <SnackbarProvider>

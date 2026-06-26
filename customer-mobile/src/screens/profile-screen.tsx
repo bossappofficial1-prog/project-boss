@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from "react";
 import {
   Alert,
+  InteractionManager,
   Pressable,
   ScrollView,
   Switch,
@@ -425,11 +426,13 @@ export default function ProfileScreen() {
                     key={value}
                     onPress={() => {
                       setTheme(value);
-                      if (value === "system") {
-                        resetColorScheme();
-                      } else {
-                        setColorScheme(value);
-                      }
+                      InteractionManager.runAfterInteractions(() => {
+                        if (value === "system") {
+                          resetColorScheme();
+                        } else {
+                          setColorScheme(value);
+                        }
+                      });
                     }}
                     style={{
                       flex: 1,

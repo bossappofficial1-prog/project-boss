@@ -1,8 +1,8 @@
+import { clsx, type ClassValue } from "clsx";
 import { LucideIcon, Package, Ticket, ToolCase } from "lucide-react-native";
 import { Linking, type ViewStyle } from "react-native";
-import { OutletProduct } from "../features/outlet";
-import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { OutletProduct } from "../features/outlet";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -85,3 +85,50 @@ export const openInstagram = async (username: string) => {
 
   await Linking.openURL(`https://instagram.com/${cleanUsername}`);
 };
+
+export function formatPrice(price: number): string {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(price);
+}
+
+export function formatDate(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export function formatDateGroup(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const orderDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diff = today.getTime() - orderDate.getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  if (days === 0) return "Hari Ini";
+  if (days === 1) return "Kemarin";
+  if (days < 7) return d.toLocaleDateString("id-ID", { weekday: "long" });
+  return d.toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+export function normalizePhone(phone?: string | null): string {
+  if (!phone) return "";
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("62")) return digits;
+  if (digits.startsWith("0")) return `62${digits.slice(1)}`;
+  return digits;
+}

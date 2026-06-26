@@ -436,22 +436,29 @@ export default function NearbyScreen() {
     <View style={{ flex: 1, backgroundColor: c.background }}>
       {viewMode === "list" ? (
         <>
+          {/* Header Bar */}
           <View
             style={{
-              paddingHorizontal: 14,
-              paddingBottom: 10,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingHorizontal: 16,
+              paddingVertical: 12,
+              backgroundColor: c.card,
+              borderBottomWidth: 1,
+              borderBottomColor: c.border,
             }}
           >
-            <Text
-              style={{ fontSize: 20, fontWeight: "700", color: c.foreground }}
-            >
-              Terdekat
-            </Text>
-            <Text
-              style={{ fontSize: 12, color: c.mutedForeground, marginTop: 2 }}
-            >
-              Outlet di sekitarmu
-            </Text>
+            <View style={{ gap: 2 }}>
+              <Text
+                style={{ fontSize: 18, fontWeight: "700", color: c.foreground }}
+              >
+                Terdekat
+              </Text>
+              <Text style={{ fontSize: 11, color: c.mutedForeground }}>
+                Outlet di sekitarmu
+              </Text>
+            </View>
           </View>
 
           <View
@@ -459,6 +466,7 @@ export default function NearbyScreen() {
               flexDirection: "row",
               paddingHorizontal: 12,
               gap: 8,
+              marginTop: 12,
               marginBottom: 10,
             }}
           >
