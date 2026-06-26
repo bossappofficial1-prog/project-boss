@@ -1,138 +1,170 @@
-"use client";
+'use client'
 
-import { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Download, X, Smartphone } from "lucide-react";
-import { useStoreState } from "@/stores/use-store-state";
+import { useState, useEffect, useRef } from 'react'
+import { Button } from '@/components/ui/button'
+import { Download, X, Smartphone } from 'lucide-react'
+import { useStoreState } from '@/stores/use-store-state'
 
-const APK_URL = process.env.NEXT_PUBLIC_APK_URL || "/downloads/app.apk";
-const APP_LINK_URL = "https://customer.bossapp.id";
+const APK_URL = process.env.NEXT_PUBLIC_APK_URL || '/downloads/app.apk'
+const LS_APK_INSTALLED = 'boss_apk_installed'
 
 interface BeforeInstallPromptEvent extends Event {
-  readonly platforms: string[];
+  readonly platforms: string[]
   readonly userChoice: Promise<{
-    outcome: "accepted" | "dismissed";
-    platform: string;
-  }>;
-  prompt(): Promise<void>;
+    outcome: 'accepted' | 'dismissed'
+    platform: string
+  }>
+  prompt(): Promise<void>
 }
 
 declare global {
   interface WindowEventMap {
-    beforeinstallprompt: BeforeInstallPromptEvent;
+    beforeinstallprompt: BeforeInstallPromptEvent
   }
 }
 
 export default function PWAInstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
-  const [showPwaPrompt, setShowPwaPrompt] = useState(false);
-  const [showApkPrompt, setShowApkPrompt] = useState(false);
-  const [isPwaInstalled, setIsPwaInstalled] = useState(false);
-  const [isAndroid, setIsAndroid] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
+  const [showPwaPrompt, setShowPwaPrompt] = useState(false)
+  const [showApkPrompt, setShowApkPrompt] = useState(false)
+  const [isPwaInstalled, setIsPwaInstalled] = useState(false)
+  const [isAndroid, setIsAndroid] = useState(false)
 
-  const { dismissInstallTimeout, setDismissInstallTimeout } = useStoreState();
-  const isAndroidRef = useRef(false);
+  const { dismissInstallTimeout, setDismissInstallTimeout } = useStoreState()
+  const isAndroidRef = useRef(false)
 
   useEffect(() => {
-    const ua = navigator.userAgent;
-    const android = /Android/i.test(ua);
-    isAndroidRef.current = android;
-    setIsAndroid(android);
+    const ua = navigator.userAgent
+    const android = /Android/i.test(ua)
+    isAndroidRef.current = android
+    setIsAndroid(android)
 
     const standalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as any).standalone === true;
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true
 
-    if (standalone) setIsPwaInstalled(true);
-  }, []);
+    if (standalone) {
+      setIsPwaInstalled(true)
+      return
+    }
+
+    if (!android) return
+
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('app_not_found') === '1') {
+      sessionStorage.setItem('bossapp_not_found', 'true')
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [])
 
   useEffect(() => {
-    if (!isAndroid || isPwaInstalled) return;
-    if (Date.now() <= dismissInstallTimeout) return;
+    if (!isAndroid || isPwaInstalled) return
+    if (localStorage.getItem(LS_APK_INSTALLED) === 'true') return
 
-    const DETECT_TIMEOUT = 1500;
-    let appOpened = false;
+    if (sessionStorage.getItem('bossapp_not_found')) {
+      sessionStorage.removeItem('bossapp_not_found')
+      return
+    }
 
-    const onVisibilityChange = () => {
-      if (document.hidden) appOpened = true;
-    };
+    if (sessionStorage.getItem('bossapp_links_tried')) return
+    sessionStorage.setItem('bossapp_links_tried', 'true')
 
-    document.addEventListener("visibilitychange", onVisibilityChange);
+    const persistInstalled = () => {
+      localStorage.setItem(LS_APK_INSTALLED, 'true')
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('pagehide', onPageHide)
+    }
 
-    const tryOpen = setTimeout(() => {
-      window.location.href = APP_LINK_URL;
-    }, 200);
+    const onVisibility = () => {
+      if (document.hidden) persistInstalled()
+    }
 
-    const fallback = setTimeout(() => {
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-      if (!appOpened) setShowApkPrompt(true);
-    }, DETECT_TIMEOUT);
+    const onPageHide = () => persistInstalled()
+
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener('pagehide', onPageHide)
+
+    setTimeout(() => {
+      try { window.location.href = window.location.origin + '/verify-install' } catch { /* ignore */ }
+    }, 200)
 
     return () => {
-      clearTimeout(tryOpen);
-      clearTimeout(fallback);
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-    };
-  }, [isAndroid, isPwaInstalled, dismissInstallTimeout]);
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('pagehide', onPageHide)
+    }
+  }, [isAndroid, isPwaInstalled])
+
+  useEffect(() => {
+    const evaluate = () => {
+      if (
+        isAndroid &&
+        !isPwaInstalled &&
+        localStorage.getItem(LS_APK_INSTALLED) !== 'true' &&
+        Date.now() > dismissInstallTimeout
+      ) {
+        setShowApkPrompt(true)
+      } else {
+        setShowApkPrompt(false)
+      }
+    }
+
+    evaluate()
+    window.addEventListener('pageshow', evaluate)
+    return () => window.removeEventListener('pageshow', evaluate)
+  }, [isAndroid, isPwaInstalled, dismissInstallTimeout])
 
   useEffect(() => {
     const handler = (e: BeforeInstallPromptEvent) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
+      e.preventDefault()
+      setDeferredPrompt(e)
       if (!isAndroidRef.current && !isPwaInstalled) {
-        setShowPwaPrompt(true);
+        setShowPwaPrompt(true)
       }
-    };
+    }
 
-    const onAppInstalled = () => {
-      setIsPwaInstalled(true);
-      setShowPwaPrompt(false);
-      setShowApkPrompt(false);
-      setDeferredPrompt(null);
-    };
+    window.addEventListener('beforeinstallprompt', handler)
+    window.addEventListener('appinstalled', () => {
+      setIsPwaInstalled(true)
+      setShowPwaPrompt(false)
+      setShowApkPrompt(false)
+      setDeferredPrompt(null)
+    })
 
-    window.addEventListener("beforeinstallprompt", handler);
-    window.addEventListener("appinstalled", onAppInstalled);
-
-    return () => {
-      window.removeEventListener("beforeinstallprompt", handler);
-      window.removeEventListener("appinstalled", onAppInstalled);
-    };
-  }, [isPwaInstalled]);
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [isPwaInstalled])
 
   const handleInstallPwa = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === "accepted") {
-      setIsPwaInstalled(true);
+    if (!deferredPrompt) return
+    deferredPrompt.prompt()
+    const { outcome } = await deferredPrompt.userChoice
+    if (outcome === 'accepted') {
+      setIsPwaInstalled(true)
     }
-    setDeferredPrompt(null);
-    setShowPwaPrompt(false);
-  };
+    setDeferredPrompt(null)
+    setShowPwaPrompt(false)
+  }
 
   const handleDownloadApk = () => {
-    setShowApkPrompt(false);
-    const a = document.createElement("a");
-    a.href = APK_URL;
-    a.download = "boss.apk";
-    a.click();
-  };
+    setShowApkPrompt(false)
+    const a = document.createElement('a')
+    a.href = APK_URL
+    a.download = 'boss.apk'
+    a.click()
+  }
 
   const handleDismiss = () => {
-    setDismissInstallTimeout(Date.now() + 86400000);
-    setShowPwaPrompt(false);
-    setShowApkPrompt(false);
-  };
+    setDismissInstallTimeout(Date.now() + 900000)
+    setShowPwaPrompt(false)
+    setShowApkPrompt(false)
+  }
 
-  if (isPwaInstalled) return null;
+  if (isPwaInstalled) return null
 
   if (!isAndroid && showPwaPrompt && deferredPrompt) {
     return (
       <div
         className="fixed left-4 right-4 z-50 md:left-auto md:right-4 md:max-w-sm"
-        style={{ bottom: "calc(var(--bottomnav-height, 0px) + 1em)" }}
+        style={{ bottom: 'calc(var(--bottomnav-height, 0px) + 1em)' }}
       >
         <div className="bg-card rounded-lg shadow-lg border border-border p-4">
           <div className="flex items-start justify-between mb-3">
@@ -164,14 +196,14 @@ export default function PWAInstallPrompt() {
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   if (isAndroid && showApkPrompt) {
     return (
       <div
         className="fixed left-4 right-4 z-50 md:left-auto md:right-4 md:max-w-sm"
-        style={{ bottom: "calc(var(--bottomnav-height, 0px) + 1em)" }}
+        style={{ bottom: 'calc(var(--bottomnav-height, 0px) + 1em)' }}
       >
         <div className="bg-card rounded-lg shadow-lg border border-border p-4">
           <div className="flex items-start justify-between mb-3">
@@ -203,8 +235,8 @@ export default function PWAInstallPrompt() {
           </div>
         </div>
       </div>
-    );
+    )
   }
 
-  return null;
+  return null
 }
