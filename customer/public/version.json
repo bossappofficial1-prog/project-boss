@@ -4,5 +4,5 @@
   "apkUrl": "https://customer.bossapp.id/downloads/boss-release.apk",
   "minVersionCode": 1,
   "forceUpdate": false,
-  "releaseNotes": "- Perbaikan network error\n- Update dependency"
+  "releaseNotes": "**Perbaikan:**\n- Network error pada build lokal\n- Update dependency\n\n**Catatan:**\n- Hapus cache jika ada kendala"
 }
