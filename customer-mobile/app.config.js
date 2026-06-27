@@ -10,6 +10,10 @@ module.exports = ({ config }) => {
       ? 'id.bossapp.customer.preview' 
       : 'id.bossapp.customer';
 
+  const googleServicesFile = IS_DEV
+    ? './credentials/android/google-services-debug.json'
+    : './credentials/android/google-services-release.json';
+
   return {
     ...config,
     name,
@@ -20,6 +24,11 @@ module.exports = ({ config }) => {
     android: {
       ...config.android,
       package: bundleIdentifier,
+      googleServicesFile,
     },
+    plugins: [
+      ...(config.plugins || []),
+      "./plugins/with-google-services",
+    ],
   };
 };

@@ -4,20 +4,17 @@ import {
   InteractionManager,
   Pressable,
   ScrollView,
-  Switch,
   Text,
   TextInput,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTheme } from "@/components/ThemeProvider";
 import { useSnackbar } from "@/components/ui/snackbar";
+import { NotificationButton } from "@/src/features/notifications";
 import { useThemeColors } from "@/src/hooks/use-theme-colors";
 import { useProfileStore } from "@/src/stores/profile.store";
 import {
-  Bell,
-  BellOff,
   Bookmark,
   ChevronRight,
   Heart,
@@ -62,21 +59,11 @@ function SectionLabel({
 }
 
 export default function ProfileScreen() {
-  const insets = useSafeAreaInsets();
   const c = useThemeColors();
   const { setColorScheme, resetColorScheme } = useTheme();
   const snackbar = useSnackbar();
-  const {
-    fullName,
-    phone,
-    theme,
-    notifEnabled,
-    setFullName,
-    setPhone,
-    setTheme,
-    setNotifEnabled,
-    reset,
-  } = useProfileStore();
+  const { fullName, phone, theme, setFullName, setPhone, setTheme, reset } =
+    useProfileStore();
 
   const profileCompleteness = useMemo(() => {
     let completed = 0;
@@ -313,44 +300,10 @@ export default function ProfileScreen() {
                 borderRadius: 14,
                 borderWidth: 1,
                 borderColor: c.border,
-                paddingVertical: 14,
-                paddingHorizontal: 16,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 12,
+                overflow: "hidden",
               }}
             >
-              {notifEnabled ? (
-                <Bell size={18} color={c.foreground} />
-              ) : (
-                <BellOff size={18} color={c.mutedForeground} />
-              )}
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: "600",
-                    color: c.foreground,
-                  }}
-                >
-                  Notifikasi Push
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 12,
-                    color: c.mutedForeground,
-                    marginTop: 1,
-                  }}
-                >
-                  {notifEnabled ? "Aktif" : "Tidak aktif"}
-                </Text>
-              </View>
-              <Switch
-                value={notifEnabled}
-                onValueChange={setNotifEnabled}
-                trackColor={{ false: c.muted, true: c.primary }}
-                thumbColor={c.card}
-              />
+              <NotificationButton />
             </View>
           </View>
 

@@ -51,6 +51,10 @@
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
+    "notification": {
+      "icon": "./assets/images/notification-icon.png",
+      "color": "#eb2525"
+    },
     "plugins": [
       "expo-router",
       [
@@ -65,7 +69,14 @@
       "expo-video",
       "./plugins/with-abi-split",
       "./plugins/with-asset-statements",
-      "./plugins/with-app-updater"
+      "./plugins/with-app-updater",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#eb2525"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

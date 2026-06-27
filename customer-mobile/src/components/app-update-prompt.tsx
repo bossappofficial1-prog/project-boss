@@ -5,6 +5,7 @@ import { useCallback, useRef, useState } from "react";
 import { Modal, Pressable, Text, View } from "react-native";
 
 import { installApk } from "@/modules/app-updater";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface UpdateInfo {
   versionCode: number;
@@ -37,9 +38,16 @@ export default function AppUpdatePrompt() {
 
   useFocusEffect(
     useCallback(() => {
-      const skipUntil = localStorage.getItem(LS_SKIP_KEY);
-      if (skipUntil && Date.now() < Number(skipUntil)) return;
-      checkUpdate();
+      const checkSkipStatus = async () => {
+        try {
+          const skipUntil = await AsyncStorage.getItem(LS_SKIP_KEY);
+          if (skipUntil && Date.now() < Number(skipUntil)) return;
+          checkUpdate();
+        } catch (error) {
+          checkUpdate();
+        }
+      };
+      checkSkipStatus();
     }, []),
   );
 
@@ -69,9 +77,13 @@ export default function AppUpdatePrompt() {
     }
   }
 
-  function handleSkip() {
+  async function handleSkip() {
     const until = Date.now() + LS_SKIP_MS;
-    localStorage.setItem(LS_SKIP_KEY, String(until));
+    try {
+      await AsyncStorage.setItem(LS_SKIP_KEY, String(until));
+    } catch (error) {
+      console.error("Gagal menyimpan data skip update:", error);
+    }
     setState("latest");
   }
 

@@ -40,20 +40,16 @@ export function CategoryChip({
           borderRadius: 16,
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: isActive ? c.primary : c.muted,
+          backgroundColor: c.primary,
         }}
       >
-        <Icon
-          size={20}
-          color={isActive ? c.primaryForeground : c.mutedForeground}
-          strokeWidth={2}
-        />
+        <Icon size={20} color={c.primaryForeground} strokeWidth={2} />
       </View>
       <Text
         style={{
           fontSize: 12,
           fontWeight: "500",
-          color: isActive ? c.primary : c.mutedForeground,
+          color: c.primary,
         }}
       >
         {title}

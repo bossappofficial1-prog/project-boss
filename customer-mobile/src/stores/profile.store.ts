@@ -11,10 +11,12 @@ interface ProfileStore {
   phone: string;
   theme: ProfileTheme;
   notifEnabled: boolean;
+  expoPushToken: string | null;
   setFullName: (name: string) => void;
   setPhone: (phone: string) => void;
   setTheme: (theme: ProfileTheme) => void;
   setNotifEnabled: (enabled: boolean) => void;
+  setExpoPushToken: (token: string | null) => void;
   reset: () => void;
 }
 
@@ -23,6 +25,7 @@ const initial = {
   phone: "",
   theme: "system" as ProfileTheme,
   notifEnabled: false,
+  expoPushToken: null as string | null,
 };
 
 export const useProfileStore = create<ProfileStore>()(
@@ -33,6 +36,7 @@ export const useProfileStore = create<ProfileStore>()(
       setPhone: (phone) => set({ phone }),
       setTheme: (theme) => set({ theme }),
       setNotifEnabled: (notifEnabled) => set({ notifEnabled }),
+      setExpoPushToken: (expoPushToken) => set({ expoPushToken }),
       reset: () => set(initial),
     }),
     {
