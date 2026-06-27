@@ -60,11 +60,18 @@ model UserSession {
   @@index([userId, lastActiveAt])
 }
 
+enum PushType {
+  WEB
+  EXPO
+}
+
 model PushSubscription {
   id              String         @id @default(uuid())
   endpoint        String         @unique
-  p256dh          String
-  auth            String
+  type            PushType       @default(WEB)
+  p256dh          String?
+  auth            String?
+  expoPushToken   String?
   guestCustomerId String?
   userId          String?
   staffId         String?

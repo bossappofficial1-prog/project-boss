@@ -1,8 +1,11 @@
+import { Expo, ExpoPushMessage } from "expo-server-sdk";
 import { Job } from "bull";
 import { BaseQueue } from "./base-queue";
 import { db } from "../config/prisma";
 import webpush from "../config/webpush";
 import Console from "../utils/logger";
+
+const expo = new Expo();
 
 export class BookingReminderQueue extends BaseQueue<{ triggeredAt: string }> {
   constructor() {
@@ -81,16 +84,29 @@ export class BookingReminderQueue extends BaseQueue<{ triggeredAt: string }> {
       Console.log(`[BOOKING-REMINDER-JOB] Sending reminder to ${customer.name} for ${serviceName}. subscriptions count: ${customer.pushSubscriptions.length}`);
 
       const sendPromises = customer.pushSubscriptions.map(async (subDb: any) => {
-        const pushSubFormat = {
-          endpoint: subDb.endpoint,
-          keys: {
-            p256dh: subDb.p256dh,
-            auth: subDb.auth,
-          },
-        };
-
         try {
-          await webpush.sendNotification(pushSubFormat, payload);
+          if (subDb.type === "EXPO") {
+            const token = subDb.expoPushToken || subDb.endpoint;
+            if (Expo.isExpoPushToken(token)) {
+              const message: ExpoPushMessage = {
+                to: token,
+                sound: "default",
+                title: "Pengingat Jadwal Layanan",
+                body: `Halo ${customer.name}, layanan ${serviceName} Anda dijadwalkan akan dimulai dalam 1 jam lagi (pukul ${startTimeStr}).`,
+                data: { url: "/history" },
+              };
+              await expo.sendPushNotificationsAsync([message]);
+            }
+          } else {
+            const pushSubFormat = {
+              endpoint: subDb.endpoint,
+              keys: {
+                p256dh: subDb.p256dh,
+                auth: subDb.auth,
+              },
+            };
+            await webpush.sendNotification(pushSubFormat, payload);
+          }
         } catch (err: any) {
           if (err.statusCode === 410 || err.statusCode === 404) {
             Console.log(`[BOOKING-REMINDER-JOB] Removing invalid push subscription: ${subDb.id}`);

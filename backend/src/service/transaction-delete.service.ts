@@ -73,7 +73,7 @@ export class TransactionDeleteService {
 
           for (const sub of ownerSubscriptions) {
             try {
-              await (pushService as any).sendNotificationToCustomer("", {
+              await pushService.sendNotificationToCustomer("", {
                 id: "",
                 totalAmount: 0,
                 guestCustomer: { pushSubscriptions: [sub] },
