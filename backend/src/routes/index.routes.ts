@@ -1,7 +1,9 @@
 import { Router } from "express";
+import { Expo, ExpoPushMessage } from "expo-server-sdk";
 import userRouter from "./user.route";
 import authRouter from "./auth.route";
 import integrationRouter from "./integration.route";
+import ResponseUtil from "../utils/response";
 
 
 import productRouter from "./product.route";
@@ -112,6 +114,27 @@ apiRouter.use("/stock-transfers", stockTransferRouter);
 
 apiRouter.get("/payment-methods", async (req, res) => {
   ResponseUtil.success(res, paymentMethod);
+});
+
+apiRouter.post("/test-push", async (req, res) => {
+  const { token, title, body } = req.body;
+  if (!token) {
+    return ResponseUtil.error(res, "Token diperlukan", 400);
+  }
+  try {
+    const expo = new Expo();
+    const message: ExpoPushMessage = {
+      to: token,
+      sound: "default",
+      title: title || "Test Notifikasi",
+      body: body || "Ini adalah notifikasi uji coba dari backend",
+      data: { url: "/" },
+    };
+    await expo.sendPushNotificationsAsync([message]);
+    return ResponseUtil.success(res, { message: "Notifikasi terkirim" });
+  } catch (error: any) {
+    return ResponseUtil.error(res, error.message, 500);
+  }
 });
 
 apiRouter.get("/test-event/:outletId", (req, res) => {
