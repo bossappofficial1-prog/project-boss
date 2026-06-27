@@ -121,18 +121,28 @@ apiRouter.post("/test-push", async (req, res) => {
   if (!token) {
     return ResponseUtil.error(res, "Token diperlukan", 400);
   }
+  if (!Expo.isExpoPushToken(token)) {
+    return ResponseUtil.error(res, "Token Expo tidak valid", 400);
+  }
   try {
     const expo = new Expo();
     const message: ExpoPushMessage = {
       to: token,
       sound: "default",
+      channelId: "default",
+      priority: "high",
       title: title || "Test Notifikasi",
       body: body || "Ini adalah notifikasi uji coba dari backend",
       data: { url: "/" },
     };
-    await expo.sendPushNotificationsAsync([message]);
-    return ResponseUtil.success(res, { message: "Notifikasi terkirim" });
+    const [ticket] = await expo.sendPushNotificationsAsync([message]);
+    console.log("[test-push] Ticket:", JSON.stringify(ticket));
+    if (ticket.status === "error") {
+      return ResponseUtil.error(res, `Expo error: ${ticket.message}`, 500);
+    }
+    return ResponseUtil.success(res, { ticketId: ticket.id, message: "Notifikasi terkirim ke Expo" });
   } catch (error: any) {
+    console.error("[test-push] Error:", error);
     return ResponseUtil.error(res, error.message, 500);
   }
 });

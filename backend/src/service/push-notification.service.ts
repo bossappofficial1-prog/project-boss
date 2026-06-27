@@ -128,6 +128,8 @@ export class PushNotificationService {
       const message: ExpoPushMessage = {
         to: token,
         sound: "default",
+        channelId: "default",
+        priority: "high",
         title: payload.title,
         body: payload.body,
         data: { url: payload.url },
