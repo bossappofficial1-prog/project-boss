@@ -1,5 +1,6 @@
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { SnackbarProvider } from "@/components/ui/snackbar";
+import AppUpdatePrompt from "@/src/components/app-update-prompt";
 import { queryClient } from "@/lib/query-client";
 import { useThemeColors } from "@/src/hooks/use-theme-colors";
 import { SocketProvider } from "@/src/lib/socket-context";
@@ -63,6 +64,7 @@ function RootLayoutInner() {
 
   return (
     <SnackbarProvider>
+      <AppUpdatePrompt />
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen

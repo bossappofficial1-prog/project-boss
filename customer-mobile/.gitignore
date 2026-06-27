@@ -41,6 +41,10 @@ yarn-error.*
 /ios
 /android
 
+# local module build outputs
+modules/**/android/build/
+modules/**/android/.gradle/
+
 # build outputs
 *.apk
 *.aab
