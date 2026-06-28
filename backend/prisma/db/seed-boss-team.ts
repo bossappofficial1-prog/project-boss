@@ -38,6 +38,13 @@ const OWNER_ID = "9a3f581e-75e3-4f6b-878e-3422f54aebfb";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+const genId = (prefix: string) => {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let id = "";
+  for (let i = 0; i < 8; i++) id += chars[Math.floor(Math.random() * chars.length)];
+  return `${prefix}-${id}`;
+};
+
 const rand = (min: number, max: number) =>
   Math.floor(Math.random() * (max - min + 1)) + min;
 
@@ -187,6 +194,7 @@ async function createFNBOutlet() {
 
   const outlet = await db.outlet.create({
     data: {
+      id: genId("OUT"),
       name: "Warung Makan Padang",
       slug: "warung-makan-padang",
       description: "Warung makan dengan cita rasa Padang autentik, masakan rumahan berkualitas",
@@ -591,6 +599,7 @@ async function createRetailOutlet() {
 
   const outlet = await db.outlet.create({
     data: {
+      id: genId("OUT"),
       name: "Toko Sembako Maju",
       slug: "toko-sembako-maju",
       description: "Toko kebutuhan sehari-hari lengkap dengan harga terjangkau",
@@ -873,6 +882,7 @@ async function createServiceOutlet() {
 
   const outlet = await db.outlet.create({
     data: {
+      id: genId("OUT"),
       name: "Salon Kecantikan",
       slug: "salon-kecantikan",
       description: "Salon kecantikan profesional dengan layanan terbaik",
@@ -1107,6 +1117,7 @@ async function createEventOutlet() {
 
   const outlet = await db.outlet.create({
     data: {
+      id: genId("OUT"),
       name: "Event Konser Musik",
       slug: "event-konser-musik",
       description: "Penjualan tiket konser dan event musik di Pekanbaru",
@@ -1425,6 +1436,7 @@ async function seedFNBOrders(
 
     const order = await db.order.create({
       data: {
+        id: genId("ORD"),
         outletId,
         guestCustomerId: customer.id,
         handledByStaffId: staffMember.id,
@@ -1544,6 +1556,7 @@ async function seedRetailOrders(
 
     const order = await db.order.create({
       data: {
+        id: genId("ORD"),
         outletId,
         guestCustomerId: customer.id,
         handledByStaffId: staffMember.id,
@@ -1658,6 +1671,7 @@ async function seedServiceOrders(
 
     const order = await db.order.create({
       data: {
+        id: genId("ORD"),
         outletId,
         guestCustomerId: customer.id,
         handledByStaffId: staffMember.id,
@@ -1760,6 +1774,7 @@ async function seedEventOrders(
 
     const order = await db.order.create({
       data: {
+        id: genId("ORD"),
         outletId,
         guestCustomerId: customer.id,
         handledByStaffId: staffMember.id,

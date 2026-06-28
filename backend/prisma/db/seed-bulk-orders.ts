@@ -18,6 +18,13 @@ const OWNER_ID = "9a3f581e-75e3-4f6b-878e-3422f54aebfb";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+const genId = (prefix: string) => {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let id = "";
+  for (let i = 0; i < 8; i++) id += chars[Math.floor(Math.random() * chars.length)];
+  return `${prefix}-${id}`;
+};
+
 const rand = (min: number, max: number) =>
   Math.floor(Math.random() * (max - min + 1)) + min;
 
@@ -291,6 +298,7 @@ async function seedBulkFNB(
 
           const order = await db.order.create({
             data: {
+              id: genId("ORD"),
               outletId: outlet.id,
               guestCustomerId: customer.id,
               handledByStaffId: staff.id,
@@ -405,6 +413,7 @@ async function seedBulkRetail(
         (async () => {
           const order = await db.order.create({
             data: {
+              id: genId("ORD"),
               outletId: outlet.id,
               guestCustomerId: customer.id,
               handledByStaffId: staff.id,
@@ -542,6 +551,7 @@ async function seedBulkService(
 
           const order = await db.order.create({
             data: {
+              id: genId("ORD"),
               outletId: outlet.id,
               guestCustomerId: customer.id,
               handledByStaffId: staff.id,
@@ -658,6 +668,7 @@ async function seedBulkEvent(
         (async () => {
           const order = await db.order.create({
             data: {
+              id: genId("ORD"),
               outletId: outlet.id,
               guestCustomerId: customer.id,
               handledByStaffId: staff.id,

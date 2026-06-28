@@ -41,10 +41,12 @@ export class HomeRepository {
             JOIN "Business" b ON o."businessId" = b.id
             -- Menghitung order 30 hari terakhir
             LEFT JOIN (
-                SELECT ord."outletId", COUNT(ord.id)::int as successful_orders
+                SELECT ord."outletId", COUNT(DISTINCT ord.id)::int as successful_orders
                 FROM "Order" ord
                 JOIN "Transaction" tr ON tr."orderId" = ord.id
                 WHERE tr.status = 'SUCCESS'
+                    AND ord."paymentStatus" = 'SUCCESS'
+                    AND ord."orderStatus" = 'COMPLETED'
                     AND ord."createdAt" >= NOW() - INTERVAL '30 days'
                 GROUP BY ord."outletId"
             ) order_counts ON order_counts."outletId" = o.id
