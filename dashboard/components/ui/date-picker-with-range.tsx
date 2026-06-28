@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { addDays, format, setDate } from "date-fns";
+import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { DateRange } from "react-day-picker";
 
@@ -23,11 +23,8 @@ export function DatePickerWithRange({
   date,
   onDateChange,
 }: DatePickerWithRangeProps) {
-  // Default: Select last 30 days
-  const [dateRange, setDateRange] = React.useState<DateRange | undefined>({
-    from: date?.from || new Date(2023, 10, 1), // Mock start date (Nov 1, 2023) based on context
-    to: date?.to || addDays(new Date(2023, 10, 1), 20),
-  });
+  // Default: No date selected (show all data)
+  const [dateRange, setDateRange] = React.useState<DateRange | undefined>(date);
 
   React.useEffect(() => {
     if (date) {
@@ -37,9 +34,7 @@ export function DatePickerWithRange({
 
   const handleSelect = (newRange: DateRange | undefined) => {
     setDateRange(newRange);
-    if (newRange?.from && newRange?.to) {
-      onDateChange?.(newRange);
-    }
+    onDateChange?.(newRange || { from: undefined, to: undefined });
   };
 
   return (
@@ -66,9 +61,7 @@ export function DatePickerWithRange({
                 format(dateRange.from, "LLL dd, y")
               )
             ) : (
-              <span className="text-muted-foreground">
-                Pilih Rentang Tanggal
-              </span>
+              <span className="text-muted-foreground">Semua Data</span>
             )}
           </Button>
         </PopoverTrigger>

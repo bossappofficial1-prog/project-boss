@@ -1,65 +1,54 @@
 import { db } from "../config/prisma";
-import { PaymentStatus, ProductType } from "@prisma/client";
 import { OutletDashboardRepository } from "../routes/outlet-dashboard.routes";
 
 export async function getDashboardSummaryService(outletId: string) {
-    // All metrics are scoped to the selected outlet
+  const { totalProducts, totalServices, totalOrders, totalRevenue } =
+    await OutletDashboardRepository.getDashboardSummary(outletId);
 
-    const { totalProducts, totalServices, totalOrders, totalRevenue } = await OutletDashboardRepository.getDashboardSummary(outletId)
-
-    return {
-        totalProducts,
-        totalServices,
-        totalOrders,
-        totalRevenue,
-    };
+  return {
+    totalProducts,
+    totalServices,
+    totalOrders,
+    totalRevenue,
+  };
 }
 
-export async function getOrderStatsService(outletId: string, period: 'week' | 'month') {
-    const now = new Date();
-    let startDate;
+export async function getOrderStatsService(
+  outletId: string,
+  period: "week" | "month",
+) {
+  const now = new Date();
+  const startDate = new Date();
+  if (period === "week") {
+    startDate.setDate(now.getDate() - 7);
+  } else {
+    startDate.setMonth(now.getMonth() - 1);
+  }
 
-    if (period === 'week') {
-        startDate = new Date(now.setDate(now.getDate() - 7));
-    } else { // month
-        startDate = new Date(now.setMonth(now.getMonth() - 1));
-    }
+  const rows = await db.$queryRaw<any[]>`
+        SELECT
+            date_trunc('day', "createdAt") AS date,
+            COUNT(*)::int AS "totalOrders",
+            COALESCE(SUM("totalAmount"), 0)::float AS "totalRevenue"
+        FROM "Order"
+        WHERE "outletId" = ${outletId} AND "createdAt" >= ${startDate}
+            AND "orderStatus" = 'COMPLETED' AND "paymentStatus" = 'SUCCESS'
+        GROUP BY date_trunc('day', "createdAt")
+        ORDER BY date ASC
+    `;
 
-    const orders = await db.order.findMany({
-        where: {
-            createdAt: {
-                gte: startDate,
-            },
-            outletId,
-            orderStatus: "COMPLETED",
-            paymentStatus: PaymentStatus.SUCCESS,
-        },
-        select: {
-            id: true,
-            createdAt: true,
-            paymentStatus: true,
-            totalAmount: true,
-            appFee: true,
-            midtransFee: true,
-        },
-        orderBy: {
-            createdAt: 'asc',
-        },
-    });
+  const statsRecord = rows.reduce(
+    (acc, row) => {
+      const dateObj = row.date instanceof Date ? row.date : new Date(row.date);
+      const dateKey = dateObj.toISOString().split("T")[0];
+      acc[dateKey] = {
+        totalOrders: row.totalOrders,
+        totalRevenue: row.totalRevenue,
+      };
+      return acc;
+    },
+    {} as Record<string, { totalOrders: number; totalRevenue: number }>,
+  );
 
-    // This is a simple aggregation. In a real app, you might group by day/week in the database query itself.
-    const stats = orders.reduce((acc, order) => {
-        const date = order.createdAt.toISOString().split('T')[0];
-        if (!acc[date]) {
-            acc[date] = { totalOrders: 0, totalRevenue: 0 };
-        }
-        acc[date].totalOrders += 1;
-        if (order.paymentStatus === PaymentStatus.SUCCESS) {
-            const grossAmount = order.totalAmount;
-            acc[date].totalRevenue += (grossAmount);
-        }
-        return acc;
-    }, {} as Record<string, { totalOrders: number; totalRevenue: number }>);
-
-    return stats;
+  return statsRecord;
 }

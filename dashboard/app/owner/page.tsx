@@ -53,14 +53,14 @@ export default function DashboardPage() {
         if (!old) return old;
         if (Array.isArray(old)) {
           return old.map((outlet: any) =>
-            outlet.id === outletId ? { ...outlet, isOpen: status } : outlet
+            outlet.id === outletId ? { ...outlet, isOpen: status } : outlet,
           );
         }
         if (old.data && Array.isArray(old.data)) {
           return {
             ...old,
             data: old.data.map((outlet: any) =>
-              outlet.id === outletId ? { ...outlet, isOpen: status } : outlet
+              outlet.id === outletId ? { ...outlet, isOpen: status } : outlet,
             ),
           };
         }
@@ -73,7 +73,7 @@ export default function DashboardPage() {
         return {
           ...old,
           outlets: old.outlets.map((outlet: any) =>
-            outlet.id === outletId ? { ...outlet, isOpen: status } : outlet
+            outlet.id === outletId ? { ...outlet, isOpen: status } : outlet,
           ),
         };
       });
@@ -272,32 +272,6 @@ export default function DashboardPage() {
             isLoading={isLoading}
           />
         </div>
-
-        {/* Bank owner info empty card if business exists but no bank */}
-        {business && !(business.bankName && business.bankAccount) && (
-          <Card className="rounded-md gap-0 py-0 overflow-hidden border-2 border-dashed border-foreground bg-emerald-500/5 p-6 sm:p-8 animate-fade-in group hover:bg-emerald-500/10 transition-colors">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-              <div className="p-4 rounded-full bg-emerald-500/10 text-emerald-600 group-hover:scale-110 transition-transform shadow-sm border border-emerald-500/20">
-                <CreditCard className="h-10 w-10" />
-              </div>
-              <div className="flex-1 text-center sm:text-left space-y-2">
-                <h2 className="text-xl font-black text-foreground tracking-tight">
-                  Metode Penarikan Belum Siap
-                </h2>
-                <p className="text-sm text-muted-foreground max-w-lg leading-relaxed">
-                  Anda belum mendaftarkan rekening bank utama. Informasi ini
-                  wajib diisi agar sistem dapat meneruskan dana hasil penjualan
-                  outlet ke rekening pribadi atau perusahaan Anda.
-                </p>
-                <div className="pt-4 flex flex-wrap justify-center sm:justify-start gap-3">
-                  <Button onClick={() => setShowBankModal(true)} size="lg">
-                    Atur Rekening Penarikan
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </Card>
-        )}
       </div>
 
       {/* Modals */}

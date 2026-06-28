@@ -360,7 +360,7 @@ export class ReportService extends BaseService {
       gaji,
       totalHpp,
       totalFees,
-      labaBersih: revenue - totalHpp - pengeluaran - gaji - totalFees,
+      labaBersih: revenue - totalPajak - totalHpp - pengeluaran - gaji - totalFees,
       count: filteredOrders.length,
     };
   }
