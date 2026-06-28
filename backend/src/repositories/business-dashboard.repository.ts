@@ -1,5 +1,5 @@
 import { db } from "../config/prisma";
-import { PaymentStatus, ProductType } from "@prisma/client";
+import { OrderStatus, PaymentStatus, ProductType } from "@prisma/client";
 
 export class BusinessDashboardRepository {
     /**
@@ -51,6 +51,7 @@ export class BusinessDashboardRepository {
         const orders = await db.order.findMany({
             where: {
                 outletId: { in: outletIds },
+                orderStatus: OrderStatus.COMPLETED,
                 paymentStatus: PaymentStatus.SUCCESS,
                 createdAt: { gte: startDate },
             },
@@ -97,6 +98,7 @@ export class BusinessDashboardRepository {
         const orders = await db.order.findMany({
             where: {
                 outletId: { in: outletIds },
+                orderStatus: OrderStatus.COMPLETED,
                 paymentStatus: PaymentStatus.SUCCESS,
                 createdAt: { gte: startDate },
             },
@@ -219,6 +221,7 @@ export class BusinessDashboardRepository {
                     db.order.findMany({
                         where: {
                             outletId: outlet.id,
+                            orderStatus: OrderStatus.COMPLETED,
                             paymentStatus: PaymentStatus.SUCCESS,
                             createdAt: { gte: startDate },
                         },
