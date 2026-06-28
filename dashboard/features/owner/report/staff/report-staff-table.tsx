@@ -27,12 +27,14 @@ export function ReportStaffTable({ data, totals }: ReportStaffTableProps) {
       showTableInfo={false}
       pagination={false}
       showFooter
+      tableId="report-staff"
+      emptyMessage="Belum ada data kinerja staff untuk periode ini."
       columns={[
         {
           accessorKey: "name",
           header: "Nama Staff",
           cell: ({ row }) => <span className="font-bold text-foreground/90 text-xs">{row.original.name}</span>,
-          footer: () => <span className="font-bold uppercase tracking-widest text-[10px] text-muted-foreground opacity-60">Total Staff</span>,
+          footer: () => <span className="font-semibold text-xs text-muted-foreground opacity-75">Total Staff</span>,
         },
         {
           accessorKey: "role",

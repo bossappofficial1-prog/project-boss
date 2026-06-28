@@ -1,26 +1,21 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import {
   Calendar as CalendarIcon,
   FileSpreadsheet,
   ChevronLeft,
   ChevronRight,
-  ArrowUpRight,
   Wallet,
   Users,
   Receipt,
-  BarChart3,
   Loader2,
   Package,
-  TrendingDown,
-  ArrowDownRight,
-  HelpCircle,
+  Info,
 } from "lucide-react";
 import { gooeyToast } from "goey-toast";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SectionHeader } from "@/components/ui/section-header";
 import {
@@ -30,78 +25,170 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useReportOutlet, useCompareOutletsReport, useReportStaff } from "@/hooks/use-report";
+import {
+  useReportOutlet,
+  useCompareOutletsReport,
+  useReportStaff,
+} from "@/hooks/use-report";
 import { useOutletStore } from "@/stores/outlet.store";
 import { DataTable } from "@/components/ui/data-table";
 import { ReportFinancialTable, Totals } from "./report-financial-table";
 import { ReportStaffTable } from "../staff/report-staff-table";
-import { SummaryCard } from "../summary-card";
+import { Sparkline } from "../sparkline";
 import { formatCurrency, cn } from "@/lib/utils";
 import reportApi from "@/lib/apis/report";
 import { format } from "date-fns";
+import { ColumnDef } from "@tanstack/react-table";
 
 type FilterType = "daily" | "weekly" | "monthly";
 type CompareFilterType = "daily" | "monthly" | "yearly";
 type ViewMode = "time" | "compare";
 
-interface FilterButtonProps {
-  children: React.ReactNode;
-  active: boolean;
-  onClick: () => void;
+// ── CUSTOM HOOK FOR STATE MANAGEMENT ──
+function useReportDashboardState(selectedOutletId?: string) {
+  const [activeTab, setActiveTab] = useState<string>("keuangan");
+  const [viewMode, setViewMode] = useState<ViewMode>("time");
+
+  // Unified date and period state
+  const [period, setPeriod] = useState<string>("daily");
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [outletFilter, setOutletFilter] = useState<string>(
+    selectedOutletId || "all",
+  );
+  const [isExporting, setIsExporting] = useState<boolean>(false);
+
+  // Sync outlet filter when store changes
+  useEffect(() => {
+    if (selectedOutletId) {
+      setOutletFilter(selectedOutletId);
+    }
+  }, [selectedOutletId]);
+
+  // Adjust period if it becomes invalid for the current viewMode/tab
+  const handleTabChange = useCallback(
+    (newTab: string) => {
+      setActiveTab(newTab);
+
+      // Yearly is only valid in keuangan + compare mode
+      if (newTab !== "keuangan" && period === "yearly") {
+        setPeriod("monthly");
+      }
+    },
+    [period],
+  );
+
+  const handleViewModeChange = useCallback(
+    (newMode: ViewMode) => {
+      setViewMode(newMode);
+
+      if (newMode === "compare") {
+        if (period === "weekly") {
+          setPeriod("monthly"); // Compare mode doesn't support weekly, default to monthly
+        }
+      } else {
+        if (period === "yearly") {
+          setPeriod("monthly"); // Time mode doesn't support yearly, default to monthly
+        }
+      }
+    },
+    [period],
+  );
+
+  const handlePeriodChange = useCallback((newPeriod: string) => {
+    setPeriod(newPeriod);
+  }, []);
+
+  const adjustDate = useCallback(
+    (amount: number) => {
+      setCurrentDate((prevDate) => {
+        const newDate = new Date(prevDate);
+        if (activeTab === "keuangan") {
+          if (viewMode === "time") {
+            if (period === "daily")
+              newDate.setDate(newDate.getDate() + amount * 10);
+            else if (period === "weekly")
+              newDate.setMonth(newDate.getMonth() + amount);
+            else if (period === "monthly")
+              newDate.setFullYear(newDate.getFullYear() + amount);
+          } else {
+            // compare
+            if (period === "daily") newDate.setDate(newDate.getDate() + amount);
+            else if (period === "monthly")
+              newDate.setMonth(newDate.getMonth() + amount);
+            else if (period === "yearly")
+              newDate.setFullYear(newDate.getFullYear() + amount);
+          }
+        } else if (activeTab === "staff") {
+          if (period === "daily") newDate.setDate(newDate.getDate() + amount);
+          else if (period === "weekly")
+            newDate.setDate(newDate.getDate() + amount * 7);
+          else if (period === "monthly")
+            newDate.setMonth(newDate.getMonth() + amount);
+        } else if (activeTab === "stok") {
+          if (period === "daily")
+            newDate.setDate(newDate.getDate() + amount * 10);
+          else if (period === "weekly")
+            newDate.setMonth(newDate.getMonth() + amount);
+          else if (period === "monthly")
+            newDate.setFullYear(newDate.getFullYear() + amount);
+        }
+        return newDate;
+      });
+    },
+    [activeTab, viewMode, period],
+  );
+
+  return {
+    activeTab,
+    setActiveTab: handleTabChange,
+    viewMode,
+    setViewMode: handleViewModeChange,
+    period,
+    setPeriod: handlePeriodChange,
+    currentDate,
+    outletFilter,
+    setOutletFilter,
+    isExporting,
+    setIsExporting,
+    adjustDate,
+  };
 }
 
+// ── MAIN COMPONENT ──
 export default function ReportFinancialContent() {
   const { outlets, selectedOutlet } = useOutletStore();
-  const [activeTab, setActiveTab] = useState("keuangan");
+  const state = useReportDashboardState(selectedOutlet?.id);
 
-  // ── Shared state ──
-  const [viewMode, setViewMode] = useState<ViewMode>("time");
-  const [filterType, setFilterType] = useState<FilterType>("daily");
-  const [compareFilterType, setCompareFilterType] = useState<CompareFilterType>("daily");
-  const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const [outletFilter, setOutletFilter] = useState<string>(selectedOutlet?.id || "all");
-  const [isExporting, setIsExporting] = useState(false);
+  // ── Conditional queries for better performance ──
+  const isKeuanganTime =
+    state.activeTab === "keuangan" && state.viewMode === "time";
+  const isKeuanganCompare =
+    state.activeTab === "keuangan" && state.viewMode === "compare";
+  const isStaff = state.activeTab === "staff";
+  const isStok = state.activeTab === "stok";
 
-  // ── Staff-specific state ──
-  const [staffFilterType, setStaffFilterType] = useState<FilterType>("daily");
-  const [staffDate, setStaffDate] = useState<Date>(new Date());
-
-  // ── Stock-specific state ──
-  const [stockFilterType, setStockFilterType] = useState<FilterType>("daily");
-  const [stockDate, setStockDate] = useState<Date>(new Date());
-
-  React.useEffect(() => {
-    if (selectedOutlet?.id) {
-      setOutletFilter(selectedOutlet.id);
-    }
-  }, [selectedOutlet?.id]);
-
-  // ── Data Fetching ──
+  // Financial (Laporan Waktu) & Stok share the same API endpoint
   const { data: timeData, isLoading: isLoadingTime } = useReportOutlet(
-    outletFilter,
-    filterType,
-    currentDate.toISOString(),
+    state.outletFilter,
+    state.period,
+    state.currentDate.toISOString(),
   );
 
-  const { data: compareData, isLoading: isLoadingCompare } = useCompareOutletsReport(
-    compareFilterType,
-    currentDate.toISOString(),
-  );
+  const { data: compareData, isLoading: isLoadingCompare } =
+    useCompareOutletsReport(state.period, state.currentDate.toISOString());
 
   const { data: staffData, isLoading: isLoadingStaff } = useReportStaff(
-    outletFilter,
-    staffFilterType,
-    format(staffDate, "yyyy-MM-dd"),
+    state.outletFilter,
+    state.period,
+    format(state.currentDate, "yyyy-MM-dd"),
   );
 
-  const { data: timeDataStok, isLoading: isLoadingStok } = useReportOutlet(
-    outletFilter,
-    stockFilterType,
-    stockDate.toISOString(),
-  );
-
-  const activeData = viewMode === "time" ? timeData : compareData;
-  const isLoading = viewMode === "time" ? isLoadingTime : isLoadingCompare;
+  const activeData = state.viewMode === "time" ? timeData : compareData;
+  const isLoading =
+    (state.activeTab === "keuangan" &&
+      (state.viewMode === "time" ? isLoadingTime : isLoadingCompare)) ||
+    (state.activeTab === "stok" && isLoadingTime) ||
+    (state.activeTab === "staff" && isLoadingStaff);
 
   // ── Totals for Financial ──
   const totals = useMemo<Totals>(() => {
@@ -137,122 +224,133 @@ export default function ReportFinancialContent() {
       (acc, curr) => ({
         transactions: acc.transactions + curr.transactionCount,
         revenue: acc.revenue + (curr.type === "CASHIER" ? curr.revenue : 0),
-        commission: acc.commission + (curr.type === "SERVICE" ? curr.commission : 0),
+        commission:
+          acc.commission + (curr.type === "SERVICE" ? curr.commission : 0),
       }),
       { transactions: 0, revenue: 0, commission: 0 },
     );
   }, [staffData]);
 
-  // ── Totals for Stock ──
+  // ── Totals for Stock (shared data from timeData) ──
   const stokTotals = useMemo(() => {
-    return (timeDataStok || []).reduce(
+    return (timeData || []).reduce(
       (acc, curr) => ({
-        jumlahTransaksi: acc.jumlahTransaksi + curr.jumlahTransaksi,
-        totalPembelian: acc.totalPembelian + curr.totalPembelian,
+        jumlahTransaksi: acc.jumlahTransaksi + (curr.jumlahTransaksi || 0),
+        totalPembelian: acc.totalPembelian + (curr.totalPembelian || 0),
       }),
       { jumlahTransaksi: 0, totalPembelian: 0 },
     );
-  }, [timeDataStok]);
+  }, [timeData]);
 
-  // ── Date Navigation ──
-  const adjustDate = (amount: number): void => {
-    const newDate = new Date(currentDate);
-
-    if (viewMode === "time") {
-      if (filterType === "daily") newDate.setDate(newDate.getDate() + amount * 10);
-      if (filterType === "weekly") newDate.setMonth(newDate.getMonth() + amount);
-      if (filterType === "monthly") newDate.setFullYear(newDate.getFullYear() + amount);
-    } else {
-      if (compareFilterType === "daily") newDate.setDate(newDate.getDate() + amount);
-      if (compareFilterType === "monthly") newDate.setMonth(newDate.getMonth() + amount);
-      if (compareFilterType === "yearly") newDate.setFullYear(newDate.getFullYear() + amount);
-    }
-
-    setCurrentDate(newDate);
-  };
-
-  const adjustStaffDate = (amount: number): void => {
-    const newDate = new Date(staffDate);
-    if (staffFilterType === "daily") newDate.setDate(newDate.getDate() + amount);
-    if (staffFilterType === "weekly") newDate.setDate(newDate.getDate() + amount * 7);
-    if (staffFilterType === "monthly") newDate.setMonth(newDate.getMonth() + amount);
-    setStaffDate(newDate);
-  };
-
-  const adjustStockDate = (amount: number): void => {
-    const newDate = new Date(stockDate);
-    if (stockFilterType === "daily") newDate.setDate(newDate.getDate() + amount * 10);
-    if (stockFilterType === "weekly") newDate.setMonth(newDate.getMonth() + amount);
-    if (stockFilterType === "monthly") newDate.setFullYear(newDate.getFullYear() + amount);
-    setStockDate(newDate);
-  };
-
-  // ── Export ──
+  // ── Unified Export Handler ──
   const handleExport = useCallback(async () => {
-    setIsExporting(true);
+    state.setIsExporting(true);
     try {
-      const activeType = viewMode === "time" ? filterType : compareFilterType;
-      const blob = await reportApi.exportOutletExcel(outletFilter, {
-        type: activeType,
-        date: currentDate.toISOString(),
-        viewMode,
-      });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `Laporan_Keuangan_${new Date().toISOString().split("T")[0]}.xlsx`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      gooeyToast.success("Berhasil mengexport laporan keuangan");
-    } catch {
-      gooeyToast.error("Gagal mengexport laporan keuangan");
-    } finally {
-      setIsExporting(false);
-    }
-  }, [outletFilter, filterType, compareFilterType, currentDate, viewMode]);
+      let blob: Blob;
+      if (state.activeTab === "keuangan") {
+        blob = await reportApi.exportOutletExcel(state.outletFilter, {
+          type: state.period,
+          date: state.currentDate.toISOString(),
+          viewMode: state.viewMode,
+        });
+      } else if (state.activeTab === "staff") {
+        blob = await reportApi.exportStaffExcel(state.outletFilter, {
+          type: state.period,
+          date: format(state.currentDate, "yyyy-MM-dd"),
+        });
+      } else {
+        return;
+      }
 
-  const handleExportStaff = useCallback(async () => {
-    setIsExporting(true);
-    try {
-      const blob = await reportApi.exportStaffExcel(outletFilter, {
-        type: staffFilterType,
-        date: format(staffDate, "yyyy-MM-dd"),
-      });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `Laporan_Staff_${new Date().toISOString().split("T")[0]}.xlsx`;
+      const prefix =
+        state.activeTab === "keuangan" ? "Laporan_Keuangan" : "Laporan_Staff";
+      link.download = `${prefix}_${new Date().toISOString().split("T")[0]}.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      gooeyToast.success("Berhasil mengexport laporan staff");
+      gooeyToast.success(
+        `Berhasil mengunduh ${state.activeTab === "keuangan" ? "laporan keuangan" : "laporan staff"}`,
+      );
     } catch {
-      gooeyToast.error("Gagal mengexport laporan staff");
+      gooeyToast.error(
+        `Gagal mengunduh ${state.activeTab === "keuangan" ? "laporan keuangan" : "laporan staff"}`,
+      );
     } finally {
-      setIsExporting(false);
+      state.setIsExporting(false);
     }
-  }, [outletFilter, staffFilterType, staffDate]);
+  }, [
+    state.outletFilter,
+    state.period,
+    state.currentDate,
+    state.viewMode,
+    state.activeTab,
+  ]);
 
   // ── Beban Total (HPP + Ops + Gaji + Fees) ──
-  const totalBeban = totals.totalHpp + totals.totalPengeluaran + totals.gajiStaf + totals.totalFees;
+  const totalBeban =
+    totals.totalHpp +
+    totals.totalPengeluaran +
+    totals.gajiStaf +
+    totals.totalFees;
+
+  // ── Available Periods mapping ──
+  const getPeriodOptions = useCallback(() => {
+    if (state.activeTab === "keuangan" && state.viewMode === "compare") {
+      return [
+        { value: "daily", label: "Harian" },
+        { value: "monthly", label: "Bulanan" },
+        { value: "yearly", label: "Tahunan" },
+      ];
+    }
+    return [
+      { value: "daily", label: "Harian" },
+      { value: "weekly", label: "Mingguan" },
+      { value: "monthly", label: "Bulanan" },
+    ];
+  }, [state.activeTab, state.viewMode]);
+
+  // ── Format unified period label ──
+  const dateLabel = useMemo(() => {
+    if (state.activeTab === "keuangan") {
+      return state.viewMode === "time"
+        ? formatPeriodLabel(state.period as FilterType, state.currentDate)
+        : formatComparePeriodLabel(
+            state.period as CompareFilterType,
+            state.currentDate,
+          );
+    } else if (state.activeTab === "staff") {
+      return formatStaffPeriodLabel(
+        state.period as FilterType,
+        state.currentDate,
+      );
+    } else if (state.activeTab === "stok") {
+      return formatPeriodLabel(state.period as FilterType, state.currentDate);
+    }
+    return "";
+  }, [state.activeTab, state.viewMode, state.period, state.currentDate]);
 
   return (
-    <>
+    <div className="space-y-6">
+      {/* 1. Page Header */}
       <SectionHeader
-        title="Laporan Keuangan"
-        description="Analisis mendalam performa bisnis, laba rugi, dan kinerja operasional outlet Anda."
+        title="Laporan Bisnis"
+        description="Analisis mendalam performa finansial, operasional outlet, kinerja staff, dan perputaran aset."
         actions={
-          <Select value={outletFilter} onValueChange={setOutletFilter}>
-            <SelectTrigger className="w-full sm:w-64 h-10 border-border/60 bg-background/50 focus:bg-background transition-all rounded-md font-bold text-xs uppercase tracking-widest shadow-none">
+          <Select
+            value={state.outletFilter}
+            onValueChange={state.setOutletFilter}
+          >
+            <SelectTrigger className="w-full sm:w-64 h-10 border-border/80 bg-card hover:bg-muted/30 transition-all rounded-md cursor-pointer">
               <SelectValue placeholder="Pilih outlet" />
             </SelectTrigger>
-            <SelectContent className="border-border/80 shadow-2xl">
-              <SelectItem value="all" className="text-xs font-bold uppercase tracking-widest">Semua Outlet</SelectItem>
+            <SelectContent className="border-border shadow-2xl">
+              <SelectItem value="all">Semua Outlet</SelectItem>
               {outlets.map((outlet) => (
-                <SelectItem key={outlet.id} value={outlet.id} className="text-xs font-bold uppercase tracking-widest">
+                <SelectItem key={outlet.id} value={outlet.id}>
                   {outlet.name}
                 </SelectItem>
               ))}
@@ -261,423 +359,821 @@ export default function ReportFinancialContent() {
         }
       />
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4 space-y-4">
-        <TabsList >
-          <TabsTrigger value="keuangan" className="gap-2 px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">
-            Laporan Keuangan
-          </TabsTrigger>
-          <TabsTrigger value="staff" className="gap-2 px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">
-            Laporan Staff
-          </TabsTrigger>
-          <TabsTrigger value="stok" className="gap-2 px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">
-            Stok & Aset
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="keuangan" className="space-y-6">
-          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            {/* P&L Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <SummaryCard
-                title="(+) Pendapatan"
-                value={totals.totalPendapatan}
-                variant="success"
-                highlight={true}
-                icon={<ArrowUpRight className="w-4 h-4" />}
-                description="Total omset dari pesanan selesai"
-              />
-              <SummaryCard
-                title="(+) Pajak"
-                value={totals.totalPajak}
-                variant="info"
-                highlight={true}
-                icon={<Receipt className="w-4 h-4" />}
-                description="Total pajak dari penjualan"
-              />
-              <SummaryCard
-                title="(-) Beban & HPP"
-                value={totalBeban}
-                variant="destructive"
-                highlight={true}
-                icon={<ArrowDownRight className="h-4 w-4" />}
-                description={`Total akumulasi beban modal & operasional`}
-                tooltip={
-                  <div className="space-y-3 p-1">
-                    <div>
-                      <p className="font-bold text-foreground mb-1 uppercase tracking-widest text-[10px]">Daftar Beban & Modal:</p>
-                      <p className="text-muted-foreground opacity-80">Total biaya yang mengurangi pendapatan kotor untuk menghasilkan laba bersih.</p>
-                    </div>
-                    <div className="space-y-3 pt-3 border-t border-border/40">
-                      <div className="flex items-start gap-2">
-                        <div className="h-1.5 w-1.5 rounded-full bg-amber-500 mt-1 shrink-0" />
-                        <div>
-                          <span className="font-bold block text-[10px] uppercase tracking-wider text-amber-600">1. Modal (HPP)</span>
-                          <p className="opacity-70">Harga Pokok Penjualan dari barang terjual.</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <div className="h-1.5 w-1.5 rounded-full bg-rose-500 mt-1 shrink-0" />
-                        <div>
-                          <span className="font-bold block text-[10px] uppercase tracking-wider text-rose-600">2. Beban Ops</span>
-                          <p className="opacity-70">Biaya operasional harian / bulanan.</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <div className="h-1.5 w-1.5 rounded-full bg-blue-500 mt-1 shrink-0" />
-                        <div>
-                          <span className="font-bold block text-[10px] uppercase tracking-wider text-blue-600">3. Komisi/Gaji</span>
-                          <p className="opacity-70">Bonus staf per transaksi atau layanan.</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <div className="h-1.5 w-1.5 rounded-full bg-slate-400 mt-1 shrink-0" />
-                        <div>
-                          <span className="font-bold block text-[10px] uppercase tracking-wider text-slate-500">4. Biaya Layanan</span>
-                          <p className="opacity-70">Potongan platform atau biaya bank.</p>
-                        </div>
-                      </div>
-                    </div>
-                    <p className="border-t border-border/40 pt-2 italic text-[9px] font-bold text-center opacity-60">Laba Bersih = Penjualan - Total Beban</p>
-                  </div>
-                }
-              />
-              <SummaryCard
-                title="= Laba Bersih"
-                value={totals.labaBersih}
-                variant={totals.labaBersih >= 0 ? "success" : "destructive"}
-                highlight={true}
-                icon={<TrendingDown className="w-4 h-4" />}
-                description="Keuntungan bersih yang dapat ditarik"
-                tooltip={
-                  <div className="space-y-2 p-1">
-                    <p className="font-bold text-foreground uppercase tracking-widest text-[10px]">Laba Bersih (Net Profit):</p>
-                    <p className="text-muted-foreground opacity-80">Keuntungan bersih setelah dikurangi semua modal (HPP), biaya operasional, gaji, dan biaya layanan.</p>
-                    <div className="bg-muted/50 border border-border/40 p-2 rounded text-[10px] font-bold tabular-nums mt-2 text-center">
-                      LABA = OMSET - BEBAN
-                    </div>
-                  </div>
-                }
-              />
+      {/* 2. ADAPTIVE SPLIT GRID LAYOUT */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        {/* LEFT COLUMN: Report Section Switcher */}
+        <div className="lg:col-span-1">
+          {/* Desktop Sidebar Switcher (hidden on mobile) */}
+          <div className="hidden lg:block space-y-3">
+            <div className="text-xs font-semibold text-muted-foreground px-1">
+              Menu Laporan
             </div>
-          </div>
-
-          {/* View Mode Toggle + Export */}
-          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
-            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)}>
-              <TabsList className="bg-muted/50 border border-border/40 p-1 rounded-md h-auto gap-1 w-full md:w-auto">
-                <TabsTrigger value="time" className="px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">
-                  Laporan Waktu
-                </TabsTrigger>
-                <TabsTrigger value="compare" className="px-4 py-1.5 font-bold uppercase tracking-widest text-[10px]">
-                  Bandingkan Outlet
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-
-            <div className="flex items-center gap-2 w-full md:w-auto ml-auto">
-              <Button
-                onClick={handleExport}
-                disabled={isExporting}
-                variant="outline"
-                className="h-10 w-full md:w-auto font-bold text-[10px] uppercase tracking-widest border-border/60 hover:bg-muted/50 transition-all shadow-none"
+            <div className="flex flex-col gap-2">
+              {/* Keuangan tab card */}
+              <button
+                onClick={() => state.setActiveTab("keuangan")}
+                className={cn(
+                  "flex items-center gap-3 w-full text-left p-3.5 rounded-lg border transition-all cursor-pointer shadow-sm",
+                  state.activeTab === "keuangan"
+                    ? "bg-primary border-primary text-white"
+                    : "bg-card hover:bg-muted/40 border-border/80 text-foreground",
+                )}
               >
-                {isExporting ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <FileSpreadsheet className="w-4 h-4 mr-2 text-emerald-500" />
-                )}
-                {isExporting ? "Mengexport..." : "Export Excel"}
-              </Button>
-            </div>
-          </div>
-
-          {/* Filter & Date Navigation */}
-          <Card className="rounded-md gap-0 py-0 border border-border/80 bg-background shadow-sm overflow-hidden">
-            <CardContent className="p-4 bg-muted/30 border-b border-border/40 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
-              {/* Filter Buttons */}
-              <div className="flex w-full lg:w-auto bg-muted/50 p-1 rounded-md border border-border/40 overflow-x-auto hide-scrollbar gap-1">
-                {viewMode === "time" ? (
-                  <>
-                    <FilterButton active={filterType === "daily"} onClick={() => setFilterType("daily")}>Harian</FilterButton>
-                    <FilterButton active={filterType === "weekly"} onClick={() => setFilterType("weekly")}>Mingguan</FilterButton>
-                    <FilterButton active={filterType === "monthly"} onClick={() => setFilterType("monthly")}>Bulanan</FilterButton>
-                  </>
-                ) : (
-                  <>
-                    <FilterButton active={compareFilterType === "daily"} onClick={() => setCompareFilterType("daily")}>Harian</FilterButton>
-                    <FilterButton active={compareFilterType === "monthly"} onClick={() => setCompareFilterType("monthly")}>Bulanan</FilterButton>
-                    <FilterButton active={compareFilterType === "yearly"} onClick={() => setCompareFilterType("yearly")}>Tahunan</FilterButton>
-                  </>
-                )}
-              </div>
-
-              {/* Date Selector */}
-              <div className="flex items-center justify-between lg:justify-center w-full lg:w-auto gap-2 lg:gap-6 px-1 lg:px-2 bg-background/50 border border-border/40 rounded-md p-1">
-                <Button
-                  onClick={() => adjustDate(-1)}
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 rounded-full hover:bg-muted/50 transition-all">
-                  <ChevronLeft className="w-5 h-5" />
-                </Button>
-                <div className="text-foreground flex flex-1 items-center justify-center gap-3 font-bold lg:flex-none min-w-0">
-                  <CalendarIcon className="w-4 h-4 text-emerald-500 opacity-60 shrink-0" />
-                  <span className="text-xs sm:text-sm uppercase tracking-widest text-center truncate px-2 font-bold opacity-90 tabular-nums">
-                    {viewMode === "time"
-                      ? formatPeriodLabel(filterType, currentDate)
-                      : formatComparePeriodLabel(compareFilterType, currentDate)}
-                  </span>
-                </div>
-                <Button
-                  onClick={() => adjustDate(1)}
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 rounded-full hover:bg-muted/50 transition-all">
-                  <ChevronRight className="w-5 h-5" />
-                </Button>
-              </div>
-
-              <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/5 border border-emerald-500/20">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-600/70">Verified Data</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Financial Table */}
-          <Card className="rounded-md gap-0 py-0 border border-border/80 bg-background shadow-sm overflow-hidden relative">
-            {isLoading && (
-              <div className="absolute inset-0 bg-background/60 backdrop-blur-md z-10 flex flex-col items-center justify-center space-y-3">
-                <div className="relative">
-                  <div className="h-10 w-10 rounded-full border-2 border-emerald-500/20 border-t-emerald-500 animate-spin" />
-                  <Receipt className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500" />
-                </div>
-                <span className="text-[10px] font-bold text-foreground/70 uppercase tracking-[0.2em] animate-pulse">
-                  Mengolah Laporan...
-                </span>
-              </div>
-            )}
-            <ReportFinancialTable
-              data={activeData || []}
-              totals={totals}
-              hideTrend={viewMode === "compare"}
-              labelHeader={viewMode === "compare" ? "Nama Outlet" : "Tanggal"}
-            />
-          </Card>
-        </TabsContent>
-
-        {/* ═══════ TAB 2: Laporan Staff ═══════ */}
-        <TabsContent value="staff" className="space-y-6">
-          {/* Staff Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <SummaryCard
-              title="Total Transaksi"
-              isCurrency={false}
-              value={staffTotals.transactions}
-              icon={<Receipt className="w-4 h-4 text-slate-500" />}
-            />
-            <SummaryCard
-              title="Total Penjualan (Kasir)"
-              value={staffTotals.revenue}
-              icon={<Wallet className="w-4 h-4 text-emerald-500" />}
-            />
-            <SummaryCard
-              title="Total Komisi (Layanan)"
-              value={staffTotals.commission}
-              icon={<Users className="w-4 h-4 text-indigo-500" />}
-            />
-          </div>
-
-          {/* Staff Date Filter */}
-          <Card className="rounded-md py-3">
-            <CardContent className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
-              <div className="flex w-full lg:w-auto bg-muted p-1 rounded-md border border-border overflow-x-auto hide-scrollbar">
-                <FilterButton
-                  active={staffFilterType === "daily"}
-                  onClick={() => setStaffFilterType("daily")}>
-                  Harian
-                </FilterButton>
-                <FilterButton
-                  active={staffFilterType === "weekly"}
-                  onClick={() => setStaffFilterType("weekly")}>
-                  Mingguan
-                </FilterButton>
-                <FilterButton
-                  active={staffFilterType === "monthly"}
-                  onClick={() => setStaffFilterType("monthly")}>
-                  Bulanan
-                </FilterButton>
-              </div>
-              <div className="flex items-center justify-between lg:justify-center w-full lg:w-auto gap-2 lg:gap-6 px-1 lg:px-2">
-                <Button
-                  onClick={() => adjustStaffDate(-1)}
-                  variant="ghost"
-                  size="icon-sm"
-                  className="rounded-full shrink-0">
-                  <ChevronLeft className="w-6 h-6" />
-                </Button>
-                <div className="text-foreground flex items-center justify-center gap-2 lg:gap-3 font-bold flex-1 lg:flex-none min-w-0">
-                  <CalendarIcon className="w-5 h-5 text-emerald-500 hidden sm:block shrink-0" />
-                  <span className="text-sm sm:text-base lg:text-lg text-center truncate px-2">
-                    {formatStaffPeriodLabel(staffFilterType, staffDate)}
-                  </span>
-                </div>
-                <Button
-                  onClick={() => adjustStaffDate(1)}
-                  variant="ghost"
-                  size="icon-sm"
-                  className="rounded-full shrink-0">
-                  <ChevronRight className="w-6 h-6" />
-                </Button>
-              </div>
-
-              <div className="flex items-center gap-2 ml-auto">
-                <Button
-                  onClick={handleExportStaff}
-                  disabled={isExporting}
-                  className="h-10">
-                  {isExporting ? (
-                    <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-                  ) : (
-                    <FileSpreadsheet className="w-4 h-4 shrink-0" />
+                <div
+                  className={cn(
+                    "p-2 rounded-md",
+                    state.activeTab === "keuangan" ? "bg-white/10" : "bg-muted",
                   )}
-                  {isExporting ? "Mengexport..." : "Export Excel"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Staff Table */}
-          <Card className="rounded-md py-0 overflow-hidden relative">
-            {isLoadingStaff && (
-              <div className="absolute inset-0 bg-background/70 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-500 mb-2"></div>
-                <span className="text-xs font-bold text-primary uppercase tracking-widest text-center">
-                  Memuat Data Staff...
-                </span>
-              </div>
-            )}
-            <ReportStaffTable data={staffData || []} totals={staffTotals} />
-          </Card>
-        </TabsContent>
-
-        {/* ═══════ TAB 3: Stok & Aset ═══════ */}
-        <TabsContent value="stok" className="space-y-6">
-          {/* Stok Summary */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <SummaryCard
-              title="📦 Total Pembelian Stok (Aset)"
-              value={stokTotals.totalPembelian}
-              icon={<Package className="w-4 h-4 text-amber-500" />}
-              description="Tidak mempengaruhi perhitungan laba bersih"
-              tooltip={
-                <div className="space-y-3">
-                  <div>
-                    <p className="font-bold text-foreground mb-1">Total Pembelian Stok:</p>
-                    <p>Akumulasi biaya yang Anda keluarkan untuk membeli persediaan barang (Stock In) dalam periode ini.</p>
-                  </div>
-                  <div className="space-y-2 text-rose-500 bg-rose-500/5 p-2 rounded border border-rose-500/20">
-                    <p className="font-semibold text-xs uppercase">Penting:</p>
-                    <p>Pembelian stok **bukanlah pengurang laba bersih** (bukan HPP). Ini adalah aset dalam bentuk barang.</p>
-                    <p className="mt-1">Laba Anda hanya berkurang saat barang tersebut **terjual** (dicatat sebagai HPP di tab Keuangan).</p>
+                >
+                  <Receipt className="w-5 h-5 shrink-0" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="">Keuangan & Omset</div>
+                  <div
+                    className={cn(
+                      "text-xs truncate mt-0.5",
+                      state.activeTab === "keuangan"
+                        ? "text-white/70"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    Laba Rugi, HPP & Operasional
                   </div>
                 </div>
-              }
-            />
-            <SummaryCard
-              title="Jumlah Transaksi (Periode)"
-              value={stokTotals.jumlahTransaksi}
-              isCurrency={false}
-              icon={<Receipt className="w-4 h-4 text-slate-500" />}
-              description="Jumlah order completed dalam periode ini"
-            />
-          </div>
+              </button>
 
-          {/* Stok Date Filter */}
-          <Card className="rounded-md py-3">
-            <CardContent className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
-              <div className="flex w-full lg:w-auto bg-muted p-1 rounded-md border border-border overflow-x-auto hide-scrollbar">
-                <FilterButton
-                  active={stockFilterType === "daily"}
-                  onClick={() => setStockFilterType("daily")}>
-                  Harian
-                </FilterButton>
-                <FilterButton
-                  active={stockFilterType === "weekly"}
-                  onClick={() => setStockFilterType("weekly")}>
-                  Mingguan
-                </FilterButton>
-                <FilterButton
-                  active={stockFilterType === "monthly"}
-                  onClick={() => setStockFilterType("monthly")}>
-                  Bulanan
-                </FilterButton>
-              </div>
-              <div className="flex items-center justify-between lg:justify-center w-full lg:w-auto gap-2 lg:gap-6 px-1 lg:px-2">
-                <Button
-                  onClick={() => adjustStockDate(-1)}
-                  variant="ghost"
-                  size="icon-sm"
-                  className="rounded-full shrink-0">
-                  <ChevronLeft className="w-6 h-6" />
-                </Button>
-                <div className="text-foreground flex items-center justify-center gap-2 lg:gap-3 font-bold flex-1 lg:flex-none min-w-0">
-                  <CalendarIcon className="w-5 h-5 text-emerald-500 hidden sm:block shrink-0" />
-                  <span className="text-sm sm:text-base lg:text-lg text-center truncate px-2">
-                    {formatPeriodLabel(stockFilterType, stockDate)}
-                  </span>
+              {/* Staff tab card */}
+              <button
+                onClick={() => state.setActiveTab("staff")}
+                className={cn(
+                  "flex items-center gap-3 w-full text-left p-3.5 rounded-lg border transition-all cursor-pointer shadow-sm",
+                  state.activeTab === "staff"
+                    ? "bg-primary border-primary text-white"
+                    : "bg-card hover:bg-muted/40 border-border/80 text-foreground",
+                )}
+              >
+                <div
+                  className={cn(
+                    "p-2 rounded-md",
+                    state.activeTab === "staff" ? "bg-white/10" : "bg-muted",
+                  )}
+                >
+                  <Users className="w-5 h-5 shrink-0" />
                 </div>
-                <Button
-                  onClick={() => adjustStockDate(1)}
-                  variant="ghost"
-                  size="icon-sm"
-                  className="rounded-full shrink-0">
-                  <ChevronRight className="w-6 h-6" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="flex-1 min-w-0">
+                  <div className="">Kinerja Staff</div>
+                  <div
+                    className={cn(
+                      "text-xs truncate mt-0.5",
+                      state.activeTab === "staff"
+                        ? "text-white/70"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    Komisi Layanan & Kasir
+                  </div>
+                </div>
+              </button>
 
-          {/* Info Card */}
-          <div className="group rounded-md border border-blue-500/20 bg-blue-500/5 p-5 shadow-sm relative overflow-hidden transition-all hover:bg-blue-500/10">
-            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
-              <Package className="h-16 w-16" />
-            </div>
-            <div className="flex items-start gap-4 relative z-10">
-              <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20 shrink-0">
-                <HelpCircle className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-1.5">
-                  Catatan Penting: Pembelian Stok & Aset
-                </h3>
-                <p className="text-[11px] font-medium text-foreground/70 leading-relaxed max-w-2xl">
-                  Pembelian stok dicatat sebagai penambahan aset (inventory), <span className="font-bold text-blue-600">bukanlah pengurang laba operasional (HPP)</span>.
-                  Data ini ditarik dari log stok masuk dan dihitung berdasarkan nilai perolehan. Laba Anda hanya berkurang secara finansial saat barang tersebut <span className="underline decoration-blue-500/30">terjual</span>.
-                </p>
-              </div>
+              {/* Stok tab card */}
+              <button
+                onClick={() => state.setActiveTab("stok")}
+                className={cn(
+                  "flex items-center gap-3 w-full text-left p-3.5 rounded-lg border transition-all cursor-pointer shadow-sm",
+                  state.activeTab === "stok"
+                    ? "bg-primary border-primary text-white"
+                    : "bg-card hover:bg-muted/40 border-border/80 text-foreground",
+                )}
+              >
+                <div
+                  className={cn(
+                    "p-2 rounded-md",
+                    state.activeTab === "stok" ? "bg-white/10" : "bg-muted",
+                  )}
+                >
+                  <Package className="w-5 h-5 shrink-0" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div>Stok & Inventaris</div>
+                  <div
+                    className={cn(
+                      "text-xs truncate mt-0.5",
+                      state.activeTab === "stok"
+                        ? "text-white/70"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    Nilai Pengadaan Stok Masuk
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
 
-          {/* Stok Purchase Table */}
-          <Card className="rounded-md py-0 overflow-hidden relative">
-            {isLoadingStok && (
-              <div className="absolute inset-0 bg-background/70 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-500 mb-2"></div>
-                <span className="text-xs font-bold text-primary uppercase tracking-widest text-center">
-                  Memuat Data Stok...
-                </span>
-              </div>
-            )}
-            <StockAssetTable data={timeDataStok || []} totalPembelian={stokTotals.totalPembelian} />
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </>
+          {/* Mobile Segmented Switcher (hidden on desktop) */}
+          <div className="lg:hidden flex bg-muted/65 p-1 rounded-lg border border-border/40 w-full mb-1">
+            <button
+              onClick={() => state.setActiveTab("keuangan")}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1.5 py-2  rounded-md transition-all cursor-pointer",
+                state.activeTab === "keuangan"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground/85",
+              )}
+            >
+              <Receipt className="w-3.5 h-3.5 shrink-0" />
+              <span>Keuangan</span>
+            </button>
+            <button
+              onClick={() => state.setActiveTab("staff")}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1.5 py-2  rounded-md transition-all cursor-pointer",
+                state.activeTab === "staff"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground/85",
+              )}
+            >
+              <Users className="w-3.5 h-3.5 shrink-0" />
+              <span>Staff</span>
+            </button>
+            <button
+              onClick={() => state.setActiveTab("stok")}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1.5 py-2  rounded-md transition-all cursor-pointer",
+                state.activeTab === "stok"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground/85",
+              )}
+            >
+              <Package className="w-3.5 h-3.5 shrink-0" />
+              <span>Stok</span>
+            </button>
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN: Interactive Control Panel & Dashboard Visualizations */}
+        <div className="lg:col-span-3 space-y-6">
+          {/* Unified compact control toolbar */}
+          <UnifiedControlPanel
+            activeTab={state.activeTab}
+            viewMode={state.viewMode}
+            setViewMode={state.setViewMode}
+            period={state.period}
+            setPeriod={state.setPeriod}
+            adjustDate={state.adjustDate}
+            dateLabel={dateLabel}
+            isExporting={state.isExporting}
+            handleExport={handleExport}
+            getPeriodOptions={getPeriodOptions}
+          />
+
+          {/* Conditional content rendering */}
+          {state.activeTab === "keuangan" && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              {/* Performance board */}
+              <FinancialPerformanceBoard
+                totals={totals}
+                totalBeban={totalBeban}
+                viewMode={state.viewMode}
+                activeData={activeData || []}
+              />
+
+              {/* Table wrapper that hides the empty settings toolbar of the DataTable */}
+              <Card className="rounded-lg border border-border/80 bg-background shadow-sm overflow-hidden relative [&_div.flex.flex-col.gap-4]:hidden">
+                {isLoading && (
+                  <div className="absolute inset-0 bg-background/60 backdrop-blur-md z-15 flex flex-col items-center justify-center space-y-3">
+                    <div className="relative">
+                      <div className="h-10 w-10 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+                      <Receipt className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
+                    </div>
+                    <span className="text-xs font-semibold text-foreground/80 animate-pulse">
+                      Mengolah Laporan...
+                    </span>
+                  </div>
+                )}
+                <ReportFinancialTable
+                  data={activeData || []}
+                  totals={totals}
+                  hideTrend={state.viewMode === "compare"}
+                  labelHeader={
+                    state.viewMode === "compare" ? "Nama Outlet" : "Tanggal"
+                  }
+                />
+              </Card>
+            </div>
+          )}
+
+          {state.activeTab === "staff" && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              {/* Staff metrics */}
+              <StaffPerformanceBoard totals={staffTotals} />
+
+              {/* Table wrapper that hides the empty settings toolbar of the DataTable */}
+              <Card className="rounded-lg border border-border/80 bg-background shadow-sm overflow-hidden relative [&_div.flex.flex-col.gap-4]:hidden">
+                {isLoading && (
+                  <div className="absolute inset-0 bg-background/60 backdrop-blur-md z-15 flex flex-col items-center justify-center space-y-3">
+                    <div className="relative">
+                      <div className="h-10 w-10 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+                      <Users className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
+                    </div>
+                    <span className="text-xs font-semibold text-foreground/80 animate-pulse">
+                      Mengolah Laporan Staff...
+                    </span>
+                  </div>
+                )}
+                <ReportStaffTable data={staffData || []} totals={staffTotals} />
+              </Card>
+            </div>
+          )}
+
+          {state.activeTab === "stok" && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              {/* Stok metrics */}
+              <StockAssetBoard totals={stokTotals} />
+
+              {/* Table wrapper that hides the empty settings toolbar of the DataTable */}
+              <Card className="rounded-lg border border-border/80 bg-background shadow-sm overflow-hidden relative [&_div.flex.flex-col.gap-4]:hidden">
+                {isLoading && (
+                  <div className="absolute inset-0 bg-background/60 backdrop-blur-md z-15 flex flex-col items-center justify-center space-y-3">
+                    <div className="relative">
+                      <div className="h-10 w-10 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+                      <Package className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
+                    </div>
+                    <span className="text-xs font-semibold text-foreground/80 animate-pulse">
+                      Mengolah Laporan Aset...
+                    </span>
+                  </div>
+                )}
+                <StockAssetTable
+                  data={timeData || []}
+                  totalPembelian={stokTotals.totalPembelian}
+                />
+              </Card>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
-function StockAssetTable({ data, totalPembelian }: { data: any[]; totalPembelian: number }) {
+// ── SUB-COMPONENTS ──
+
+// 1. Unified Control Toolbar
+function UnifiedControlPanel({
+  activeTab,
+  viewMode,
+  setViewMode,
+  period,
+  setPeriod,
+  adjustDate,
+  dateLabel,
+  isExporting,
+  handleExport,
+  getPeriodOptions,
+}: {
+  activeTab: string;
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
+  period: string;
+  setPeriod: (period: string) => void;
+  adjustDate: (amount: number) => void;
+  dateLabel: string;
+  isExporting: boolean;
+  handleExport: () => void;
+  getPeriodOptions: () => { value: string; label: string }[];
+}) {
+  const showModeToggle = activeTab === "keuangan";
+  const periodOptions = getPeriodOptions();
+
+  return (
+    <Card className="rounded-lg border border-border/80 bg-card p-3.5 shadow-sm select-none">
+      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+        {/* Left side: View Mode & Period Selectors */}
+        <div className="flex flex-wrap items-center gap-2">
+          {showModeToggle && (
+            <div className="flex bg-muted/65 p-0.5 rounded-lg border border-border/40 w-full sm:w-auto">
+              <button
+                onClick={() => setViewMode("time")}
+                className={cn(
+                  "flex-1 sm:flex-none px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer",
+                  viewMode === "time"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground/85",
+                )}
+              >
+                Waktu
+              </button>
+              <button
+                onClick={() => setViewMode("compare")}
+                className={cn(
+                  "flex-1 sm:flex-none px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer",
+                  viewMode === "compare"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground/85",
+                )}
+              >
+                Bandingkan
+              </button>
+            </div>
+          )}
+
+          <div className="flex bg-muted/65 p-0.5 rounded-lg border border-border/40 w-full sm:w-auto">
+            {periodOptions.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setPeriod(opt.value)}
+                className={cn(
+                  "flex-1 sm:flex-none px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer",
+                  period === opt.value
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground/85",
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Right side: Date Navigator & Export */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="flex items-center justify-between sm:justify-end gap-1 bg-muted/30 border border-border/50 rounded-lg p-0.5">
+            <Button
+              onClick={() => adjustDate(-1)}
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-md hover:bg-muted/60 transition-all shrink-0 cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4 text-foreground/80" />
+            </Button>
+
+            <div className="flex items-center gap-2 px-3 min-w-[140px] justify-center">
+              <CalendarIcon className="w-3.5 h-3.5 text-primary opacity-70 shrink-0" />
+              <span className="text-xs font-semibold text-center truncate tabular-nums text-foreground/90">
+                {dateLabel}
+              </span>
+            </div>
+
+            <Button
+              onClick={() => adjustDate(1)}
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-md hover:bg-muted/60 transition-all shrink-0 cursor-pointer"
+            >
+              <ChevronRight className="w-4 h-4 text-foreground/80" />
+            </Button>
+          </div>
+
+          {(activeTab === "keuangan" || activeTab === "staff") && (
+            <Button
+              onClick={handleExport}
+              disabled={isExporting}
+              variant="outline"
+              className="h-9 font-semibold text-xs border-border/80 bg-background hover:bg-muted/50 transition-all shadow-sm cursor-pointer"
+            >
+              {isExporting ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" />
+              ) : (
+                <FileSpreadsheet className="w-3.5 h-3.5 mr-2 text-emerald-600" />
+              )}
+              {isExporting ? "Mengexport..." : "Export Excel"}
+            </Button>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+// 2. Financial performance HERO Board
+function FinancialPerformanceBoard({
+  totals,
+  totalBeban,
+  viewMode,
+  activeData,
+}: {
+  totals: Totals;
+  totalBeban: number;
+  viewMode: ViewMode;
+  activeData: any[];
+}) {
+  const sparklineData = useMemo(() => {
+    if (viewMode !== "time" || !activeData || activeData.length === 0)
+      return [];
+    return activeData.map((item) => item.labaBersih || 0);
+  }, [activeData, viewMode]);
+
+  const totalOmset = totals.totalPendapatan;
+  const isNetProfitPositive = totals.labaBersih >= 0;
+
+  // Compute percentages relative to total revenue or total outflow + profit
+  const totalBase = Math.max(
+    totalOmset,
+    totalBeban + (isNetProfitPositive ? totals.labaBersih : 0),
+    1,
+  );
+
+  const hppPct = (totals.totalHpp / totalBase) * 100;
+  const opsPct = (totals.totalPengeluaran / totalBase) * 100;
+  const staffPct = (totals.gajiStaf / totalBase) * 100;
+  const feesPct = (totals.totalFees / totalBase) * 100;
+  const labaPct =
+    ((isNetProfitPositive ? totals.labaBersih : 0) / totalBase) * 100;
+
+  const fmt = (val: number) => formatCurrency(val);
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Hero Card: Laba Bersih */}
+      <Card
+        className={cn(
+          "md:col-span-1 rounded-lg border-l-[4px] border-border/80 shadow-sm p-5 flex flex-col justify-between transition-all",
+          isNetProfitPositive
+            ? "border-l-emerald-500 bg-emerald-500/5 dark:bg-emerald-950/10 hover:bg-emerald-500/10"
+            : "border-l-rose-500 bg-rose-500/5 dark:bg-rose-950/10 hover:bg-rose-500/10",
+        )}
+      >
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-muted-foreground opacity-85">
+              Laba Bersih
+            </span>
+            <Badge
+              className={cn(
+                "font-semibold text-[10px] px-2 shadow-none border-none py-0.5",
+                isNetProfitPositive
+                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                  : "bg-rose-500/15 text-rose-600 dark:text-rose-400",
+              )}
+            >
+              {isNetProfitPositive ? "Untung" : "Rugi"}
+            </Badge>
+          </div>
+          <h2
+            className={cn(
+              "text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums",
+              isNetProfitPositive
+                ? "text-emerald-600 dark:text-emerald-400"
+                : "text-rose-600 dark:text-rose-400",
+            )}
+          >
+            {fmt(totals.labaBersih)}
+          </h2>
+          <p className="text-xs text-muted-foreground/70 mt-1 leading-normal">
+            Laba setelah dikurangi harga pokok penjualan, biaya ops, komisi
+            staff, dan bank fees.
+          </p>
+        </div>
+
+        {viewMode === "time" && sparklineData.length >= 2 && (
+          <div className="mt-4 pt-3 border-t border-border/20 flex items-center justify-between gap-3">
+            <div>
+              <span className="text-[10px] font-semibold text-muted-foreground/65 block">
+                Tren Laba Bersih
+              </span>
+              <span className="text-xs font-semibold text-foreground/85">
+                {sparklineData.length} Periode Data
+              </span>
+            </div>
+            <div className="bg-background/90 dark:bg-muted/40 p-1 rounded border border-border/20 flex items-center justify-center shrink-0">
+              <Sparkline
+                data={sparklineData}
+                color={isNetProfitPositive ? "#10b981" : "#f43f5e"}
+                width={100}
+                height={26}
+              />
+            </div>
+          </div>
+        )}
+      </Card>
+
+      {/* Allocation Breakdown and Cost Distribution */}
+      <Card className="md:col-span-2 rounded-lg border-l-[4px] border-l-primary/20 bg-card p-5 shadow-sm flex flex-col justify-between hover:bg-muted/10 transition-all">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-muted-foreground opacity-85">
+              Alokasi Pengeluaran & Laba
+            </span>
+            <span className="text-[10px] font-semibold text-muted-foreground/65">
+              Pendapatan Kotor: {fmt(totalOmset)}
+            </span>
+          </div>
+
+          {/* Ratio bar */}
+          <div className="h-3 w-full rounded-full bg-muted overflow-hidden flex shadow-inner">
+            {labaPct > 0 && (
+              <div
+                className="bg-emerald-500 h-full transition-all duration-300"
+                style={{ width: `${labaPct}%` }}
+                title={`Laba Bersih: ${labaPct.toFixed(1)}%`}
+              />
+            )}
+            {hppPct > 0 && (
+              <div
+                className="bg-amber-500 h-full transition-all duration-300"
+                style={{ width: `${hppPct}%` }}
+                title={`HPP (Modal): ${hppPct.toFixed(1)}%`}
+              />
+            )}
+            {opsPct > 0 && (
+              <div
+                className="bg-rose-500 h-full transition-all duration-300"
+                style={{ width: `${opsPct}%` }}
+                title={`Beban Ops: ${opsPct.toFixed(1)}%`}
+              />
+            )}
+            {staffPct > 0 && (
+              <div
+                className="bg-blue-500 h-full transition-all duration-300"
+                style={{ width: `${staffPct}%` }}
+                title={`Komisi Staff: ${staffPct.toFixed(1)}%`}
+              />
+            )}
+            {feesPct > 0 && (
+              <div
+                className="bg-slate-400 h-full transition-all duration-300"
+                style={{ width: `${feesPct}%` }}
+                title={`Biaya Layanan: ${feesPct.toFixed(1)}%`}
+              />
+            )}
+          </div>
+
+          {/* Legends */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 pt-1 text-xs">
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-1.5">
+                <div className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+                <span className="font-semibold text-foreground/80 truncate">
+                  Laba Bersih
+                </span>
+              </div>
+              <p className="font-bold pl-3.5 tabular-nums text-emerald-600 dark:text-emerald-400">
+                {labaPct.toFixed(1)}%{" "}
+                <span className="font-medium text-muted-foreground/60 text-[10px] block sm:inline">
+                  ({fmt(totals.labaBersih)})
+                </span>
+              </p>
+            </div>
+
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-1.5">
+                <div className="h-2 w-2 rounded-full bg-amber-500 shrink-0" />
+                <span className="font-semibold text-foreground/80 truncate">
+                  HPP (Modal)
+                </span>
+              </div>
+              <p className="font-bold pl-3.5 tabular-nums text-amber-600 dark:text-amber-400">
+                {hppPct.toFixed(1)}%{" "}
+                <span className="font-medium text-muted-foreground/60 text-[10px] block sm:inline">
+                  ({fmt(totals.totalHpp)})
+                </span>
+              </p>
+            </div>
+
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-1.5">
+                <div className="h-2 w-2 rounded-full bg-rose-500 shrink-0" />
+                <span className="font-semibold text-foreground/80 truncate">
+                  Beban Ops
+                </span>
+              </div>
+              <p className="font-bold pl-3.5 tabular-nums text-rose-600 dark:text-rose-400">
+                {opsPct.toFixed(1)}%{" "}
+                <span className="font-medium text-muted-foreground/60 text-[10px] block sm:inline">
+                  ({fmt(totals.totalPengeluaran)})
+                </span>
+              </p>
+            </div>
+
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-1.5">
+                <div className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />
+                <span className="font-semibold text-foreground/80 truncate">
+                  Komisi Staff
+                </span>
+              </div>
+              <p className="font-bold pl-3.5 tabular-nums text-blue-600 dark:text-blue-400">
+                {staffPct.toFixed(1)}%{" "}
+                <span className="font-medium text-muted-foreground/60 text-[10px] block sm:inline">
+                  ({fmt(totals.gajiStaf)})
+                </span>
+              </p>
+            </div>
+
+            <div className="space-y-0.5 col-span-2 sm:col-span-1">
+              <div className="flex items-center gap-1.5">
+                <div className="h-2 w-2 rounded-full bg-slate-400 shrink-0" />
+                <span className="font-semibold text-foreground/80 truncate">
+                  Layanan/Bank
+                </span>
+              </div>
+              <p className="font-bold pl-3.5 tabular-nums text-slate-600 dark:text-slate-400">
+                {feesPct.toFixed(1)}%{" "}
+                <span className="font-medium text-muted-foreground/60 text-[10px] block sm:inline">
+                  ({fmt(totals.totalFees)})
+                </span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 pt-3 border-t border-border/20 grid grid-cols-3 gap-2 text-center">
+          <div>
+            <span className="text-[10px] font-semibold text-muted-foreground/65 block">
+              Omset Penjualan
+            </span>
+            <span className="text-xs sm:text-sm font-bold text-foreground/90 tabular-nums">
+              {fmt(totals.totalPendapatan)}
+            </span>
+          </div>
+          <div>
+            <span className="text-[10px] font-semibold text-muted-foreground/65 block">
+              Pajak Terkumpul
+            </span>
+            <span className="text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 tabular-nums">
+              {totals.totalPajak > 0 ? fmt(totals.totalPajak) : "—"}
+            </span>
+          </div>
+          <div>
+            <span className="text-[10px] font-semibold text-muted-foreground/65 block">
+              Akumulasi Beban
+            </span>
+            <span className="text-xs sm:text-sm font-bold text-rose-600 dark:text-rose-400 tabular-nums">
+              {fmt(totalBeban)}
+            </span>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+// 3. Staff performance Board
+function StaffPerformanceBoard({
+  totals,
+}: {
+  totals: { transactions: number; revenue: number; commission: number };
+}) {
+  const fmt = (val: number) => formatCurrency(val);
+
+  return (
+    <Card className="rounded-lg border-l-[4px] border-l-primary/20 bg-card p-5 shadow-sm hover:bg-muted/10 transition-all">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <span className="text-xs font-semibold text-muted-foreground opacity-85 block mb-1">
+            Ringkasan Kinerja Staff
+          </span>
+          <p className="text-xs text-muted-foreground max-w-md">
+            Komisi untuk staff terapis/layanan, omset kasir, dan volume
+            transaksi yang selesai diproses.
+          </p>
+        </div>
+
+        {/* Responsive wrap layout to prevent column overlap on mobile */}
+        <div className="flex flex-row flex-wrap items-center justify-between sm:justify-end gap-x-8 gap-y-3 w-full md:w-auto pt-3 md:pt-0 border-t md:border-t-0 border-border/20">
+          <div className="min-w-[80px]">
+            <span className="text-[10px] font-semibold text-muted-foreground/65 block mb-0.5">
+              Total Komisi
+            </span>
+            <span className="text-sm sm:text-base font-bold text-blue-600 dark:text-blue-400 tabular-nums">
+              {fmt(totals.commission)}
+            </span>
+          </div>
+          <div className="min-w-[80px]">
+            <span className="text-[10px] font-semibold text-muted-foreground/65 block mb-0.5">
+              Omset Kasir
+            </span>
+            <span className="text-sm sm:text-base font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+              {fmt(totals.revenue)}
+            </span>
+          </div>
+          <div className="min-w-[80px]">
+            <span className="text-[10px] font-semibold text-muted-foreground/65 block mb-0.5">
+              Total Transaksi
+            </span>
+            <span className="text-sm sm:text-base font-bold text-foreground/90 tabular-nums">
+              {totals.transactions} Trx
+            </span>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+// 4. Stock Asset Board
+function StockAssetBoard({
+  totals,
+}: {
+  totals: { jumlahTransaksi: number; totalPembelian: number };
+}) {
+  const fmt = (val: number) => formatCurrency(val);
+
+  return (
+    <div className="space-y-4">
+      <Card className="rounded-lg border-l-[4px] border-l-primary/20 bg-card p-5 shadow-sm hover:bg-muted/10 transition-all">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <span className="text-xs font-semibold text-muted-foreground opacity-85 block mb-1">
+              Ringkasan Pembelian Stok & Aset
+            </span>
+            <p className="text-xs text-muted-foreground max-w-md">
+              Nilai perolehan stok masuk (Stock In) dalam periode berjalan.
+              Belum terhitung sebagai HPP.
+            </p>
+          </div>
+
+          {/* Responsive wrap layout to prevent column overlap on mobile */}
+          <div className="flex flex-row flex-wrap items-center justify-between sm:justify-end gap-x-8 gap-y-3 w-full md:w-auto pt-3 md:pt-0 border-t md:border-t-0 border-border/20">
+            <div className="min-w-[80px]">
+              <span className="text-[10px] font-semibold text-muted-foreground/65 block mb-0.5">
+                Total Pembelian
+              </span>
+              <span className="text-sm sm:text-base font-bold text-amber-600 dark:text-amber-400/80 tabular-nums">
+                {fmt(totals.totalPembelian)}
+              </span>
+            </div>
+            <div className="min-w-[80px]">
+              <span className="text-[10px] font-semibold text-muted-foreground/65 block mb-0.5">
+                Transaksi Masuk
+              </span>
+              <span className="text-sm sm:text-base font-bold text-foreground/90 tabular-nums">
+                {totals.jumlahTransaksi} Order
+              </span>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <div className="group rounded-lg border border-blue-500/20 bg-blue-500/5 dark:bg-blue-950/10 p-4 shadow-sm relative overflow-hidden transition-all hover:bg-blue-500/10">
+        <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:scale-110 transition-transform">
+          <Package className="h-12 w-12 text-blue-600/20" />
+        </div>
+        <div className="flex items-start gap-3 relative z-10">
+          <div className="h-8 w-8 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20 shrink-0">
+            <Info className="h-4.5 w-4.5 text-blue-600" />
+          </div>
+          <div>
+            <h3 className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">
+              Catatan Penting: Pembelian Stok & Aset
+            </h3>
+            <p className="text-[11px] font-medium text-foreground/70 leading-relaxed max-w-3xl">
+              Pembelian stok dicatat sebagai penambahan aset lancar
+              (persediaan),{" "}
+              <span className="font-bold text-blue-600 dark:text-blue-400">
+                bukan pengurang langsung laba bersih
+              </span>
+              . Keuangan Anda baru berkurang secara finansial sebagai modal
+              terpakai ketika barang tersebut terjual (dicatat sebagai HPP di
+              tab Keuangan).
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 5. Stock Asset Table (renders custom table using DataTable)
+function StockAssetTable({
+  data,
+  totalPembelian,
+}: {
+  data: any[];
+  totalPembelian: number;
+}) {
+  const columns: ColumnDef<any>[] = [
+    {
+      accessorKey: "label",
+      header: "Periode",
+      cell: ({ row }) => (
+        <span className="font-bold text-foreground/90 text-xs">
+          {row.original.label}
+        </span>
+      ),
+      footer: () => (
+        <span className="font-semibold text-xs text-muted-foreground opacity-75">
+          Total Periode
+        </span>
+      ),
+    },
+    {
+      accessorKey: "totalPembelian",
+      header: "Pembelian Stok (Aset)",
+      cell: (props: any) => (
+        <span className="text-amber-600 dark:text-amber-400/80 font-bold tabular-nums text-xs">
+          {formatCurrency(props.row.original.totalPembelian || 0)}
+        </span>
+      ),
+      footer: () => (
+        <span className="text-amber-600 dark:text-amber-400/80 font-bold tabular-nums text-xs">
+          {formatCurrency(totalPembelian)}
+        </span>
+      ),
+    },
+  ];
+
   return (
     <DataTable
       data={data}
@@ -687,45 +1183,14 @@ function StockAssetTable({ data, totalPembelian }: { data: any[]; totalPembelian
       showTableInfo={false}
       pagination={false}
       showFooter
-      columns={[
-        {
-          accessorKey: "label",
-          header: "Periode",
-          footer: () => "Total",
-        },
-        {
-          accessorKey: "totalPembelian",
-          header: "Pembelian Stok (Aset)",
-          cell: (props: any) => (
-            <span className="text-amber-600 dark:text-amber-400/80 font-semibold">
-              {formatCurrency(props.row.original.totalPembelian)}
-            </span>
-          ),
-          footer: () => (
-            <span className="text-amber-600 dark:text-amber-400/80 font-bold">
-              {formatCurrency(totalPembelian)}
-            </span>
-          ),
-        },
-      ]}
+      tableId="report-stock"
+      emptyMessage="Belum ada data pembelian stok untuk periode ini."
+      columns={columns}
     />
   );
 }
 
-const FilterButton: React.FC<FilterButtonProps> = ({ children, active, onClick }) => {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "flex-1 lg:flex-none px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all rounded-md whitespace-nowrap shadow-none",
-        active
-          ? "bg-background text-foreground border border-border/60 shadow-sm"
-          : "text-muted-foreground hover:text-foreground/80 hover:bg-muted/30"
-      )}>
-      {children}
-    </button>
-  );
-};
+// ── PERIOD LABEL FORMATTER HELPERS ──
 
 const formatPeriodLabel = (type: FilterType, date: Date): string => {
   if (type === "daily") {
@@ -742,7 +1207,10 @@ const formatPeriodLabel = (type: FilterType, date: Date): string => {
   return "";
 };
 
-const formatComparePeriodLabel = (type: CompareFilterType, date: Date): string => {
+const formatComparePeriodLabel = (
+  type: CompareFilterType,
+  date: Date,
+): string => {
   if (type === "daily") {
     return date.toLocaleDateString("id-ID", {
       weekday: "long",

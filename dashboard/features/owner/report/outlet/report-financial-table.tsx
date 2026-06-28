@@ -41,12 +41,14 @@ export function ReportFinancialTable({
       showTableInfo={false}
       pagination={false}
       showFooter
+      tableId="report-financial"
+      emptyMessage="Belum ada data laporan keuangan untuk periode ini."
       columns={[
         {
           accessorKey: "label",
           header: labelHeader || "Tanggal",
           cell: ({ row }) => <span className="font-bold text-foreground/90 text-xs">{row.original.label}</span>,
-          footer: () => <span className="font-bold uppercase tracking-widest text-[10px] text-muted-foreground opacity-60">Total Periode</span>,
+          footer: () => <span className="font-semibold text-xs text-muted-foreground opacity-75">Total Periode</span>,
         },
         {
           accessorKey: "jumlahTransaksi",
