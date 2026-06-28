@@ -285,16 +285,7 @@ export class ReportService extends BaseService {
       end = endOfDay(refDate);
     }
 
-    const business = await this.db.business.findUnique({
-      where: { id: businessId },
-      include: { outlets: { select: { id: true, name: true } } },
-    });
-
-    if (!business) {
-      return [];
-    }
-
-    const outlets = business.outlets;
+    const outlets = await this.reportRepository.getOutletsByBusinessId(businessId);
     if (outlets.length === 0) {
       return [];
     }

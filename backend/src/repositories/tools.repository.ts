@@ -53,7 +53,7 @@ export class ToolsRepository {
         order: {
           outletId,
           ...COMPLETED_FILTER,
-        date: { gte: startDate, lte: endDate },
+          createdAt: { gte: startDate, lte: endDate },
         },
       },
       select: {
@@ -95,7 +95,7 @@ export class ToolsRepository {
     return db.expense.findMany({
       where: {
         outletId,
-        createdAt: { gte: startDate, lte: endDate },
+        date: { gte: startDate, lte: endDate },
       },
       select: {
         amount: true,

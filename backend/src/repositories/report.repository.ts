@@ -158,4 +158,11 @@ export class ReportRepository extends BaseRepository {
       },
     });
   }
+
+  async getOutletsByBusinessId(businessId: string) {
+    return this.db.outlet.findMany({
+      where: { businessId },
+      select: { id: true, name: true },
+    });
+  }
 }
