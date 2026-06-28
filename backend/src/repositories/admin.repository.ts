@@ -37,13 +37,14 @@ export class AdminRepository {
 
       // Total revenue (from completed orders)
       db.order.aggregate({
-        where: { paymentStatus: "SUCCESS" },
+        where: { orderStatus: "COMPLETED", paymentStatus: "SUCCESS" },
         _sum: { totalAmount: true },
       }),
 
       // Today's revenue
       db.order.aggregate({
         where: {
+          orderStatus: "COMPLETED",
           paymentStatus: "SUCCESS",
           createdAt: { gte: startOfDay },
         },
@@ -53,6 +54,7 @@ export class AdminRepository {
       // Monthly revenue
       db.order.aggregate({
         where: {
+          orderStatus: "COMPLETED",
           paymentStatus: "SUCCESS",
           createdAt: { gte: startOfMonth },
         },
@@ -62,6 +64,7 @@ export class AdminRepository {
       // Previous month revenue
       db.order.aggregate({
         where: {
+          orderStatus: "COMPLETED",
           paymentStatus: "SUCCESS",
           createdAt: {
             gte: previousMonth,
@@ -72,11 +75,12 @@ export class AdminRepository {
       }),
 
       // Total transactions
-      db.order.count({ where: { paymentStatus: "SUCCESS" } }),
+      db.order.count({ where: { orderStatus: "COMPLETED", paymentStatus: "SUCCESS" } }),
 
       // Today's transactions
       db.order.count({
         where: {
+          orderStatus: "COMPLETED",
           paymentStatus: "SUCCESS",
           createdAt: { gte: startOfDay },
         },
@@ -352,6 +356,7 @@ export class AdminRepository {
           outlet: {
             businessId,
           },
+          orderStatus: "COMPLETED",
           paymentStatus: "SUCCESS",
           createdAt: { gte: thirtyDaysAgo },
         },
@@ -362,6 +367,7 @@ export class AdminRepository {
           outlet: {
             businessId,
           },
+          orderStatus: "COMPLETED",
           paymentStatus: "SUCCESS",
           createdAt: { gte: thirtyDaysAgo },
         },
@@ -474,6 +480,7 @@ export class AdminRepository {
     const revenueData = await db.order.groupBy({
       by: ["createdAt"],
       where: {
+        orderStatus: "COMPLETED",
         paymentStatus: "SUCCESS",
         ...dateFilter,
       },
@@ -533,6 +540,7 @@ export class AdminRepository {
           include: {
             orders: {
               where: {
+                orderStatus: "COMPLETED",
                 paymentStatus: "SUCCESS",
                 ...dateFilter,
               },
@@ -596,7 +604,7 @@ export class AdminRepository {
     const [totalTransactions, successfulTransactions, failedTransactions] =
       await Promise.all([
         db.order.count({ where: dateFilter }),
-        db.order.count({ where: { paymentStatus: "SUCCESS", ...dateFilter } }),
+        db.order.count({ where: { orderStatus: "COMPLETED", paymentStatus: "SUCCESS", ...dateFilter } }),
         db.order.count({ where: { paymentStatus: "FAILED", ...dateFilter } }),
       ]);
 
@@ -698,7 +706,8 @@ export class AdminRepository {
                         SUM("totalAmount") as revenue,
                         COUNT(*) as transactions
                     FROM "Order"
-                    WHERE "paymentStatus" = 'SUCCESS'
+                    WHERE "orderStatus" = 'COMPLETED'
+                        AND "paymentStatus" = 'SUCCESS'
                         AND "createdAt" >= ${dateFilter.createdAt.gte || new Date(0)}
                         AND "createdAt" <= ${dateFilter.createdAt.lte}
                     GROUP BY DATE("createdAt")
@@ -711,7 +720,8 @@ export class AdminRepository {
                         SUM("totalAmount") as revenue,
                         COUNT(*) as transactions
                     FROM "Order"
-                    WHERE "paymentStatus" = 'SUCCESS'
+                    WHERE "orderStatus" = 'COMPLETED'
+                        AND "paymentStatus" = 'SUCCESS'
                         AND "createdAt" >= ${dateFilter.createdAt?.gte || new Date(0)}
                     GROUP BY DATE("createdAt")
                     ORDER BY period ASC
@@ -725,7 +735,8 @@ export class AdminRepository {
                         SUM("totalAmount") as revenue,
                         COUNT(*) as transactions
                     FROM "Order"
-                    WHERE "paymentStatus" = 'SUCCESS'
+                    WHERE "orderStatus" = 'COMPLETED'
+                        AND "paymentStatus" = 'SUCCESS'
                         AND "createdAt" >= ${dateFilter.createdAt.gte || new Date(0)}
                         AND "createdAt" <= ${dateFilter.createdAt.lte}
                     GROUP BY DATE("createdAt" - INTERVAL '1 day' * EXTRACT(dow FROM "createdAt"))
@@ -738,7 +749,8 @@ export class AdminRepository {
                         SUM("totalAmount") as revenue,
                         COUNT(*) as transactions
                     FROM "Order"
-                    WHERE "paymentStatus" = 'SUCCESS'
+                    WHERE "orderStatus" = 'COMPLETED'
+                        AND "paymentStatus" = 'SUCCESS'
                         AND "createdAt" >= ${dateFilter.createdAt?.gte || new Date(0)}
                     GROUP BY DATE("createdAt" - INTERVAL '1 day' * EXTRACT(dow FROM "createdAt"))
                     ORDER BY period ASC
@@ -752,7 +764,8 @@ export class AdminRepository {
                         SUM("totalAmount") as revenue,
                         COUNT(*) as transactions
                     FROM "Order"
-                    WHERE "paymentStatus" = 'SUCCESS'
+                    WHERE "orderStatus" = 'COMPLETED'
+                        AND "paymentStatus" = 'SUCCESS'
                         AND "createdAt" >= ${dateFilter.createdAt.gte || new Date(0)}
                         AND "createdAt" <= ${dateFilter.createdAt.lte}
                     GROUP BY DATE_TRUNC('month', "createdAt")
@@ -765,7 +778,8 @@ export class AdminRepository {
                         SUM("totalAmount") as revenue,
                         COUNT(*) as transactions
                     FROM "Order"
-                    WHERE "paymentStatus" = 'SUCCESS'
+                    WHERE "orderStatus" = 'COMPLETED'
+                        AND "paymentStatus" = 'SUCCESS'
                         AND "createdAt" >= ${dateFilter.createdAt?.gte || new Date(0)}
                     GROUP BY DATE_TRUNC('month', "createdAt")
                     ORDER BY period ASC
@@ -819,6 +833,7 @@ export class AdminRepository {
     ] = await Promise.all([
       db.order.aggregate({
         where: {
+          orderStatus: "COMPLETED",
           paymentStatus: "SUCCESS",
           createdAt: { gte: startOfMonth },
         },
@@ -832,6 +847,7 @@ export class AdminRepository {
       }),
       db.order.aggregate({
         where: {
+          orderStatus: "COMPLETED",
           paymentStatus: "SUCCESS",
           createdAt: {
             gte: startOfPrevMonth,
@@ -841,7 +857,7 @@ export class AdminRepository {
         _sum: { totalAmount: true },
       }),
       db.order.aggregate({
-        where: { paymentStatus: "SUCCESS" },
+        where: { orderStatus: "COMPLETED", paymentStatus: "SUCCESS" },
         _sum: {
           totalAmount: true,
           appFee: true,
@@ -887,7 +903,8 @@ export class AdminRepository {
                 FROM "Order" o
                 INNER JOIN "Outlet" ot ON o."outletId" = ot.id
                 INNER JOIN "Business" b ON ot."businessId" = b.id
-                WHERE o."paymentStatus" = 'SUCCESS'
+                WHERE o."orderStatus" = 'COMPLETED'
+                    AND o."paymentStatus" = 'SUCCESS'
                 GROUP BY b.id, b.name
                 ORDER BY SUM(o."totalAmount") DESC
                 LIMIT 5;
@@ -1327,15 +1344,15 @@ export class AdminRepository {
     if (reportType === "summary") {
       const [totalRevenue, appFees, midtransFees] = await Promise.all([
         db.order.aggregate({
-          where: { paymentStatus: "SUCCESS", ...dateFilter },
+          where: { orderStatus: "COMPLETED", paymentStatus: "SUCCESS", ...dateFilter },
           _sum: { totalAmount: true },
         }),
         db.order.aggregate({
-          where: { paymentStatus: "SUCCESS", ...dateFilter },
+          where: { orderStatus: "COMPLETED", paymentStatus: "SUCCESS", ...dateFilter },
           _sum: { appFee: true },
         }),
         db.order.aggregate({
-          where: { paymentStatus: "SUCCESS", ...dateFilter },
+          where: { orderStatus: "COMPLETED", paymentStatus: "SUCCESS", ...dateFilter },
           _sum: { midtransFee: true },
         }),
       ]);
@@ -1352,6 +1369,7 @@ export class AdminRepository {
     } else if (reportType === "detailed") {
       const transactions = await db.order.findMany({
         where: {
+          orderStatus: "COMPLETED",
           paymentStatus: "SUCCESS",
           ...dateFilter,
         },
@@ -1634,6 +1652,7 @@ export class AdminRepository {
     const [currentPeriodData, previousPeriodData] = await Promise.all([
       db.order.aggregate({
         where: {
+          orderStatus: "COMPLETED",
           paymentStatus: "SUCCESS",
           ...dateFilter,
         },
@@ -1642,6 +1661,7 @@ export class AdminRepository {
       }),
       db.order.aggregate({
         where: {
+          orderStatus: "COMPLETED",
           paymentStatus: "SUCCESS",
           createdAt: {
             gte: previousStart,
@@ -1708,6 +1728,7 @@ export class AdminRepository {
           include: {
             orders: {
               where: {
+                orderStatus: "COMPLETED",
                 paymentStatus: "SUCCESS",
                 ...dateFilter,
               },

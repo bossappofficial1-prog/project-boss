@@ -91,7 +91,7 @@ export class AdminAnalyticsService extends BaseService {
         db.business.count({ where: { subscriptionStatus: 'ACTIVE' } }),
         db.user.count(),
         db.order.aggregate({
-          where: { paymentStatus: 'SUCCESS' },
+          where: { orderStatus: 'COMPLETED', paymentStatus: 'SUCCESS' },
           _sum: { totalAmount: true },
         }),
         db.businessSubscription.aggregate({
@@ -167,7 +167,7 @@ export class AdminAnalyticsService extends BaseService {
           select: { pricePerCycle: true, billingCycle: true },
         },
         orders: {
-          where: { paymentStatus: 'SUCCESS' },
+          where: { orderStatus: 'COMPLETED', paymentStatus: 'SUCCESS' },
           select: { totalAmount: true },
         },
       },
@@ -210,7 +210,8 @@ export class AdminAnalyticsService extends BaseService {
       FROM "Order" o
       JOIN "Outlet" ot ON o."outletId" = ot.id
       JOIN "Business" b ON ot."businessId" = b.id
-      WHERE o."paymentStatus" = 'SUCCESS'
+      WHERE o."orderStatus" = 'COMPLETED'
+        AND o."paymentStatus" = 'SUCCESS'
         AND o."createdAt" >= ${sixMonthsAgo}
       GROUP BY DATE_TRUNC('month', o."createdAt")
       ORDER BY month
@@ -382,7 +383,8 @@ export class AdminAnalyticsService extends BaseService {
       FROM "Order" o
       JOIN "Outlet" ot ON o."outletId" = ot.id
       JOIN "Business" b ON ot."businessId" = b.id
-      WHERE o."paymentStatus" = 'SUCCESS'
+      WHERE o."orderStatus" = 'COMPLETED'
+        AND o."paymentStatus" = 'SUCCESS'
         AND o."createdAt" >= ${sixMonthsAgo}
       GROUP BY DATE_TRUNC('month', o."createdAt")
       ORDER BY month

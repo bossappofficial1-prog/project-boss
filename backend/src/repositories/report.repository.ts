@@ -10,6 +10,7 @@ export class ReportRepository extends BaseRepository {
       FROM "Order"
       WHERE "outletId" = ${outletId}
         AND "orderStatus" = 'COMPLETED'::"OrderStatus"
+        AND "paymentStatus" = 'SUCCESS'::"PaymentStatus"
         AND "createdAt" >= ${start}
         AND "createdAt" <= ${end}
     `;
@@ -73,7 +74,8 @@ export class ReportRepository extends BaseRepository {
         ) as items
       FROM "Order" o
       WHERE o."outletId" IN (${joinedOutletIds})
-        AND o."orderStatus" NOT IN ('AWAITING_PAYMENT'::"OrderStatus", 'CANCELLED'::"OrderStatus")
+        AND o."orderStatus" = 'COMPLETED'::"OrderStatus"
+        AND o."paymentStatus" = 'SUCCESS'::"PaymentStatus"
         AND o."createdAt" >= ${startDate}
         AND o."createdAt" <= ${endDate}
     `;
@@ -109,6 +111,7 @@ export class ReportRepository extends BaseRepository {
       where: {
         outletId,
         orderStatus: "COMPLETED",
+        paymentStatus: "SUCCESS",
         createdAt: { gte: start, lte: end },
       },
       select: {
@@ -131,6 +134,7 @@ export class ReportRepository extends BaseRepository {
       where: {
         outletId: { in: outletIds },
         orderStatus: "COMPLETED",
+        paymentStatus: "SUCCESS",
         createdAt: { gte: start, lte: end },
       },
       select: {

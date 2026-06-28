@@ -30,7 +30,9 @@ export async function getOrderStatsService(outletId: string, period: 'week' | 'm
             createdAt: {
                 gte: startDate,
             },
-            outletId
+            outletId,
+            orderStatus: "COMPLETED",
+            paymentStatus: PaymentStatus.SUCCESS,
         },
         select: {
             id: true,

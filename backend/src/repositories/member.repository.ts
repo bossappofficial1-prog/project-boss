@@ -41,6 +41,7 @@ export class MemberRepository {
                 ), '[]'::json)
                 FROM "Order" o
                 WHERE o."guestCustomerId" = gc.id
+                  AND o."orderStatus" = 'COMPLETED'
                   AND o."paymentStatus" = 'SUCCESS'
                   ${outletFilter}
             ) AS orders,
@@ -95,6 +96,7 @@ export class MemberRepository {
       JOIN "Order" o ON o."guestCustomerId" = gc.id
       WHERE o."outletId" = ${outletId}
         AND gc.phone != '0000000000' -- Abaikan pelanggan walk-in
+        AND o."orderStatus" = 'COMPLETED'
         AND o."paymentStatus" = 'SUCCESS' -- Hanya hitung pesanan sukses
         ${searchParam}
     `;
@@ -116,6 +118,7 @@ export class MemberRepository {
           JOIN "Order" o ON o."guestCustomerId" = gc.id
           WHERE o."outletId" = ${outletId}
             AND gc.phone != '0000000000' -- Abaikan pelanggan walk-in
+            AND o."orderStatus" = 'COMPLETED'
             AND o."paymentStatus" = 'SUCCESS' -- Hanya hitung pesanan sukses
             ${searchParam}
           GROUP BY gc.id
@@ -133,6 +136,7 @@ export class MemberRepository {
                   FROM "Order" o
                   WHERE o."guestCustomerId" = gc.id
                     AND o."outletId" = ${outletId}
+                    AND o."orderStatus" = 'COMPLETED'
                     AND o."paymentStatus" = 'SUCCESS'
                   ORDER BY o."createdAt" DESC
                   LIMIT 1

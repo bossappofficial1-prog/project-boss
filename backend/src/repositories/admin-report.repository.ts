@@ -100,6 +100,7 @@ export class AdminReportRepository {
   async getRevenueData(startDate: Date, endDate: Date) {
     const orders = await db.order.findMany({
       where: {
+        orderStatus: 'COMPLETED',
         paymentStatus: 'SUCCESS',
         createdAt: { gte: startDate, lte: endDate },
       },
@@ -179,6 +180,7 @@ export class AdminReportRepository {
             name: true,
             orders: {
               where: {
+                orderStatus: 'COMPLETED',
                 paymentStatus: 'SUCCESS',
                 createdAt: { gte: startDate, lte: endDate },
               },

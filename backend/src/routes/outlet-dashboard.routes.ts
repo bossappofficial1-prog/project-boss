@@ -13,8 +13,8 @@ export class OutletDashboardRepository {
             SELECT
                 (SELECT COUNT(*)::int FROM "Product" WHERE "outletId" = ${outletId} AND "type" = 'GOODS') AS "totalProducts",
                 (SELECT COUNT(*)::int FROM "Product" WHERE "outletId" = ${outletId} AND "type" = 'SERVICE') AS "totalServices",
-                (SELECT COUNT(*)::int FROM "Order" WHERE "outletId" = ${outletId}) AS "totalOrders",
-                (SELECT COALESCE(SUM("totalAmount"), 0)::float FROM "Order" WHERE "outletId" = ${outletId} AND "paymentStatus" = 'SUCCESS') AS "totalRevenue"
+                (SELECT COUNT(*)::int FROM "Order" WHERE "outletId" = ${outletId} AND "orderStatus" = 'COMPLETED' AND "paymentStatus" = 'SUCCESS') AS "totalOrders",
+                (SELECT COALESCE(SUM("totalAmount"), 0)::float FROM "Order" WHERE "outletId" = ${outletId} AND "orderStatus" = 'COMPLETED' AND "paymentStatus" = 'SUCCESS') AS "totalRevenue"
         `;
 
         return {
@@ -43,6 +43,7 @@ export class OutletDashboardRepository {
                 COALESCE(SUM(CASE WHEN "paymentStatus" = 'SUCCESS' THEN "totalAmount" ELSE 0 END), 0)::float AS "totalRevenue"
             FROM "Order"
             WHERE "outletId" = ${outletId} AND "createdAt" >= ${startDate}
+                AND "orderStatus" = 'COMPLETED' AND "paymentStatus" = 'SUCCESS'
             GROUP BY date_trunc('day', "createdAt")
             ORDER BY date ASC
         `;

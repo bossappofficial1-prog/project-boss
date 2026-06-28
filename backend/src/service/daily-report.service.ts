@@ -1,5 +1,5 @@
 import { db } from '../config/prisma';
-import { OrderStatus } from '@prisma/client';
+import { OrderStatus, PaymentStatus } from '@prisma/client';
 import { getOutletByIdService } from './outlet.service';
 
 export class DailyReportService {
@@ -18,6 +18,7 @@ export class DailyReportService {
             where: {
                 outletId,
                 orderStatus: OrderStatus.COMPLETED,
+                paymentStatus: PaymentStatus.SUCCESS,
                 createdAt: {
                     gte: actualStartDate,
                     lte: actualEndDate,

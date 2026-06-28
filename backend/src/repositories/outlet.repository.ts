@@ -556,6 +556,7 @@ export class OutletRepository {
     return db.order.findMany({
       where: {
         outletId,
+        orderStatus: OrderStatus.COMPLETED,
         paymentStatus: PaymentStatus.SUCCESS,
         createdAt: {
           gte: startDate,
@@ -605,6 +606,7 @@ export class OutletRepository {
           AND: [
             { outletId },
             { createdAt: { gte: endMonth, lte: startMonth } },
+            { orderStatus: "COMPLETED" },
             { paymentStatus: "SUCCESS" },
           ],
         },
@@ -661,6 +663,7 @@ export class OutletRepository {
           order: {
             outletId,
             createdAt: { gte: endMonth, lte: startMonth },
+            orderStatus: "COMPLETED",
             paymentStatus: {
               in: [PaymentStatus.SUCCESS],
             },

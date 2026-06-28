@@ -119,6 +119,7 @@ export class BusinessManagementRepository {
         ? db.order.aggregate({
             where: {
               outletId: { in: outletIds },
+              orderStatus: 'COMPLETED',
               paymentStatus: 'SUCCESS',
               createdAt: { gte: thirtyDaysAgo },
             },
@@ -130,6 +131,7 @@ export class BusinessManagementRepository {
         ? db.order.aggregate({
             where: {
               outletId: { in: outletIds },
+              orderStatus: 'COMPLETED',
               paymentStatus: 'SUCCESS',
               createdAt: { gte: ninetyDaysAgo },
             },
