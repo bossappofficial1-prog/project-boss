@@ -7,7 +7,6 @@ import type { PaymentMethod } from "@/types/payment";
 import { router, useLocalSearchParams } from "expo-router";
 import {
   AlertTriangle,
-  ArrowLeft,
   Check,
   CreditCard,
   Receipt,
@@ -25,6 +24,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { StackHeader } from "../components/ui/stack-header";
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat("id-ID", {
@@ -167,34 +167,11 @@ export default function CheckoutScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
       {/* Header */}
-      <View
-        style={{
-          paddingTop: 8,
-          paddingHorizontal: 16,
-          paddingBottom: 10,
-          backgroundColor: c.card,
-          borderBottomWidth: 1,
-          borderBottomColor: c.border,
-        }}
-      >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-          <Pressable onPress={() => router.back()} hitSlop={8}>
-            <ArrowLeft size={22} color={c.foreground} />
-          </Pressable>
-          <View>
-            <Text
-              style={{ fontSize: 18, fontWeight: "600", color: c.foreground }}
-            >
-              Checkout
-            </Text>
-            <Text
-              style={{ fontSize: 11, color: c.mutedForeground, marginTop: 1 }}
-            >
-              {itemCount} {itemCount === 1 ? "item" : "item"} · {outletName}
-            </Text>
-          </View>
-        </View>
-      </View>
+      <StackHeader
+        onBack={() => router.back()}
+        title="Checkout"
+        description={`${itemCount} ${itemCount === 1 ? "item" : "item"} · ${outletName}`}
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

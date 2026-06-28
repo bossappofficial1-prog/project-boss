@@ -16,27 +16,30 @@ import { useSocket } from "@/src/lib/socket-context";
 import { useCartStore } from "@/src/stores/cart.store";
 import { useProfileStore } from "@/src/stores/profile.store";
 import type { OrderDetail } from "@/src/types/order";
+import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
 import {
-  AlertCircle,
   ArrowUpDown,
-  Bell,
+  Check,
+  ListChevronsDownUp,
   Phone,
   Search,
   ShoppingBag,
 } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Modal,
   Pressable,
   RefreshControl,
-  ScrollView,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { EmptyState } from "../components/ui/empty-state";
+import { ErrorState } from "../components/ui/error-state";
+import { LoadingState } from "../components/ui/loading-state";
+import { StackHeader, HeaderIconBtn } from "../components/ui/stack-header";
 import { formatDateGroup, normalizePhone } from "../lib/utils";
 
 type SortOption = "newest" | "oldest" | "price-high" | "price-low";
@@ -64,6 +67,12 @@ export default function OrdersScreen() {
     action: string;
   } | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSortSheet, setShowSortSheet] = useState(false);
+
+  const handleSortPress = useCallback(() => {
+    setShowSortSheet(true);
+  }, []);
 
   useEffect(() => {
     if (profilePhone && isConnected) joinUserRoom(profilePhone);
@@ -267,6 +276,64 @@ export default function OrdersScreen() {
     [cartItems, addItem, clearCart, snackbar],
   );
 
+  const flatListData = useMemo(() => {
+    const result: (
+      | { type: "header"; id: string; label: string; count: number }
+      | { type: "item"; id: string; order: OrderDetail }
+    )[] = [];
+    for (const group of groupedOrders) {
+      result.push({
+        type: "header",
+        id: `header-${group.key}`,
+        label: group.label,
+        count: group.orders.length,
+      });
+      for (const order of group.orders) {
+        result.push({
+          type: "item",
+          id: `item-${order.id}`,
+          order,
+        });
+      }
+    }
+    return result;
+  }, [groupedOrders]);
+
+  const renderItem = useCallback(
+    ({ item }: { item: (typeof flatListData)[0] }) => {
+      if (item.type === "header") {
+        return (
+          <View style={{ marginTop: 14, marginBottom: 8 }}>
+            <SectionLabel label={item.label} count={item.count} c={c} />
+          </View>
+        );
+      }
+      return (
+        <View style={{ marginBottom: 10 }}>
+          <OrderCard
+            order={item.order}
+            onPress={() => setSelectedOrder(item.order)}
+            onPay={() => handlePay(item.order)}
+            onCancel={() => handleCancel(item.order)}
+            onConfirm={() => handleConfirm(item.order)}
+            onContact={() => handleContact(item.order)}
+            onReorder={() => handleReorder(item.order)}
+            isBusy={busyAction?.orderId === item.order.id}
+          />
+        </View>
+      );
+    },
+    [
+      c,
+      handlePay,
+      handleCancel,
+      handleConfirm,
+      handleContact,
+      handleReorder,
+      busyAction,
+    ],
+  );
+
   const sortLabel: Record<SortOption, string> = {
     newest: "Terbaru",
     oldest: "Terlama",
@@ -317,29 +384,7 @@ export default function OrdersScreen() {
   }
 
   if (isLoading) {
-    return (
-      <View style={{ flex: 1, backgroundColor: c.background }}>
-        <View
-          style={{ paddingTop: 12, paddingHorizontal: 16, paddingBottom: 10 }}
-        >
-          <Text
-            style={{ fontSize: 20, fontWeight: "700", color: c.foreground }}
-          >
-            Pesanan Saya
-          </Text>
-          <Text
-            style={{ fontSize: 12, color: c.mutedForeground, marginTop: 2 }}
-          >
-            Riwayat dan status pesanan
-          </Text>
-        </View>
-        <View
-          style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
-        >
-          <ActivityIndicator size="large" color={c.primary} />
-        </View>
-      </View>
-    );
+    return <LoadingState fullScreen />;
   }
 
   if (error) {
@@ -350,55 +395,13 @@ export default function OrdersScreen() {
           backgroundColor: c.background,
           alignItems: "center",
           justifyContent: "center",
-          paddingHorizontal: 32,
         }}
       >
-        <View
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: 28,
-            backgroundColor: c.muted,
-            alignItems: "center",
-            justifyContent: "center",
-            marginBottom: 12,
-          }}
-        >
-          <AlertCircle size={24} color={c.destructive} strokeWidth={1.5} />
-        </View>
-        <Text style={{ fontSize: 15, fontWeight: "700", color: c.foreground }}>
-          Gagal Memuat
-        </Text>
-        <Text
-          style={{
-            fontSize: 13,
-            color: c.mutedForeground,
-            marginTop: 4,
-            textAlign: "center",
-          }}
-        >
-          {error.message}
-        </Text>
-        <Pressable
-          onPress={() => refetch()}
-          style={{
-            marginTop: 16,
-            paddingVertical: 10,
-            paddingHorizontal: 28,
-            borderRadius: 10,
-            backgroundColor: c.primary,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 13,
-              fontWeight: "600",
-              color: c.primaryForeground,
-            }}
-          >
-            Coba Lagi
-          </Text>
-        </Pressable>
+        <ErrorState
+          title="Gagal Memuat"
+          description={error?.message || "Gagal memuat data"}
+          onRetry={refetch}
+        />
       </View>
     );
   }
@@ -448,54 +451,36 @@ export default function OrdersScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
       {/* Header */}
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          paddingHorizontal: 16,
-          paddingVertical: 12,
-          backgroundColor: c.card,
-          borderBottomWidth: 1,
-          borderBottomColor: c.border,
-        }}
-      >
-        <View style={{ gap: 2 }}>
-          <Text
-            style={{ fontSize: 18, fontWeight: "700", color: c.foreground }}
-          >
-            Pesanan Saya
-          </Text>
-          <Text style={{ fontSize: 11, color: c.mutedForeground }}>
-            {orders.length} pesanan
-          </Text>
-        </View>
-        <View style={{ position: "relative" }}>
-          <Pressable hitSlop={10}>
-            <Bell size={20} color={c.foreground} strokeWidth={1.8} />
-          </Pressable>
-          {unreadCount > 0 && (
-            <View
-              style={{
-                position: "absolute",
-                top: -4,
-                right: -4,
-                minWidth: 16,
-                height: 16,
-                borderRadius: 8,
-                backgroundColor: "#eb2525",
-                alignItems: "center",
-                justifyContent: "center",
-                paddingHorizontal: 3,
-              }}
-            >
-              <Text style={{ fontSize: 9, fontWeight: "700", color: "#fff" }}>
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </Text>
+      {isSearching ? (
+        <StackHeader
+          variant="search"
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          onBack={() => {
+            setIsSearching(false);
+            setSearchQuery("");
+          }}
+          searchPlaceholder="Cari pesanan..."
+        />
+      ) : (
+        <StackHeader
+          title="Pesanan Saya"
+          description={`${orders.length} pesanan`}
+          rightContent={
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <HeaderIconBtn
+                icon={<Search size={16} color={c.foreground} />}
+                onPress={() => setIsSearching(true)}
+              />
+              <HeaderIconBtn
+                icon={<ArrowUpDown size={16} color={c.foreground} />}
+                onPress={handleSortPress}
+                badge={sortBy !== "newest" ? 1 : 0}
+              />
             </View>
-          )}
-        </View>
-      </View>
+          }
+        />
+      )}
 
       {/* Tabs */}
       <View style={{ marginBottom: 10, paddingTop: 14 }}>
@@ -506,117 +491,33 @@ export default function OrdersScreen() {
         />
       </View>
 
-      {/* Search + Sort */}
-      <View
-        style={{
-          flexDirection: "row",
-          paddingHorizontal: 16,
-          gap: 8,
-          marginBottom: 12,
-        }}
-      >
-        <View
-          style={{
-            flex: 1,
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
-            paddingHorizontal: 12,
-            paddingVertical: 9,
-            borderRadius: 10,
-            borderWidth: 1,
-            borderColor: c.border,
-            backgroundColor: c.card,
-          }}
-        >
-          <Search size={14} color={c.mutedForeground} />
-          <TextInput
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder="Cari pesanan..."
-            placeholderTextColor={c.mutedForeground}
-            style={{ flex: 1, fontSize: 13, color: c.foreground, padding: 0 }}
-          />
-        </View>
-        <Pressable
-          onPress={() => {
-            const opts: SortOption[] = [
-              "newest",
-              "oldest",
-              "price-high",
-              "price-low",
-            ];
-            const idx = opts.indexOf(sortBy);
-            setSortBy(opts[(idx + 1) % opts.length]);
-          }}
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 5,
-            paddingHorizontal: 12,
-            paddingVertical: 9,
-            borderRadius: 10,
-            borderWidth: 1,
-            borderColor: c.border,
-            backgroundColor: c.card,
-          }}
-        >
-          <ArrowUpDown size={13} color={c.mutedForeground} />
-          <Text style={{ fontSize: 12, color: c.mutedForeground }}>
-            {sortLabel[sortBy]}
-          </Text>
-        </Pressable>
-      </View>
-
       {/* Orders List */}
-      <ScrollView
+      <FlashList
+        data={flatListData}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+        getItemType={(item) => item.type}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={isRefetching}
             onRefresh={refetch}
-            tintColor={"red"}
+            tintColor={c.primary}
           />
         }
         contentContainerStyle={{
           paddingHorizontal: 16,
           paddingBottom: 24,
-          gap: 16,
         }}
-      >
-        {groupedOrders.length === 0 ? (
+        ListEmptyComponent={
           <View style={{ alignItems: "center", paddingTop: 48 }}>
-            <Text style={{ fontSize: 13, color: c.mutedForeground }}>
-              Tidak ada pesanan ditemukan
-            </Text>
+            <EmptyState
+              icon={ListChevronsDownUp}
+              title="Tidak ada pesanan ditemukan"
+            />
           </View>
-        ) : (
-          groupedOrders.map((group) => (
-            <View key={group.key}>
-              <SectionLabel
-                label={group.label}
-                count={group.orders.length}
-                c={c}
-              />
-              <View style={{ gap: 10 }}>
-                {group.orders.map((order) => (
-                  <OrderCard
-                    key={order.id}
-                    order={order}
-                    onPress={() => setSelectedOrder(order)}
-                    onPay={() => handlePay(order)}
-                    onCancel={() => handleCancel(order)}
-                    onConfirm={() => handleConfirm(order)}
-                    onContact={() => handleContact(order)}
-                    onReorder={() => handleReorder(order)}
-                    isBusy={busyAction?.orderId === order.id}
-                  />
-                ))}
-              </View>
-            </View>
-          ))
-        )}
-      </ScrollView>
+        }
+      />
 
       {/* Detail Modal */}
       <Modal
@@ -654,6 +555,132 @@ export default function OrdersScreen() {
           />
         )}
       </Modal>
+
+      {/* Custom Bottom Sheet Sortir */}
+      <SortBottomSheet
+        visible={showSortSheet}
+        onClose={() => setShowSortSheet(false)}
+        sortBy={sortBy}
+        onSelect={setSortBy}
+        c={c}
+      />
     </View>
+  );
+}
+
+type SortBottomSheetProps = {
+  visible: boolean;
+  onClose: () => void;
+  sortBy: SortOption;
+  onSelect: (option: SortOption) => void;
+  c: any;
+};
+
+function SortBottomSheet({
+  visible,
+  onClose,
+  sortBy,
+  onSelect,
+  c,
+}: SortBottomSheetProps) {
+  const options: { value: SortOption; label: string }[] = [
+    { value: "newest", label: "Terbaru" },
+    { value: "oldest", label: "Terlama" },
+    { value: "price-high", label: "Harga Tertinggi" },
+    { value: "price-low", label: "Harga Terendah" },
+  ];
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <Pressable
+        style={{
+          flex: 1,
+          backgroundColor: "rgba(0,0,0,0.5)",
+          justifyContent: "flex-end",
+        }}
+        onPress={onClose}
+      >
+        <Pressable
+          style={{
+            backgroundColor: c.card,
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            paddingTop: 12,
+            paddingHorizontal: 20,
+            paddingBottom: 36,
+            borderWidth: 1,
+            borderColor: c.border,
+            borderBottomWidth: 0,
+          }}
+          onPress={(e) => e.stopPropagation()}
+        >
+          {/* Grab Handle */}
+          <View
+            style={{
+              width: 38,
+              height: 4,
+              borderRadius: 2,
+              backgroundColor: c.mutedForeground + "40",
+              alignSelf: "center",
+              marginBottom: 20,
+            }}
+          />
+
+          {/* Title */}
+          <Text
+            style={{
+              fontSize: 15,
+              fontWeight: "700",
+              color: c.foreground,
+              marginBottom: 16,
+            }}
+          >
+            Urutkan Pesanan
+          </Text>
+
+          {/* Options List */}
+          <View style={{ gap: 4 }}>
+            {options.map((opt) => {
+              const isActive = sortBy === opt.value;
+              return (
+                <Pressable
+                  key={opt.value}
+                  onPress={() => {
+                    onSelect(opt.value);
+                    onClose();
+                  }}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    paddingVertical: 14,
+                    borderBottomWidth: 1,
+                    borderBottomColor: c.border + "30",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: isActive ? "600" : "400",
+                      color: isActive ? c.primary : c.foreground,
+                    }}
+                  >
+                    {opt.label}
+                  </Text>
+                  {isActive && (
+                    <Check size={16} color={c.primary} strokeWidth={2.5} />
+                  )}
+                </Pressable>
+              );
+            })}
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
   );
 }

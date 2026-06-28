@@ -1,3 +1,5 @@
+import { Goods, Service, Ticket } from "../features/outlet/types/outlet.types";
+
 export type OrderStatusType =
   | "AWAITING_PAYMENT"
   | "PROCESSING"
@@ -49,11 +51,18 @@ export interface OrderItem {
     name: string;
     type: "GOODS" | "SERVICE" | "TICKET";
     image?: string;
+    goods: Pick<Goods, "unit" | "sellingPrice"> | null;
+    service: Pick<Service, "durationMinutes" | "sellingPrice"> | null;
+    ticket: Pick<
+      Ticket,
+      "sellingPrice" | "eventDate" | "eventEndDate" | "venue" | "venueAddress"
+    > | null;
   };
   ticketCodes?: Array<{
     id: string;
     code: string;
     status: "VALID" | "REDEEMED" | "CANCELLED" | "EXPIRED";
+    redeemedAt: string | null;
   }>;
 }
 

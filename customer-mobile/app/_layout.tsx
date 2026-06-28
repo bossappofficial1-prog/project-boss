@@ -1,12 +1,12 @@
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { SnackbarProvider } from "@/components/ui/snackbar";
-import AppUpdatePrompt from "@/src/components/app-update-prompt";
 import { queryClient } from "@/lib/query-client";
 import { useThemeColors } from "@/src/hooks/use-theme-colors";
 import { SocketProvider } from "@/src/lib/socket-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
+import * as Notifications from "expo-notifications";
 import { Stack, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
@@ -60,11 +60,28 @@ function RootLayoutInner() {
     SplashScreen.hideAsync();
   }, [onboardingChecked, needsOnboarding]);
 
+  useEffect(() => {
+    Notifications.getLastNotificationResponseAsync().then((response) => {
+      const url = response?.notification.request.content.data?.url as string;
+      if (url) router.push(url as any);
+    });
+
+    const sub = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const url = response.notification.request.content.data?.url as
+          | string
+          | undefined;
+        if (url) router.push(url as any);
+      },
+    );
+
+    return () => sub.remove();
+  }, []);
+
   if (!loaded || !onboardingChecked) return null;
 
   return (
     <SnackbarProvider>
-      <AppUpdatePrompt />
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
@@ -109,6 +126,22 @@ function RootLayoutInner() {
         />
         <Stack.Screen
           name="payment/[orderId]"
+          options={{
+            headerShown: false,
+            presentation: "card",
+            animation: "ios_from_right",
+          }}
+        />
+        <Stack.Screen
+          name="favorite-outlets"
+          options={{
+            headerShown: false,
+            presentation: "card",
+            animation: "ios_from_right",
+          }}
+        />
+        <Stack.Screen
+          name="saved-products"
           options={{
             headerShown: false,
             presentation: "card",

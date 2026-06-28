@@ -1,28 +1,27 @@
+import { ErrorState } from "@/components/ui/error-state";
+import { LoadingState } from "@/components/ui/loading-state";
 import { useSnackbar } from "@/components/ui/snackbar";
 import { ScheduleModal } from "@/features/cart/components/schedule-modal";
-import type { OutletDetail, OutletProduct } from "@/features/outlet";
+import { HoursScene, type OutletProduct } from "@/features/outlet";
 import {
   useGetOutletBySlug,
   useGetOutletProducts,
 } from "@/features/outlet/hooks/use-outlet";
+import { ProductsScene } from "@/features/products";
 import { useThemeColors } from "@/src/hooks/use-theme-colors";
-import {
-  formatTime,
-  mapProduct,
-  openInstagram,
-  openWhatsApp,
-} from "@/src/lib/utils";
+import { formatTime, openInstagram, openWhatsApp } from "@/src/lib/utils";
 import { useCartStore } from "@/src/stores/cart.store";
+import { useFavoritesStore } from "@/src/stores/favorites.store";
 import defaultOutlet from "@assets/images/default-outlet.webp";
-import defaultProduct from "@assets/images/default-product.png";
 import InstagramIcon from "@assets/svgs/instagram.svg";
 import WhatsAppIcon from "@assets/svgs/whatsapp.svg";
 import { router, useLocalSearchParams } from "expo-router";
 import {
   ArrowLeft,
   Clock,
+  Heart,
   MapPin,
-  Plus,
+  Search,
   Share2,
   ShoppingCart,
   Store,
@@ -31,316 +30,19 @@ import {
 } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Image,
+  Linking,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
   ScrollView,
   Share,
   Text,
+  TextInput,
   useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-const DAY_NAMES = [
-  "Minggu",
-  "Senin",
-  "Selasa",
-  "Rabu",
-  "Kamis",
-  "Jumat",
-  "Sabtu",
-];
-
-function ProductRow({
-  product,
-  onPress,
-  onAddToCart,
-  outletId,
-}: {
-  product: OutletProduct;
-  onPress?: () => void;
-  onAddToCart?: () => void;
-  outletId?: string;
-}) {
-  const c = useThemeColors();
-  const cartItems = useCartStore((s) => s.items);
-  const cartQty = useMemo(() => {
-    if (!outletId) return 0;
-    return cartItems
-      .filter(
-        (item) => item.outletId === outletId && item.productId === product.id,
-      )
-      .reduce((sum, item) => sum + item.quantity, 0);
-  }, [cartItems, outletId, product.id]);
-  const price =
-    product.goods?.sellingPrice ||
-    product.service?.sellingPrice ||
-    product.ticket?.sellingPrice ||
-    0;
-
-  const mappedProduct = mapProduct[product.type];
-  const Icon = mappedProduct.icon;
-
-  const isOutOfStock =
-    product.type === "GOODS" &&
-    (product.goods?.currentStock == null || product.goods.currentStock <= 0);
-
-  const ticketAvailableQuota =
-    product.type === "TICKET" && product.ticket
-      ? Math.max(
-          (product.ticket.totalQuota ?? 0) - (product.ticket.soldCount ?? 0),
-          0,
-        )
-      : 0;
-  const isTicketSoldOut =
-    product.type === "TICKET" && ticketAvailableQuota <= 0;
-
-  const canAddToCart =
-    product.status === "ACTIVE" && !isOutOfStock && !isTicketSoldOut;
-
-  return (
-    <View
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        gap: 12,
-        backgroundColor: c.card,
-      }}
-    >
-      <Pressable
-        onPress={onPress}
-        style={{ flexDirection: "row", alignItems: "center", gap: 12, flex: 1 }}
-      >
-        <Image
-          source={
-            product.image
-              ? product.image.startsWith("/default")
-                ? defaultProduct
-                : { uri: product.image }
-              : defaultProduct
-          }
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: 12,
-            backgroundColor: c.muted,
-          }}
-          resizeMode="cover"
-        />
-        <View style={{ flex: 1 }}>
-          <Text
-            style={{ fontSize: 14, fontWeight: "500", color: c.foreground }}
-            numberOfLines={1}
-          >
-            {product.name}
-          </Text>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 4,
-              marginTop: 4,
-            }}
-          >
-            <Icon color={c.mutedForeground} size={16} />
-            <Text style={{ fontSize: 11, color: c.mutedForeground }}>
-              {mappedProduct.label}
-            </Text>
-            {product.type === "GOODS" &&
-              product.goods?.currentStock != null && (
-                <Text style={{ fontSize: 11, color: c.mutedForeground }}>
-                  · Stok {product.goods.currentStock}
-                </Text>
-              )}
-            {isTicketSoldOut && (
-              <Text style={{ fontSize: 11, color: c.destructive }}>
-                · Habis
-              </Text>
-            )}
-          </View>
-        </View>
-        <Text style={{ fontSize: 14, fontWeight: "500", color: c.primary }}>
-          {new Intl.NumberFormat("id-ID", {
-            style: "currency",
-            currency: "IDR",
-            minimumFractionDigits: 0,
-          }).format(price)}
-        </Text>
-      </Pressable>
-
-      {canAddToCart && onAddToCart && (
-        <View style={{ alignItems: "center", gap: 4, marginLeft: 4 }}>
-          {cartQty > 0 && (
-            <View
-              style={{
-                minWidth: 20,
-                height: 20,
-                borderRadius: 10,
-                backgroundColor: c.primary,
-                alignItems: "center",
-                justifyContent: "center",
-                paddingHorizontal: 6,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 11,
-                  fontWeight: "700",
-                  color: c.primaryForeground,
-                }}
-              >
-                {cartQty}
-              </Text>
-            </View>
-          )}
-          <Pressable
-            onPress={onAddToCart}
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 10,
-              backgroundColor: c.primary,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Plus size={18} color={c.primaryForeground} strokeWidth={3} />
-          </Pressable>
-        </View>
-      )}
-    </View>
-  );
-}
-
-function ProductsScene({
-  products,
-  slug,
-  c,
-  onAddToCart,
-  outletId,
-}: {
-  products: OutletProduct[];
-  slug: string;
-  c: ReturnType<typeof useThemeColors>;
-  onAddToCart: (p: OutletProduct) => void;
-  outletId?: string;
-}) {
-  if (products.length === 0) {
-    return (
-      <View
-        style={{
-          backgroundColor: c.card,
-          paddingVertical: 32,
-          alignItems: "center",
-        }}
-      >
-        <Text style={{ fontSize: 13, color: c.mutedForeground }}>
-          Belum ada produk
-        </Text>
-      </View>
-    );
-  }
-
-  return (
-    <View style={{ backgroundColor: c.card, paddingBottom: 16 }}>
-      {products.map((product, index) => (
-        <View key={product.id}>
-          <ProductRow
-            product={product}
-            onPress={() => router.push(`/outlet/${slug}/product/${product.id}`)}
-            onAddToCart={() => onAddToCart(product)}
-            outletId={outletId}
-          />
-          {index < products.length - 1 && (
-            <View style={{ height: 0.5, backgroundColor: c.border }} />
-          )}
-        </View>
-      ))}
-    </View>
-  );
-}
-
-function HoursScene({
-  operatingHours,
-  c,
-}: {
-  operatingHours: OutletDetail["operatingHours"];
-  c: ReturnType<typeof useThemeColors>;
-}) {
-  const today = new Date().getDay();
-
-  if (!operatingHours || operatingHours.length === 0) {
-    return (
-      <Text
-        style={{
-          fontSize: 13,
-          color: c.mutedForeground,
-          textAlign: "center",
-          paddingVertical: 24,
-          backgroundColor: c.card,
-        }}
-      >
-        Belum ada jam buka
-      </Text>
-    );
-  }
-
-  return (
-    <View style={{ backgroundColor: c.card, padding: 16 }}>
-      {operatingHours.map((hour) => {
-        const isToday = hour.dayOfWeek === today;
-        return (
-          <View
-            key={hour.id}
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              paddingVertical: 10,
-              paddingHorizontal: isToday ? 12 : 0,
-              marginHorizontal: isToday ? -12 : 0,
-              borderRadius: isToday ? 10 : 0,
-              borderBottomWidth: isToday ? 0 : 0.5,
-              borderBottomColor: c.border,
-              backgroundColor: isToday ? c.muted : "transparent",
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: isToday ? "500" : "400",
-                color: isToday ? c.primary : c.mutedForeground,
-              }}
-            >
-              {DAY_NAMES[hour.dayOfWeek]}
-            </Text>
-            <View style={{ alignItems: "flex-end" }}>
-              <Text
-                style={{
-                  fontSize: 13,
-                  color: hour.isOpen ? c.foreground : c.mutedForeground,
-                }}
-              >
-                {hour.isOpen
-                  ? `${formatTime(hour.openTime)} – ${formatTime(hour.closeTime)}`
-                  : "Tutup"}
-              </Text>
-              {hour.breakStart && hour.breakEnd && (
-                <Text style={{ fontSize: 10, color: c.warning }}>
-                  {`Istirahat ${formatTime(hour.breakStart)} – ${formatTime(hour.breakEnd)}`}
-                </Text>
-              )}
-            </View>
-          </View>
-        );
-      })}
-    </View>
-  );
-}
 
 export default function OutletDetailScreen() {
   const c = useThemeColors();
@@ -352,12 +54,9 @@ export default function OutletDetailScreen() {
   }>();
   const insets = useSafeAreaInsets();
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [index, setIndex] = useState(0);
   const pagerRef = useRef<ScrollView>(null);
-  const routes = [
-    { key: "products", title: "Produk" },
-    { key: "hours", title: "Jam buka" },
-  ] as const;
   const [productForSchedule, setProductForSchedule] =
     useState<OutletProduct | null>(null);
   const snackbar = useSnackbar();
@@ -374,6 +73,74 @@ export default function OutletDetailScreen() {
     isLoading: outletLoading,
     error: outletError,
   } = useGetOutletBySlug(slug || "");
+
+  const routes = useMemo(() => {
+    if (!outletData) {
+      return [
+        { key: "products", title: "Produk", type: undefined },
+        { key: "hours", title: "Jam buka", type: undefined },
+      ];
+    }
+
+    const type = outletData.type;
+    const result: Array<{
+      key: string;
+      title: string;
+      type?: "GOODS" | "SERVICE" | "TICKET";
+    }> = [];
+
+    if (type === "CUSTOM") {
+      result.push({ key: "goods", title: "Barang", type: "GOODS" });
+      result.push({ key: "service", title: "Jasa", type: "SERVICE" });
+      result.push({ key: "ticket", title: "Tiket", type: "TICKET" });
+    } else if (type === "SERVICE") {
+      result.push({ key: "service", title: "Jasa", type: "SERVICE" });
+    } else if (type === "RETAIL" || type === "FNB") {
+      result.push({ key: "goods", title: "Barang", type: "GOODS" });
+    } else if (type === "EVENT") {
+      result.push({ key: "ticket", title: "Tiket", type: "TICKET" });
+    }
+
+    result.push({ key: "hours", title: "Jam buka" });
+    return result;
+  }, [outletData]);
+
+  useEffect(() => {
+    if (index >= routes.length) {
+      setIndex(0);
+      pagerRef.current?.scrollTo({ x: 0, animated: false });
+    }
+  }, [routes.length, index]);
+
+  const { toggleFavoriteOutlet, isFavoriteOutlet } = useFavoritesStore();
+  const isFav = outletData ? isFavoriteOutlet(outletData.id) : false;
+  const handleToggleFavorite = () => {
+    if (!outletData) return;
+    toggleFavoriteOutlet({
+      id: outletData.id,
+      name: outletData.name,
+      address: outletData.address || "",
+      phone: outletData.phone || undefined,
+      slug: slug || undefined,
+      image: outletData.image || undefined,
+    });
+  };
+
+  const handleOpenMap = () => {
+    if (!outletData) return;
+    let url = "";
+    if (outletData.latitude && outletData.longitude) {
+      url = `https://www.google.com/maps/search/?api=1&query=${outletData.latitude},${outletData.longitude}`;
+    } else if (outletData.address) {
+      url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(outletData.address)}`;
+    }
+
+    if (url) {
+      Linking.openURL(url).catch(() => {
+        snackbar.error("Gagal membuka aplikasi peta");
+      });
+    }
+  };
 
   useEffect(() => {
     if (tableId && outletData) {
@@ -392,6 +159,11 @@ export default function OutletDetailScreen() {
     useGetOutletProducts(slug || "", { limit: 50 });
 
   const products = productsRes?.data || [];
+  const filteredProducts = useMemo(() => {
+    if (!searchQuery.trim()) return products;
+    const query = searchQuery.toLowerCase().trim();
+    return products.filter((p) => p.name.toLowerCase().includes(query));
+  }, [products, searchQuery]);
   const isLoading = outletLoading || productsLoading;
   const error = outletError;
 
@@ -521,62 +293,17 @@ export default function OutletDetailScreen() {
   };
 
   if (isLoading) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: c.background,
-        }}
-      >
-        <ActivityIndicator size="large" color={c.primary} />
-      </View>
-    );
+    return <LoadingState fullScreen />;
   }
 
   if (error || !outletData) {
     return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: c.background,
-          paddingHorizontal: 24,
-        }}
-      >
-        <Text
-          style={{
-            fontSize: 15,
-            fontWeight: "500",
-            color: c.foreground,
-            textAlign: "center",
-          }}
-        >
-          {error?.message || "Outlet tidak ditemukan"}
-        </Text>
-        <Pressable
-          onPress={() => router.back()}
-          style={{
-            marginTop: 16,
-            paddingVertical: 10,
-            paddingHorizontal: 24,
-            borderRadius: 10,
-            backgroundColor: c.primary,
-          }}
-        >
-          <Text
-            style={{
-              color: c.primaryForeground,
-              fontSize: 14,
-              fontWeight: "500",
-            }}
-          >
-            Kembali
-          </Text>
-        </Pressable>
-      </View>
+      <ErrorState
+        variant="notFound"
+        title="Outlet tidak ditemukan"
+        description={error?.message}
+        onBack={() => router.back()}
+      />
     );
   }
 
@@ -629,105 +356,161 @@ export default function OutletDetailScreen() {
               backgroundColor: "rgba(0,0,0,0.45)",
               alignItems: "center",
               justifyContent: "center",
+              zIndex: 10,
             }}
           >
             <ArrowLeft size={18} color="#ffffff" />
           </Pressable>
 
+          <Pressable
+            onPress={handleToggleFavorite}
+            style={{
+              position: "absolute",
+              top: 8,
+              right: 12,
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              backgroundColor: "rgba(0,0,0,0.45)",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 10,
+            }}
+          >
+            <Heart
+              size={18}
+              color={isFav ? c.destructive : "#ffffff"}
+              fill={isFav ? c.destructive : "transparent"}
+            />
+          </Pressable>
+
           <View
             style={{
               backgroundColor: c.background,
-              paddingTop: 18,
+              paddingTop: 12,
               paddingHorizontal: 16,
-              paddingBottom: 16,
-              gap: 8,
+              paddingBottom: 12,
+              gap: 6,
             }}
           >
             <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
             >
-              <View
+              <Text
                 style={{
-                  paddingVertical: 4,
-                  paddingHorizontal: 10,
-                  borderRadius: 8,
-                  backgroundColor: c.muted,
+                  fontSize: 18,
+                  fontWeight: "600",
+                  color: c.foreground,
+                  flex: 1,
+                  marginRight: 8,
                 }}
+                numberOfLines={1}
               >
-                <Text
+                {outletData.name}
+              </Text>
+              <View style={{ flexDirection: "row", gap: 6 }}>
+                <View
                   style={{
-                    fontSize: 12,
-                    fontWeight: "500",
-                    color: isOpen
-                      ? c.success
-                      : isBreak
-                        ? c.warning
-                        : c.destructive,
+                    paddingVertical: 2,
+                    paddingHorizontal: 8,
+                    borderRadius: 6,
+                    backgroundColor: c.muted,
                   }}
                 >
-                  {statusText}
-                </Text>
-              </View>
-              <View
-                style={{
-                  paddingVertical: 4,
-                  paddingHorizontal: 10,
-                  borderRadius: 8,
-                  backgroundColor: c.muted,
-                }}
-              >
-                <Text style={{ fontSize: 12, color: c.mutedForeground }}>
-                  {outletData.type}
-                </Text>
+                  <Text
+                    style={{
+                      fontSize: 10,
+                      fontWeight: "600",
+                      color: isOpen
+                        ? c.success
+                        : isBreak
+                          ? c.warning
+                          : c.destructive,
+                    }}
+                  >
+                    {statusText}
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    paddingVertical: 2,
+                    paddingHorizontal: 8,
+                    borderRadius: 6,
+                    backgroundColor: c.muted,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 10,
+                      color: c.mutedForeground,
+                      fontWeight: "600",
+                    }}
+                  >
+                    {outletData.type}
+                  </Text>
+                </View>
               </View>
             </View>
 
-            <Text
-              style={{ fontSize: 20, fontWeight: "500", color: c.foreground }}
-            >
-              {outletData.name}
-            </Text>
-
             {outletData.description && (
-              <Text style={{ fontSize: 13, color: c.mutedForeground }}>
+              <Text
+                style={{ fontSize: 12, color: c.mutedForeground }}
+                numberOfLines={1}
+              >
                 {outletData.description}
               </Text>
             )}
 
             {outletData.address && (
-              <View
+              <Pressable
+                onPress={handleOpenMap}
                 style={{
                   flexDirection: "row",
                   alignItems: "flex-start",
                   gap: 6,
+                  marginTop: 2,
+                  opacity: 1,
                 }}
               >
-                <MapPin
-                  size={14}
-                  color={c.mutedForeground}
-                  style={{ marginTop: 2 }}
-                />
+                <MapPin size={12} color={c.primary} style={{ marginTop: 2 }} />
                 <Text
-                  style={{ fontSize: 13, color: c.mutedForeground, flex: 1 }}
+                  style={{
+                    fontSize: 11,
+                    color: c.primary,
+                    textDecorationLine: "underline",
+                    flex: 1,
+                    lineHeight: 15,
+                  }}
+                  numberOfLines={2}
                 >
                   {outletData.address}
                 </Text>
-              </View>
+              </Pressable>
             )}
 
             {todayHours && (
               <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  marginTop: 2,
+                }}
               >
-                <Clock size={14} color={c.mutedForeground} />
-                <Text style={{ fontSize: 13, color: c.mutedForeground }}>
+                <Clock size={12} color={c.mutedForeground} />
+                <Text style={{ fontSize: 11, color: c.mutedForeground }}>
                   {todayHours.isOpen
                     ? `${formatTime(todayHours.openTime)} - ${formatTime(todayHours.closeTime)}`
                     : "Hari ini tutup"}
                 </Text>
               </View>
             )}
-            <View style={{ flexDirection: "row", gap: 8, marginTop: 4 }}>
+
+            <View style={{ flexDirection: "row", gap: 8, marginTop: 6 }}>
               {outletData.phone && (
                 <Pressable
                   onPress={() => openWhatsApp(outletData.phone!)}
@@ -737,16 +520,17 @@ export default function OutletDetailScreen() {
                     alignItems: "center",
                     justifyContent: "center",
                     gap: 6,
-                    paddingVertical: 10,
-                    borderRadius: 10,
+                    paddingVertical: 8,
+                    borderRadius: 8,
                     borderWidth: 0.5,
                     borderColor: c.border,
+                    backgroundColor: c.card,
                   }}
                 >
-                  <WhatsAppIcon width={18} height={18} />
+                  <WhatsAppIcon width={16} height={16} />
                   <Text
                     style={{
-                      fontSize: 13,
+                      fontSize: 12,
                       fontWeight: "500",
                       color: c.foreground,
                     }}
@@ -759,32 +543,70 @@ export default function OutletDetailScreen() {
                 <Pressable
                   onPress={() => openInstagram(outletData.instagramUrl!)}
                   style={{
-                    width: 44,
-                    height: 44,
+                    width: 38,
+                    height: 34,
                     alignItems: "center",
                     justifyContent: "center",
-                    borderRadius: 10,
+                    borderRadius: 8,
                     borderWidth: 0.5,
                     borderColor: c.border,
+                    backgroundColor: c.card,
                   }}
                 >
-                  <InstagramIcon width={18} height={18} />
+                  <InstagramIcon width={16} height={16} />
                 </Pressable>
               )}
               <Pressable
                 onPress={onShare}
                 style={{
-                  width: 44,
-                  height: 44,
+                  width: 38,
+                  height: 34,
                   alignItems: "center",
                   justifyContent: "center",
-                  borderRadius: 10,
+                  borderRadius: 8,
                   borderWidth: 0.5,
                   borderColor: c.border,
+                  backgroundColor: c.card,
                 }}
               >
-                <Share2 color={c.foreground} size={16} />
+                <Share2 color={c.foreground} size={14} />
               </Pressable>
+            </View>
+
+            {/* Search Bar */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: c.muted,
+                borderRadius: 8,
+                paddingHorizontal: 10,
+                height: 36,
+                borderWidth: 0.5,
+                borderColor: c.border,
+                marginTop: 4,
+              }}
+            >
+              <Search size={14} color={c.mutedForeground} />
+              <TextInput
+                placeholder="Cari produk di outlet ini..."
+                placeholderTextColor={c.mutedForeground}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                style={{
+                  flex: 1,
+                  marginLeft: 6,
+                  fontSize: 12,
+                  color: c.foreground,
+                  padding: 0,
+                }}
+                clearButtonMode="while-editing"
+              />
+              {searchQuery.length > 0 && (
+                <Pressable onPress={() => setSearchQuery("")}>
+                  <X size={14} color={c.mutedForeground} />
+                </Pressable>
+              )}
             </View>
           </View>
         </View>
@@ -801,12 +623,15 @@ export default function OutletDetailScreen() {
         >
           {routes.map((route, i) => {
             const isActive = index === i;
+            const count = route.type
+              ? filteredProducts.filter((p) => p.type === route.type).length
+              : undefined;
             return (
               <Pressable
                 key={route.key}
                 onPress={() => goToTab(i)}
                 style={{
-                  flex: 2,
+                  flex: 1,
                   alignItems: "center",
                   paddingVertical: 12,
                   borderBottomWidth: 2,
@@ -821,7 +646,7 @@ export default function OutletDetailScreen() {
                   }}
                 >
                   {route.title}
-                  {route.key === "products" ? ` (${products.length})` : ""}
+                  {count !== undefined ? ` (${count})` : ""}
                 </Text>
               </Pressable>
             );
@@ -836,18 +661,24 @@ export default function OutletDetailScreen() {
           scrollEventThrottle={16}
           onMomentumScrollEnd={handlePagerScrollEnd}
         >
-          <View style={{ width: layout.width }}>
-            <ProductsScene
-              products={products}
-              slug={slug || ""}
-              c={c}
-              onAddToCart={handleAddToCartSimple}
-              outletId={outletData.id}
-            />
-          </View>
-          <View style={{ width: layout.width }}>
-            <HoursScene operatingHours={outletData.operatingHours} c={c} />
-          </View>
+          {routes.map((route) => (
+            <View key={route.key} style={{ width: layout.width }}>
+              {route.key === "hours" ? (
+                <HoursScene operatingHours={outletData.operatingHours} c={c} />
+              ) : (
+                <ProductsScene
+                  products={filteredProducts.filter(
+                    (p) => p.type === route.type,
+                  )}
+                  slug={slug || ""}
+                  c={c}
+                  onAddToCart={handleAddToCartSimple}
+                  outletId={outletData.id}
+                  type={route.type}
+                />
+              )}
+            </View>
+          ))}
         </ScrollView>
       </ScrollView>
 

@@ -6,3 +6,4 @@ export type {
   BookingSlot,
   OperatingHour,
 } from "./types/outlet.types";
+export { HoursScene } from "./components/hours-scene";

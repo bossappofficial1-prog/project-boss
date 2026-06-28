@@ -13,7 +13,6 @@ import { router, useLocalSearchParams } from "expo-router";
 import * as Sharing from "expo-sharing";
 import {
   AlertCircle,
-  ArrowLeft,
   CheckCircle,
   Clock,
   CreditCard,
@@ -39,6 +38,8 @@ import {
 } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ErrorState } from "../components/ui/error-state";
+import { StackHeader } from "../components/ui/stack-header";
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat("id-ID", {
@@ -876,32 +877,12 @@ export default function PaymentScreen() {
           backgroundColor: c.background,
           alignItems: "center",
           justifyContent: "center",
-          paddingHorizontal: 32,
         }}
       >
-        <Text style={{ fontSize: 16, fontWeight: "600", color: c.foreground }}>
-          Data pembayaran tidak ditemukan
-        </Text>
-        <Pressable
-          onPress={() => router.back()}
-          style={{
-            marginTop: 16,
-            paddingVertical: 12,
-            paddingHorizontal: 32,
-            borderRadius: 12,
-            backgroundColor: c.primary,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 14,
-              fontWeight: "600",
-              color: c.primaryForeground,
-            }}
-          >
-            Kembali
-          </Text>
-        </Pressable>
+        <ErrorState
+          title="Data pembayaran tidak ditemukan"
+          onBack={() => router.back()}
+        />
       </View>
     );
   }
@@ -930,37 +911,17 @@ export default function PaymentScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
       {/* Header */}
-      <View
-        style={{
-          paddingTop: 8,
-          paddingHorizontal: 16,
-          paddingBottom: 10,
-          backgroundColor: c.card,
-          borderBottomWidth: 1,
-          borderBottomColor: c.border,
-        }}
-      >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-          <Pressable
-            onPress={() =>
-              isPaymentDone
-                ? (() => {
-                    queryClient.invalidateQueries({ queryKey: ["orders"] });
-                    router.replace("/(tabs)/orders");
-                  })()
-                : router.back()
-            }
-            hitSlop={8}
-          >
-            <ArrowLeft size={22} color={c.foreground} />
-          </Pressable>
-          <Text
-            style={{ fontSize: 18, fontWeight: "600", color: c.foreground }}
-          >
-            {isPaymentDone ? "Detail Pembayaran" : "Pembayaran"}
-          </Text>
-        </View>
-      </View>
+      <StackHeader
+        title={isPaymentDone ? "Detail Pembayaran" : "Pembayaran"}
+        onBack={() =>
+          isPaymentDone
+            ? (() => {
+                queryClient.invalidateQueries({ queryKey: ["orders"] });
+                router.replace("/(tabs)/orders");
+              })()
+            : router.back()
+        }
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

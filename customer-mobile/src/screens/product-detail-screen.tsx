@@ -1,3 +1,5 @@
+import { ErrorState } from "@/components/ui/error-state";
+import { LoadingState } from "@/components/ui/loading-state";
 import { useSnackbar } from "@/components/ui/snackbar";
 import { ScheduleModal } from "@/features/cart/components/schedule-modal";
 import {
@@ -8,28 +10,36 @@ import { resolveImageUrl } from "@/lib/image";
 import { useThemeColors } from "@/src/hooks/use-theme-colors";
 import { mapProduct } from "@/src/lib/utils";
 import { useCartStore } from "@/src/stores/cart.store";
+import { useFavoritesStore } from "@/src/stores/favorites.store";
 import defaultProduct from "@assets/images/default-product.png";
 import { router, useLocalSearchParams } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
 import {
   ArrowLeft,
+  Bookmark,
+  Calendar,
   Calendar1Icon,
   Clock,
+  Mail,
+  Map,
   MapPin,
   Minus,
   Package,
+  Phone,
   Plus,
+  Share2,
   ShoppingCart,
   Tag,
   Ticket as TicketIcon,
 } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   Dimensions,
   Image,
+  Linking,
   Pressable,
   ScrollView,
+  Share,
   Text,
   View,
 } from "react-native";
@@ -113,6 +123,32 @@ export default function ProductDetailScreen() {
     product?.service?.sellingPrice ||
     product?.ticket?.sellingPrice ||
     0;
+
+  const { toggleSavedProduct, isSavedProduct } = useFavoritesStore();
+  const isSaved = product ? isSavedProduct(product.id) : false;
+  const handleToggleSaved = () => {
+    if (!product) return;
+    toggleSavedProduct({
+      id: product.id,
+      name: product.name,
+      price,
+      type: product.type,
+      image: product.image,
+      outletId: outlet?.id || "",
+      outletSlug: slug || undefined,
+      outletName: outlet?.name || undefined,
+    });
+  };
+
+  const onShare = async () => {
+    if (!product) return;
+    const productUrl = `https://customer.bossapp.id/outlet/${slug}/product/${product.id}`;
+    await Share.share({
+      title: `Lihat produk ini: ${product.name}`,
+      message: `${product.name}\n\n${product.description || ""}\n\n${productUrl}`,
+      url: productUrl,
+    });
+  };
 
   const Icon = mapProduct[product?.type || "GOODS"]?.icon || Package;
 
@@ -250,64 +286,17 @@ export default function ProductDetailScreen() {
   };
 
   if (isLoading) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: "center",
-          justifyContent: "center",
-          paddingTop: insets.top,
-          backgroundColor: c.background,
-        }}
-      >
-        <ActivityIndicator size="large" color={c.primary} />
-      </View>
-    );
+    return <LoadingState fullScreen />;
   }
 
   if (error || !product) {
     return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: "center",
-          justifyContent: "center",
-          paddingTop: insets.top,
-          backgroundColor: c.background,
-          paddingHorizontal: 24,
-        }}
-      >
-        <Text
-          style={{
-            fontSize: 15,
-            fontWeight: "500",
-            color: c.foreground,
-            textAlign: "center",
-          }}
-        >
-          {error?.message || "Produk tidak ditemukan"}
-        </Text>
-        <Pressable
-          onPress={() => router.back()}
-          style={{
-            marginTop: 16,
-            paddingVertical: 10,
-            paddingHorizontal: 24,
-            borderRadius: 10,
-            backgroundColor: c.primary,
-          }}
-        >
-          <Text
-            style={{
-              color: c.primaryForeground,
-              fontSize: 14,
-              fontWeight: "500",
-            }}
-          >
-            Kembali
-          </Text>
-        </Pressable>
-      </View>
+      <ErrorState
+        variant="notFound"
+        title="Produk tidak ditemukan"
+        description={error?.message}
+        onBack={() => router.back()}
+      />
     );
   }
 
@@ -413,9 +402,50 @@ export default function ProductDetailScreen() {
             backgroundColor: "rgba(0,0,0,0.45)",
             alignItems: "center",
             justifyContent: "center",
+            zIndex: 10,
           }}
         >
           <ArrowLeft size={18} color="#ffffff" />
+        </Pressable>
+
+        <Pressable
+          onPress={handleToggleSaved}
+          style={{
+            position: "absolute",
+            top: 8,
+            right: 56,
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: "rgba(0,0,0,0.45)",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10,
+          }}
+        >
+          <Bookmark
+            size={18}
+            color={isSaved ? c.primary : "#ffffff"}
+            fill={isSaved ? c.primary : "transparent"}
+          />
+        </Pressable>
+
+        <Pressable
+          onPress={onShare}
+          style={{
+            position: "absolute",
+            top: 8,
+            right: 12,
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: "rgba(0,0,0,0.45)",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10,
+          }}
+        >
+          <Share2 size={16} color="#ffffff" />
         </Pressable>
 
         <View
@@ -428,22 +458,53 @@ export default function ProductDetailScreen() {
         >
           <View style={{ gap: 8 }}>
             <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 4,
-                alignSelf: "flex-start",
-                paddingVertical: 4,
-                paddingHorizontal: 8,
-                borderRadius: 8,
-                borderWidth: 0.5,
-                borderColor: c.border,
-              }}
+              style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
             >
-              <Icon color={c.mutedForeground} size={13} />
-              <Text style={{ fontSize: 12, color: c.mutedForeground }}>
-                {mapProduct[product.type].label}
-              </Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 4,
+                  alignSelf: "flex-start",
+                  paddingVertical: 4,
+                  paddingHorizontal: 8,
+                  borderRadius: 8,
+                  borderWidth: 0.5,
+                  borderColor: c.border,
+                }}
+              >
+                <Icon color={c.mutedForeground} size={13} />
+                <Text style={{ fontSize: 12, color: c.mutedForeground }}>
+                  {mapProduct[product.type].label}
+                </Text>
+              </View>
+              {product.category && (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 4,
+                    alignSelf: "flex-start",
+                    paddingVertical: 4,
+                    paddingHorizontal: 8,
+                    borderRadius: 8,
+                    borderWidth: 0.5,
+                    borderColor: c.border,
+                    backgroundColor: c.muted,
+                  }}
+                >
+                  <Tag color={c.foreground} size={11} />
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: c.foreground,
+                      fontWeight: "500",
+                    }}
+                  >
+                    {product.category.name}
+                  </Text>
+                </View>
+              )}
             </View>
 
             <Text
@@ -518,6 +579,36 @@ export default function ProductDetailScreen() {
                     : "Tidak ditentukan"
                 }
               />
+              <InfoRow
+                c={c}
+                icon={<Clock size={14} color={c.mutedForeground} />}
+                label="Booking Wajib Jam Kerja"
+                value={product.service.bookingInWorkHours ? "Ya" : "Tidak"}
+              />
+              {product.service.providerName && (
+                <InfoRow
+                  c={c}
+                  icon={<Package size={14} color={c.mutedForeground} />}
+                  label="Penyedia Layanan"
+                  value={product.service.providerName}
+                />
+              )}
+              {product.service.providerPhone && (
+                <InfoRow
+                  c={c}
+                  icon={<Phone size={14} color={c.mutedForeground} />}
+                  label="Telepon Penyedia"
+                  value={product.service.providerPhone}
+                />
+              )}
+              {product.service.providerEmail && (
+                <InfoRow
+                  c={c}
+                  icon={<Mail size={14} color={c.mutedForeground} />}
+                  label="Email Penyedia"
+                  value={product.service.providerEmail}
+                />
+              )}
             </InfoCard>
           )}
 
@@ -527,33 +618,128 @@ export default function ProductDetailScreen() {
                 <InfoRow
                   c={c}
                   icon={<Calendar1Icon size={14} color={c.mutedForeground} />}
-                  label="Tanggal event"
+                  label="Waktu Mulai"
                   value={new Date(product.ticket.eventDate).toLocaleDateString(
                     "id-ID",
                     {
                       day: "numeric",
                       month: "long",
                       year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
                     },
                   )}
+                />
+              )}
+              {product.ticket.eventEndDate && (
+                <InfoRow
+                  c={c}
+                  icon={<Calendar1Icon size={14} color={c.mutedForeground} />}
+                  label="Waktu Selesai"
+                  value={new Date(
+                    product.ticket.eventEndDate,
+                  ).toLocaleDateString("id-ID", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 />
               )}
               {product.ticket.venue && (
                 <InfoRow
                   c={c}
                   icon={<MapPin size={14} color={c.mutedForeground} />}
-                  label="Lokasi"
+                  label="Lokasi (Venue)"
                   value={product.ticket.venue}
                 />
+              )}
+              {product.ticket.venueAddress && (
+                <InfoRow
+                  c={c}
+                  icon={<MapPin size={14} color={c.mutedForeground} />}
+                  label="Alamat Lokasi"
+                  value={product.ticket.venueAddress}
+                />
+              )}
+              {product.ticket.mapUrl && (
+                <View
+                  style={{ paddingLeft: 22, marginTop: 4, marginBottom: 8 }}
+                >
+                  <Pressable
+                    onPress={() => Linking.openURL(product.ticket!.mapUrl!)}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 4,
+                      alignSelf: "flex-start",
+                    }}
+                  >
+                    <Map size={12} color={c.primary} />
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        fontWeight: "500",
+                        color: c.primary,
+                      }}
+                    >
+                      Lihat Peta Petunjuk Lokasi
+                    </Text>
+                  </Pressable>
+                </View>
               )}
               {!ticketSoldOut && !ticketEventPassed && (
                 <InfoRow
                   c={c}
                   icon={<TicketIcon size={14} color={c.mutedForeground} />}
-                  label="Sisa kuota"
-                  value={`${ticketAvailableQuota} tiket`}
+                  label="Sisa Kuota"
+                  value={`${ticketAvailableQuota} dari ${product.ticket.totalQuota} tiket`}
                 />
               )}
+              {product.ticket.saleStartDate && product.ticket.saleEndDate && (
+                <InfoRow
+                  c={c}
+                  icon={<Calendar size={14} color={c.mutedForeground} />}
+                  label="Periode Penjualan"
+                  value={`${new Date(
+                    product.ticket.saleStartDate,
+                  ).toLocaleDateString("id-ID", {
+                    day: "numeric",
+                    month: "short",
+                  })} s/d ${new Date(
+                    product.ticket.saleEndDate,
+                  ).toLocaleDateString("id-ID", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}`}
+                />
+              )}
+              {product.ticket.maxPerOrder && (
+                <InfoRow
+                  c={c}
+                  icon={<Package size={14} color={c.mutedForeground} />}
+                  label="Maks. Pembelian"
+                  value={`${product.ticket.maxPerOrder} tiket per transaksi`}
+                />
+              )}
+            </InfoCard>
+          )}
+
+          {product.type === "TICKET" && product.ticket?.terms && (
+            <InfoCard c={c} title="Syarat & Ketentuan">
+              <View style={{ gap: 6 }}>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: c.mutedForeground,
+                    lineHeight: 18,
+                  }}
+                >
+                  {product.ticket.terms}
+                </Text>
+              </View>
             </InfoCard>
           )}
 

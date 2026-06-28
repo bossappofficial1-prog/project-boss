@@ -3,7 +3,6 @@ import logoBossLight from "@assets/images/boss-icon-light.png";
 import { router } from "expo-router";
 import { ChevronRight, Search } from "lucide-react-native";
 import {
-  ActivityIndicator,
   Image,
   Pressable,
   RefreshControl,
@@ -23,118 +22,72 @@ import { PromoCard } from "@/components/ui/promo-card";
 import { SectionHeader } from "@/components/ui/section-header";
 import { useGetHomeSummary } from "@/features/home/hooks/use-home";
 import { useThemeColors } from "@/src/hooks/use-theme-colors";
+import { ErrorState } from "../components/ui/error-state";
+import { LoadingState } from "../components/ui/loading-state";
+import { StackHeader } from "../components/ui/stack-header";
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const c = useThemeColors();
   const { colorScheme } = useTheme();
-  const { data, isLoading, error, isRefetching, refetch } = useGetHomeSummary();
+  const { data, error, isLoading, isRefetching, refetch } = useGetHomeSummary();
 
   const handleRefresh = () => refetch();
 
   if (isLoading) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: "center",
-          justifyContent: "center",
-          paddingTop: insets.top,
-          backgroundColor: c.background,
-        }}
-      >
-        <ActivityIndicator size="large" color={c.primary} />
-        <Text style={{ fontSize: 13, color: c.mutedForeground, marginTop: 12 }}>
-          Memuat data...
-        </Text>
-      </View>
-    );
+    return <LoadingState fullScreen />;
   }
 
   if (error && !data) {
     return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: "center",
-          justifyContent: "center",
-          paddingTop: insets.top,
-          backgroundColor: c.background,
-          paddingHorizontal: 24,
-        }}
-      >
-        <Text
+      <>
+        <View
           style={{
-            fontSize: 16,
-            fontWeight: "600",
-            color: c.foreground,
-            textAlign: "center",
+            flex: 1,
+            alignItems: "center",
+            justifyContent: "center",
+            paddingTop: insets.top,
+            backgroundColor: c.background,
+            paddingHorizontal: 24,
           }}
         >
-          {error?.message || "Gagal memuat data"}
-        </Text>
-        <Pressable
-          onPress={() => refetch()}
-          style={{
-            marginTop: 16,
-            paddingVertical: 12,
-            paddingHorizontal: 28,
-            backgroundColor: c.primary,
-            borderRadius: 12,
-          }}
-        >
-          <Text
-            style={{
-              color: c.primaryForeground,
-              fontSize: 14,
-              fontWeight: "600",
-            }}
-          >
-            Coba Lagi
-          </Text>
-        </Pressable>
-      </View>
+          <ErrorState
+            onRetry={refetch}
+            description={error?.message || "Gagal memuat data"}
+          />
+        </View>
+      </>
     );
   }
 
   return (
     <View style={{ flex: 1, backgroundColor: c.card }}>
       {/* Top Bar */}
-      <View
-        style={{
-          backgroundColor: c.card,
-          borderBottomWidth: 1,
-          borderBottomColor: c.border,
-        }}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            paddingHorizontal: 16,
-            paddingVertical: 12,
-          }}
-        >
-          <Image
-            source={logoBossDark}
-            style={{
-              width: 68,
-              height: 30,
-              ...(colorScheme === "light" ? { display: "none" } : {}),
-            }}
-            resizeMode="contain"
-          />
-          <Image
-            source={logoBossLight}
-            style={{
-              width: 68,
-              height: 30,
-              ...(colorScheme === "dark" ? { display: "none" } : {}),
-            }}
-            resizeMode="contain"
-          />
 
+      <StackHeader
+        leftContent={
+          <>
+            <Image
+              source={logoBossDark}
+              style={{
+                width: 68,
+                height: 30,
+                ...(colorScheme === "light" ? { display: "none" } : {}),
+              }}
+              resizeMode="contain"
+            />
+            <Image
+              source={logoBossLight}
+              style={{
+                width: 68,
+                height: 30,
+                ...(colorScheme === "dark" ? { display: "none" } : {}),
+              }}
+              resizeMode="contain"
+            />
+          </>
+        }
+        rightContent={
           <Pressable
             onPress={() => router.push("/search")}
             style={{
@@ -148,8 +101,8 @@ export default function HomeScreen() {
           >
             <Search size={20} color={c.mutedForeground} />
           </Pressable>
-        </View>
-      </View>
+        }
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

@@ -1,11 +1,12 @@
-const { withAppBuildGradle } = require("@expo/config-plugins");
+const { withAppBuildGradle, withGradleProperties } = require("@expo/config-plugins");
 
 /**
  * Expo config plugin to add ABI splits targeting arm64-v8a only.
  * This reduces APK size by ~50% by excluding x86, x86_64, and armeabi-v7a.
  */
 const withAbiSplit = (config) => {
-  return withAppBuildGradle(config, (mod) => {
+  // 1. Modify app/build.gradle to add splits
+  config = withAppBuildGradle(config, (mod) => {
     const contents = mod.modResults.contents;
 
     // Skip if already patched
@@ -43,6 +44,19 @@ const withAbiSplit = (config) => {
 
     return mod;
   });
+
+  // 2. Modify gradle.properties to only compile arm64-v8a native code (making compile 4x faster)
+  config = withGradleProperties(config, (mod) => {
+    mod.modResults = mod.modResults.map((prop) => {
+      if (prop.key === "reactNativeArchitectures") {
+        return { ...prop, value: "arm64-v8a" };
+      }
+      return prop;
+    });
+    return mod;
+  });
+
+  return config;
 };
 
 module.exports = withAbiSplit;

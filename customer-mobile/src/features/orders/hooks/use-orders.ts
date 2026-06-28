@@ -1,6 +1,10 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getOrdersByPhone, cancelOrder, confirmOrder } from "../services/order.service";
 import { useProfileStore } from "@/src/stores/profile.store";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  cancelOrder,
+  confirmOrder,
+  getOrdersByPhone,
+} from "../services/order.service";
 
 export function useOrders() {
   const phone = useProfileStore((s) => s.phone);
@@ -10,7 +14,6 @@ export function useOrders() {
     queryFn: () => getOrdersByPhone(phone),
     enabled: !!phone,
     staleTime: 30_000,
-    refetchInterval: 60_000,
   });
 }
 

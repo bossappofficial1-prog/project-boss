@@ -9,7 +9,6 @@ import { useThemeColors } from "@/src/hooks/use-theme-colors";
 import * as Location from "expo-location";
 import { router, useFocusEffect } from "expo-router";
 import {
-  AlertCircle,
   Clock,
   List,
   Loader2,
@@ -31,6 +30,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ErrorState } from "../components/ui/error-state";
+import { StackHeader } from "../components/ui/stack-header";
 
 function formatDistance(meters: number): string {
   const isCorrectMeter = meters * 1000;
@@ -386,30 +387,12 @@ export default function NearbyScreen() {
           backgroundColor: c.background,
           alignItems: "center",
           justifyContent: "center",
-          paddingHorizontal: 32,
         }}
       >
-        <AlertCircle size={40} color={c.destructive} />
-        <Text
-          style={{
-            fontSize: 16,
-            fontWeight: "600",
-            color: c.foreground,
-            marginTop: 12,
-          }}
-        >
-          Lokasi Tidak Tersedia
-        </Text>
-        <Text
-          style={{
-            fontSize: 13,
-            color: c.mutedForeground,
-            marginTop: 4,
-            textAlign: "center",
-          }}
-        >
-          {locationError}
-        </Text>
+        <ErrorState
+          title="Lokasi Tidak Tersedia"
+          description={locationError || "Gagal mendapatkan lokasi"}
+        />
       </View>
     );
   }
@@ -437,29 +420,7 @@ export default function NearbyScreen() {
       {viewMode === "list" ? (
         <>
           {/* Header Bar */}
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              paddingHorizontal: 16,
-              paddingVertical: 12,
-              backgroundColor: c.card,
-              borderBottomWidth: 1,
-              borderBottomColor: c.border,
-            }}
-          >
-            <View style={{ gap: 2 }}>
-              <Text
-                style={{ fontSize: 18, fontWeight: "700", color: c.foreground }}
-              >
-                Terdekat
-              </Text>
-              <Text style={{ fontSize: 11, color: c.mutedForeground }}>
-                Outlet di sekitarmu
-              </Text>
-            </View>
-          </View>
+          <StackHeader title="Terdekat" description="Outlet di sekitarmu" />
 
           <View
             style={{

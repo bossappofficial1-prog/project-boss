@@ -12,6 +12,8 @@ import {
 import { useCallback, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { EmptyState } from "../components/ui/empty-state";
+import { StackHeader } from "../components/ui/stack-header";
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat("id-ID", {
@@ -71,249 +73,180 @@ export default function CartScreen() {
   );
   const selectedCount = selectedItems.reduce((sum, i) => sum + i.quantity, 0);
 
-  if (items.length === 0) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: c.background,
-          alignItems: "center",
-          justifyContent: "center",
-          paddingTop: insets.top,
-          paddingHorizontal: 32,
-        }}
-      >
-        <View
-          style={{
-            width: 72,
-            height: 72,
-            borderRadius: 36,
-            backgroundColor: c.muted,
-            alignItems: "center",
-            justifyContent: "center",
-            marginBottom: 16,
-          }}
-        >
-          <ShoppingCart size={32} color={c.mutedForeground} strokeWidth={1.5} />
-        </View>
-        <Text
-          style={{
-            fontSize: 16,
-            fontWeight: "600",
-            color: c.foreground,
-            marginBottom: 6,
-          }}
-        >
-          Keranjang Kosong
-        </Text>
-        <Text
-          style={{
-            fontSize: 13,
-            color: c.mutedForeground,
-            textAlign: "center",
-            lineHeight: 20,
-          }}
-        >
-          Tambahkan produk dari outlet untuk memulai pesanan
-        </Text>
-        <Pressable
-          onPress={() => router.push("/(tabs)")}
-          style={{
-            marginTop: 20,
-            paddingVertical: 12,
-            paddingHorizontal: 32,
-            borderRadius: 12,
-            backgroundColor: c.primary,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 14,
-              fontWeight: "600",
-              color: c.primaryForeground,
-            }}
-          >
-            Mulai Belanja
-          </Text>
-        </Pressable>
-      </View>
-    );
-  }
-
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
       {/* Header */}
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          paddingHorizontal: 16,
-          paddingVertical: 12,
-          backgroundColor: c.card,
-          borderBottomWidth: 1,
-          borderBottomColor: c.border,
-        }}
-      >
-        <View style={{ gap: 2 }}>
-          <Text
-            style={{ fontSize: 18, fontWeight: "700", color: c.foreground }}
-          >
-            Keranjang
-          </Text>
-          {totalItems > 0 && (
-            <Text style={{ fontSize: 11, color: c.mutedForeground }}>
-              {totalItems} item · {outletGroups.length} outlet
-            </Text>
-          )}
-        </View>
-        {items.length > 0 && (
-          <Pressable
-            onPress={clearCart}
-            hitSlop={8}
-            style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
-          >
-            <Trash2 size={13} color={c.destructive} />
-            <Text
-              style={{ fontSize: 12, fontWeight: "600", color: c.destructive }}
-            >
-              Hapus Semua
-            </Text>
-          </Pressable>
-        )}
-      </View>
-
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 110 }}
-      >
-        {outletGroups.length > 1 && (
-          <View
-            style={{
-              marginHorizontal: 12,
-              marginTop: 8,
-              paddingVertical: 8,
-              paddingHorizontal: 10,
-              borderRadius: 8,
-              backgroundColor: `${c.primary}10`,
-            }}
-          >
-            <Text
-              style={{ fontSize: 11.5, color: c.foreground, lineHeight: 16 }}
-            >
-              Pilih satu outlet untuk checkout. Item dari outlet lain tidak
-              diproses.
-            </Text>
-          </View>
-        )}
-
-        {outletGroups.map(([outletId, group]) => {
-          const isSelected = selectedOutletId === outletId;
-          const groupTotal = group.items.reduce(
-            (sum, i) => sum + i.price * i.quantity,
-            0,
-          );
-
-          return (
+      <StackHeader
+        title="Keranjang"
+        description={
+          totalItems > 0
+            ? `${totalItems} item · ${outletGroups.length} outlet`
+            : undefined
+        }
+        rightContent={
+          items.length > 0 && (
             <Pressable
-              key={outletId}
-              onPress={() => setSelectedOutletId(outletId)}
+              onPress={clearCart}
+              hitSlop={8}
+              style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+            >
+              <Trash2 size={13} color={c.destructive} />
+            </Pressable>
+          )
+        }
+      />
+
+      {items.length == 0 ? (
+        <View
+          style={{
+            top: insets.top,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <EmptyState
+            title="Keranjang Kosong"
+            icon={ShoppingCart}
+            description="Tambahkan produk dari outlet untuk memulai pesanan"
+            action={{
+              label: "Mulai Belanja",
+              onPress: () => router.push("/(tabs)"),
+            }}
+          />
+        </View>
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 110 }}
+        >
+          {outletGroups.length > 1 && (
+            <View
               style={{
-                marginTop: 8,
-                backgroundColor: c.card,
-                borderRadius: 12,
                 marginHorizontal: 12,
-                overflow: "hidden",
-                borderWidth: isSelected ? 1.5 : 1,
-                borderColor: isSelected ? c.primary : c.border,
+                marginTop: 8,
+                paddingVertical: 8,
+                paddingHorizontal: 10,
+                borderRadius: 8,
+                backgroundColor: `${c.primary}10`,
               }}
             >
-              <View
+              <Text
+                style={{ fontSize: 11.5, color: c.foreground, lineHeight: 16 }}
+              >
+                Pilih satu outlet untuk checkout. Item dari outlet lain tidak
+                diproses.
+              </Text>
+            </View>
+          )}
+
+          {outletGroups.map(([outletId, group]) => {
+            const isSelected = selectedOutletId === outletId;
+            const groupTotal = group.items.reduce(
+              (sum, i) => sum + i.price * i.quantity,
+              0,
+            );
+
+            return (
+              <Pressable
+                key={outletId}
+                onPress={() => setSelectedOutletId(outletId)}
                 style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 8,
-                  paddingHorizontal: 12,
-                  paddingVertical: 9,
-                  borderBottomWidth: 1,
-                  borderBottomColor: c.border,
+                  marginTop: 8,
+                  backgroundColor: c.card,
+                  borderRadius: 12,
+                  marginHorizontal: 12,
+                  overflow: "hidden",
+                  borderWidth: isSelected ? 1.5 : 1,
+                  borderColor: isSelected ? c.primary : c.border,
                 }}
               >
-                {isSelected ? (
-                  <CheckCircle size={17} color={c.primary} />
-                ) : (
-                  <Circle size={17} color={c.mutedForeground} />
-                )}
-
-                <Pressable
-                  onPress={() => router.push(`/outlet/${group.slug}`)}
+                <View
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
-                    gap: 6,
-                    flex: 1,
+                    gap: 8,
+                    paddingHorizontal: 12,
+                    paddingVertical: 9,
+                    borderBottomWidth: 1,
+                    borderBottomColor: c.border,
                   }}
                 >
-                  <Store size={14} color={c.primary} />
-                  <Text
+                  {isSelected ? (
+                    <CheckCircle size={17} color={c.primary} />
+                  ) : (
+                    <Circle size={17} color={c.mutedForeground} />
+                  )}
+
+                  <Pressable
+                    onPress={() => router.push(`/outlet/${group.slug}`)}
                     style={{
-                      fontSize: 13,
-                      fontWeight: "600",
-                      color: c.foreground,
-                      marginRight: 6,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 6,
+                      flex: 1,
                     }}
-                    numberOfLines={1}
                   >
-                    {group.name}
-                  </Text>
-                  {tableId && tableOutletId === outletId && (
-                    <View
+                    <Store size={14} color={c.primary} />
+                    <Text
                       style={{
-                        backgroundColor: `${c.primary}15`,
-                        paddingHorizontal: 8,
-                        paddingVertical: 2,
-                        borderRadius: 6,
-                        borderWidth: 0.5,
-                        borderColor: `${c.primary}40`,
+                        fontSize: 13,
+                        fontWeight: "600",
+                        color: c.foreground,
+                        marginRight: 6,
                       }}
+                      numberOfLines={1}
                     >
-                      <Text
+                      {group.name}
+                    </Text>
+                    {tableId && tableOutletId === outletId && (
+                      <View
                         style={{
-                          fontSize: 9,
-                          fontWeight: "700",
-                          color: c.primary,
-                          textTransform: "uppercase",
+                          backgroundColor: `${c.primary}15`,
+                          paddingHorizontal: 8,
+                          paddingVertical: 2,
+                          borderRadius: 6,
+                          borderWidth: 0.5,
+                          borderColor: `${c.primary}40`,
                         }}
                       >
-                        {tableName || tableId}
-                      </Text>
-                    </View>
-                  )}
-                </Pressable>
-                <Text
-                  style={{
-                    fontSize: 12.5,
-                    fontWeight: "600",
-                    color: c.primary,
-                  }}
-                >
-                  {formatPrice(groupTotal)}
-                </Text>
-              </View>
+                        <Text
+                          style={{
+                            fontSize: 9,
+                            fontWeight: "700",
+                            color: c.primary,
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          {tableName || tableId}
+                        </Text>
+                      </View>
+                    )}
+                  </Pressable>
+                  <Text
+                    style={{
+                      fontSize: 12.5,
+                      fontWeight: "600",
+                      color: c.primary,
+                    }}
+                  >
+                    {formatPrice(groupTotal)}
+                  </Text>
+                </View>
 
-              {group.items.map((item) => (
-                <CartItemCard
-                  key={item.id}
-                  item={item}
-                  onUpdateQuantity={updateQuantity}
-                  onRemoveItem={removeItem}
-                  onUpdateSlot={handleUpdateSlot}
-                />
-              ))}
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+                {group.items.map((item) => (
+                  <CartItemCard
+                    key={item.id}
+                    item={item}
+                    onUpdateQuantity={updateQuantity}
+                    onRemoveItem={removeItem}
+                    onUpdateSlot={handleUpdateSlot}
+                  />
+                ))}
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      )}
 
       {/* Bottom checkout bar */}
       <View

@@ -8,12 +8,14 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { router } from "expo-router";
 
 import { useTheme } from "@/components/ThemeProvider";
 import { useSnackbar } from "@/components/ui/snackbar";
 import { NotificationButton } from "@/src/features/notifications";
 import { useThemeColors } from "@/src/hooks/use-theme-colors";
 import { useProfileStore } from "@/src/stores/profile.store";
+import { useFavoritesStore } from "@/src/stores/favorites.store";
 import {
   Bookmark,
   ChevronRight,
@@ -65,6 +67,8 @@ export default function ProfileScreen() {
   const { fullName, phone, theme, setFullName, setPhone, setTheme, reset } =
     useProfileStore();
 
+  const { favoriteOutlets, savedProducts } = useFavoritesStore();
+
   const profileCompleteness = useMemo(() => {
     let completed = 0;
     if (fullName && fullName.length >= 2) completed++;
@@ -106,21 +110,21 @@ export default function ProfileScreen() {
       icon: Receipt,
       label: "Pesanan Saya",
       subtitle: "Lihat semua pesanan",
-      onPress: () => {},
+      onPress: () => router.push("/orders"),
     },
     {
       icon: Heart,
       label: "Favorit Saya",
       subtitle: "Outlet tersimpan",
-      badge: 0,
-      onPress: () => {},
+      badge: favoriteOutlets.length,
+      onPress: () => router.push("/favorite-outlets"),
     },
     {
       icon: Bookmark,
       label: "Produk Tersimpan",
       subtitle: "Produk & layanan",
-      badge: 0,
-      onPress: () => {},
+      badge: savedProducts.length,
+      onPress: () => router.push("/saved-products"),
     },
   ];
 

@@ -15,9 +15,10 @@ class AppUpdaterModule : Module() {
       val context = appContext.reactContext
         ?: throw Exception("React context not available")
 
-      val file = File(absolutePath)
+      val cleanPath = Uri.parse(absolutePath).path ?: absolutePath
+      val file = File(cleanPath)
       if (!file.exists()) {
-        throw Exception("APK file not found: $absolutePath")
+        throw Exception("APK file not found: $cleanPath")
       }
 
       val uri: Uri = FileProvider.getUriForFile(

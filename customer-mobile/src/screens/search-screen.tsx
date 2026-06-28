@@ -1,14 +1,13 @@
 import { router, useLocalSearchParams } from "expo-router";
 import {
-  ArrowLeft,
   MapPin,
   Package,
   Search as SearchIcon,
+  SearchSlash,
   Store,
 } from "lucide-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Image,
   Pressable,
   ScrollView,
@@ -16,13 +15,15 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { getOutletById } from "@/features/outlet/services/outlet.service";
 import { apiClient } from "@/services/api-client";
 import { useThemeColors } from "@/src/hooks/use-theme-colors";
 import defaultOutlet from "@assets/images/default-outlet.webp";
 import defaultProduct from "@assets/images/default-product.png";
+import { EmptyState } from "../components/ui/empty-state";
+import { LoadingState } from "../components/ui/loading-state";
+import { StackHeader } from "../components/ui/stack-header";
 
 interface SearchOutlet {
   id: string;
@@ -43,7 +44,6 @@ interface SearchProduct {
 }
 
 export default function SearchScreen() {
-  const insets = useSafeAreaInsets();
   const c = useThemeColors();
   const { q: initialQ } = useLocalSearchParams<{ q?: string }>();
   const inputRef = useRef<TextInput>(null);
@@ -101,113 +101,49 @@ export default function SearchScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
-      <View
-        style={{
-          backgroundColor: c.topBar.bg,
-          borderBottomWidth: 1,
-          borderBottomColor: c.topBar.border,
-        }}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 12,
-            paddingHorizontal: 16,
-            paddingVertical: 12,
-          }}
-        >
-          <Pressable onPress={() => router.back()} style={{ padding: 4 }}>
-            <ArrowLeft size={24} color={c.foreground} />
-          </Pressable>
-          <View
-            style={{
-              flex: 1,
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 10,
-              paddingVertical: 10,
-              paddingHorizontal: 14,
-              backgroundColor: c.search.bg,
-              borderRadius: 12,
-            }}
-          >
-            <SearchIcon size={18} color={c.mutedForeground} />
-            <TextInput
-              ref={inputRef}
-              value={query}
-              onChangeText={setQuery}
-              placeholder="Cari produk atau outlet..."
-              placeholderTextColor={c.mutedForeground}
-              style={{
-                flex: 1,
-                fontSize: 14,
-                color: c.foreground,
-                padding: 0,
-              }}
-              returnKeyType="search"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            {query.length > 0 && (
-              <Pressable onPress={() => setQuery("")}>
-                <Text style={{ fontSize: 14, color: c.mutedForeground }}>
-                  ✕
-                </Text>
-              </Pressable>
-            )}
-          </View>
-        </View>
-      </View>
+      <StackHeader
+        variant="search"
+        searchValue={query}
+        onSearchChange={setQuery}
+        searchPlaceholder="Cari produk atau outlet..."
+        onBack={() => router.back()}
+      />
 
       {isLoading ? (
         <View
-          style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+          style={{
+            alignItems: "center",
+            justifyContent: "center",
+            marginVertical: 80,
+          }}
         >
-          <ActivityIndicator size="large" color={c.primary} />
+          <LoadingState />
         </View>
       ) : query.trim() && !hasResults ? (
         <View
           style={{
-            flex: 1,
             alignItems: "center",
             justifyContent: "center",
-            paddingHorizontal: 24,
+            marginVertical: 80,
           }}
         >
-          <Text
-            style={{
-              fontSize: 15,
-              color: c.mutedForeground,
-              textAlign: "center",
-            }}
-          >
-            Tidak ditemukan hasil untuk "{query}"
-          </Text>
+          <EmptyState
+            icon={SearchSlash}
+            title="Tidak Ditemukan"
+            description={`Tidak ditemukan hasil untuk "${query}"`}
+          />
         </View>
       ) : !query.trim() ? (
         <View
           style={{
-            flex: 1,
             alignItems: "center",
-            marginTop: 200,
-            paddingHorizontal: 24,
+            marginVertical: 80,
           }}
         >
-          <SearchIcon
-            size={48}
-            color={c.mutedForeground}
-            style={{ opacity: 0.5, marginBottom: 16 }}
+          <EmptyState
+            title="Cari outlet atau produk favorit kamu"
+            icon={SearchIcon}
           />
-          <Text
-            style={{
-              fontSize: 15,
-              color: c.mutedForeground,
-              textAlign: "center",
-            }}
-          >
-            Cari outlet atau produk favorit kamu
-          </Text>
         </View>
       ) : (
         <ScrollView

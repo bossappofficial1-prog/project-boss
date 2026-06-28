@@ -2,7 +2,8 @@
   "expo": {
     "name": "BossApp",
     "slug": "customer-mobile",
-    "version": "1.0.0",
+    "version": "1.0.1",
+
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
     "scheme": "bossapp",
@@ -14,6 +15,7 @@
     },
     "android": {
       "package": "id.bossapp.customer",
+      "versionCode": 2,
       "adaptiveIcon": {
         "backgroundColor": "#ffffff",
         "foregroundImage": "./assets/images/adaptive-icon-foreground.png"
@@ -22,10 +24,7 @@
         {
           "action": "VIEW",
           "autoVerify": true,
-          "category": [
-            "DEFAULT",
-            "BROWSABLE"
-          ],
+          "category": ["DEFAULT", "BROWSABLE"],
           "data": {
             "scheme": "https",
             "host": "customer.bossapp.id",
@@ -34,10 +33,7 @@
         },
         {
           "action": "VIEW",
-          "category": [
-            "DEFAULT",
-            "BROWSABLE"
-          ],
+          "category": ["DEFAULT", "BROWSABLE"],
           "data": {
             "scheme": "bossapp"
           }

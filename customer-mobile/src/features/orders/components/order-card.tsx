@@ -2,10 +2,10 @@ import { useThemeColors } from "@/src/hooks/use-theme-colors";
 import { formatDate, formatPrice } from "@/src/lib/utils";
 import { OrderDetail } from "@/src/types/order";
 import {
-    AlertCircle,
-    ChevronRight,
-    Phone,
-    RefreshCw,
+  AlertCircle,
+  ChevronRight,
+  Phone,
+  RefreshCw,
 } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
 import { STATUS_CONFIG } from "./utils";
@@ -44,17 +44,17 @@ export function OrderCard({
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => ({
+      style={{
         backgroundColor: c.card,
         borderRadius: 14,
         borderWidth: 1,
         borderColor: c.border,
         overflow: "hidden",
-        opacity: pressed ? 0.96 : 1,
-      })}
+        opacity: 1,
+      }}
     >
       {/* Accent top bar */}
-      <View style={{ height: 3, backgroundColor: config.accentBar }} />
+      <View style={{ height: 3, backgroundColor: config.color }} />
 
       {/* Header: outlet + status */}
       <View
@@ -80,7 +80,7 @@ export function OrderCard({
               width: 34,
               height: 34,
               borderRadius: 9,
-              backgroundColor: config.bg,
+              backgroundColor: config.color + 20,
               alignItems: "center",
               justifyContent: "center",
             }}
@@ -108,7 +108,7 @@ export function OrderCard({
               paddingVertical: 3,
               paddingHorizontal: 8,
               borderRadius: 10,
-              backgroundColor: config.bg,
+              backgroundColor: config.color + 20,
             }}
           >
             <Text

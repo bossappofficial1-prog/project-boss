@@ -1,6 +1,7 @@
+import AppUpdatePrompt from "@/src/components/app-update-prompt";
+import { useNotifications } from "@/src/hooks/use-notifications";
 import { useThemeColors } from "@/src/hooks/use-theme-colors";
 import { useCartStore } from "@/src/stores/cart.store";
-import { useNotifications } from "@/src/hooks/use-notifications";
 import { Tabs } from "expo-router";
 import {
   ClipboardList,
@@ -97,66 +98,70 @@ export default function TabLayout() {
   const c = useThemeColors();
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: c.primary,
-        tabBarInactiveTintColor: c.mutedForeground,
-        tabBarStyle: {
-          backgroundColor: c.tab.bg,
-          borderTopColor: c.tab.border,
-        },
-        headerStyle: { backgroundColor: c.tab.bg },
-        headerTintColor: c.foreground,
-        headerTitleStyle: { fontFamily: "PoppinsSemiBold" },
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Beranda",
-          tabBarIcon: ({ color }) => (
-            <Home size={22} color={color} strokeWidth={2} />
-          ),
-          headerShown: false,
-        }}
-      />
-      <Tabs.Screen
-        name="nearby"
-        options={{
-          title: "Terdekat",
-          headerShown: false,
-          tabBarIcon: ({ color }) => (
-            <MapPin size={22} color={color} strokeWidth={2} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="cart"
-        options={{
-          title: "Keranjang",
-          headerShown: false,
-          tabBarIcon: ({ color }) => <CartTabIcon color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="orders"
-        options={{
-          title: "Pesanan",
-          headerShown: false,
-          tabBarIcon: ({ color }) => <OrdersTabIcon color={color} />,
-        }}
-      />
+    <>
+      <AppUpdatePrompt />
 
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "Profil",
-          headerShown: false,
-          tabBarIcon: ({ color }) => (
-            <User size={22} color={color} strokeWidth={2} />
-          ),
+      <Tabs
+        screenOptions={{
+          tabBarActiveTintColor: c.primary,
+          tabBarInactiveTintColor: c.mutedForeground,
+          tabBarStyle: {
+            backgroundColor: c.background,
+            borderTopColor: c.border,
+          },
+          headerStyle: { backgroundColor: c.tab.bg },
+          headerTintColor: c.foreground,
+          headerTitleStyle: { fontFamily: "PoppinsSemiBold" },
         }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: "Beranda",
+            tabBarIcon: ({ color }) => (
+              <Home size={22} color={color} strokeWidth={2} />
+            ),
+            headerShown: false,
+          }}
+        />
+        <Tabs.Screen
+          name="nearby"
+          options={{
+            title: "Terdekat",
+            headerShown: false,
+            tabBarIcon: ({ color }) => (
+              <MapPin size={22} color={color} strokeWidth={2} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="cart"
+          options={{
+            title: "Keranjang",
+            headerShown: false,
+            tabBarIcon: ({ color }) => <CartTabIcon color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="orders"
+          options={{
+            title: "Pesanan",
+            headerShown: false,
+            tabBarIcon: ({ color }) => <OrdersTabIcon color={color} />,
+          }}
+        />
+
+        <Tabs.Screen
+          name="profile"
+          options={{
+            title: "Profil",
+            headerShown: false,
+            tabBarIcon: ({ color }) => (
+              <User size={22} color={color} strokeWidth={2} />
+            ),
+          }}
+        />
+      </Tabs>
+    </>
   );
 }

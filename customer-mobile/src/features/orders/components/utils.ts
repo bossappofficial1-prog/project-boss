@@ -44,66 +44,48 @@ export const STATUS_CONFIG: Record<
   string,
   {
     color: string;
-    bg: string;
     icon: typeof CheckCircle;
     label: string;
-    accentBar: string;
   }
 > = {
   AWAITING_PAYMENT: {
-    color: "#d97706",
-    bg: "#fef3c7",
+    color: "#f59e0b",
     icon: Hourglass,
     label: "Menunggu Pembayaran",
-    accentBar: "#f59e0b",
   },
   AWAITING_VERIFICATION: {
-    color: "#d97706",
-    bg: "#fef3c7",
+    color: "#f59e0b",
     icon: Hourglass,
     label: "Menunggu Verifikasi",
-    accentBar: "#f59e0b",
   },
   PROCESSING: {
-    color: "#2563eb",
-    bg: "#dbeafe",
+    color: "#3b82f6",
     icon: Clock,
     label: "Diproses",
-    accentBar: "#3b82f6",
   },
   CONFIRMED: {
-    color: "#0891b2",
-    bg: "#cffafe",
+    color: "#06b6d4",
     icon: CheckCircle,
     label: "Dikonfirmasi",
-    accentBar: "#06b6d4",
   },
   READY: {
-    color: "#0891b2",
-    bg: "#cffafe",
+    color: "#06b6d4",
     icon: CheckCircle,
     label: "Siap",
-    accentBar: "#06b6d4",
   },
   ON_GOING: {
-    color: "#ea580c",
-    bg: "#fff7ed",
+    color: "#f97316",
     icon: Play,
     label: "Sedang Berlangsung",
-    accentBar: "#f97316",
   },
   COMPLETED: {
-    color: "#16a34a",
-    bg: "#f0fdf4",
+    color: "#22c55e",
     icon: CheckCircle,
     label: "Selesai",
-    accentBar: "#22c55e",
   },
   CANCELLED: {
-    color: "#dc2626",
-    bg: "#fef2f2",
+    color: "#ef4444",
     icon: XCircle,
     label: "Dibatalkan",
-    accentBar: "#ef4444",
   },
 };

@@ -1,9 +1,23 @@
-import { useThemeContext } from "@/src/components/ThemeProvider";
 import { useThemeColors } from "@/src/hooks/use-theme-colors";
 import { formatDate, formatPrice } from "@/src/lib/utils";
 import { OrderDetail } from "@/src/types/order";
-import { Clock, Package, Phone, RefreshCw, ShoppingBag, Store, X } from "lucide-react-native";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { File, Paths } from "expo-file-system";
+import * as Sharing from "expo-sharing";
+import {
+  Calendar,
+  Clock,
+  Download,
+  MapPin,
+  Package,
+  Phone,
+  RefreshCw,
+  ShoppingBag,
+  Store,
+  X,
+} from "lucide-react-native";
+import { useState } from "react";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import QRCode from "react-native-qrcode-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { DetailRow } from "./detail-row";
 import { PAYMENT_STATUS_CONFIG, STATUS_CONFIG } from "./utils";
@@ -32,7 +46,58 @@ export function OrderDetailModal({
   const cfg = STATUS_CONFIG[order.orderStatus] || STATUS_CONFIG.PROCESSING;
   const StatusIcon = cfg.icon;
   const insets = useSafeAreaInsets();
-  const { colorScheme } = useThemeContext();
+
+  const [downloading, setDownloading] = useState(false);
+
+  const allTickets = order.items.flatMap((item) =>
+    (item.ticketCodes || []).map((tc) => ({
+      ...tc,
+      productName: item.product.name,
+      ticketInfo: item.product.ticket,
+    })),
+  );
+
+  const hasTickets = allTickets.length > 0;
+
+  const handleDownloadTicket = async () => {
+    if (downloading) return;
+    setDownloading(true);
+    try {
+      const baseUrl =
+        process.env.EXPO_PUBLIC_API_URL || "http://10.74.3.211:1234/api/v1";
+      const downloadUrl = `${baseUrl}/tickets/order/${order.id}/print`;
+      const fileName = `Ticket-${order.id.slice(0, 8).toUpperCase()}.pdf`;
+      const file = new File(Paths.cache, fileName);
+
+      const response = await fetch(downloadUrl);
+      if (!response.ok) {
+        throw new Error("Gagal mengunduh file tiket dari server");
+      }
+      const data = await response.arrayBuffer();
+      const bytes = new Uint8Array(data);
+      await file.write(bytes);
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(file.uri, {
+          mimeType: "application/pdf",
+          dialogTitle: "Download Tiket",
+        });
+      } else {
+        Alert.alert(
+          "Info",
+          "Penyimpanan/berbagi berkas tidak tersedia di perangkat Anda.",
+        );
+      }
+    } catch (err: any) {
+      console.error("Download ticket error:", err);
+      Alert.alert(
+        "Gagal",
+        err.message || "Gagal mengunduh tiket. Silakan coba lagi.",
+      );
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
@@ -89,7 +154,7 @@ export function OrderDetailModal({
             gap: 12,
             padding: 14,
             borderRadius: 12,
-            backgroundColor: colorScheme === "dark" ? cfg.bg + "10" : cfg.bg,
+            backgroundColor: cfg.color + 20,
           }}
         >
           <View
@@ -127,6 +192,8 @@ export function OrderDetailModal({
             style={{
               padding: 12,
               borderRadius: 10,
+              borderTopLeftRadius: 0,
+              borderBottomLeftRadius: 0,
               backgroundColor: `${c.destructive}0d`,
               borderLeftWidth: 3,
               borderLeftColor: c.destructive,
@@ -234,56 +301,317 @@ export function OrderDetailModal({
               overflow: "hidden",
             }}
           >
-            {order.items.map((item, i) => (
-              <View key={item.id}>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    paddingHorizontal: 14,
-                    paddingVertical: 11,
-                  }}
-                >
-                  <View style={{ flex: 1, gap: 2 }}>
+            {order.items.map((item, i) => {
+              const isTicket = item.product.type === "TICKET";
+              const isService = item.product.type === "SERVICE";
+              const isGoods = item.product.type === "GOODS";
+              const ticketInfo = item.product.ticket;
+              const serviceInfo = item.product.service;
+              const goodsInfo = item.product.goods;
+
+              return (
+                <View key={item.id}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      paddingHorizontal: 14,
+                      paddingVertical: 11,
+                    }}
+                  >
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          fontWeight: "500",
+                          color: c.foreground,
+                        }}
+                        numberOfLines={1}
+                      >
+                        {item.product.name}
+                      </Text>
+
+                      {isGoods && goodsInfo?.unit ? (
+                        <Text
+                          style={{ fontSize: 11, color: c.mutedForeground }}
+                        >
+                          {item.quantity} {goodsInfo.unit} x{" "}
+                          {formatPrice(item.priceAtTimeOfOrder)}
+                        </Text>
+                      ) : isService ? (
+                        <View style={{ gap: 2 }}>
+                          <Text
+                            style={{ fontSize: 11, color: c.mutedForeground }}
+                          >
+                            {item.quantity} x{" "}
+                            {formatPrice(item.priceAtTimeOfOrder)}
+                          </Text>
+                          {serviceInfo?.durationMinutes && (
+                            <Text
+                              style={{ fontSize: 11, color: c.mutedForeground }}
+                            >
+                              Durasi: {serviceInfo.durationMinutes} menit
+                            </Text>
+                          )}
+                        </View>
+                      ) : isTicket ? (
+                        <View style={{ gap: 2 }}>
+                          <Text
+                            style={{ fontSize: 11, color: c.mutedForeground }}
+                          >
+                            {item.quantity} x{" "}
+                            {formatPrice(item.priceAtTimeOfOrder)}
+                          </Text>
+                          {ticketInfo && (
+                            <View style={{ gap: 4, marginTop: 4 }}>
+                              {ticketInfo.eventDate && (
+                                <View
+                                  style={{
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                    gap: 5,
+                                  }}
+                                >
+                                  <Calendar
+                                    size={12}
+                                    color={c.mutedForeground}
+                                  />
+                                  <Text
+                                    style={{
+                                      fontSize: 11,
+                                      color: c.mutedForeground,
+                                    }}
+                                  >
+                                    {formatDate(ticketInfo.eventDate)}
+                                    {ticketInfo.eventEndDate &&
+                                      ` - ${formatDate(ticketInfo.eventEndDate)}`}
+                                  </Text>
+                                </View>
+                              )}
+                              {ticketInfo.venue && (
+                                <View
+                                  style={{
+                                    flexDirection: "row",
+                                    alignItems: "flex-start",
+                                    gap: 5,
+                                  }}
+                                >
+                                  <MapPin
+                                    size={12}
+                                    color={c.mutedForeground}
+                                    style={{ marginTop: 1 }}
+                                  />
+                                  <Text
+                                    style={{
+                                      fontSize: 11,
+                                      color: c.mutedForeground,
+                                      flex: 1,
+                                    }}
+                                  >
+                                    {ticketInfo.venue}
+                                    {ticketInfo.venueAddress &&
+                                      ` (${ticketInfo.venueAddress})`}
+                                  </Text>
+                                </View>
+                              )}
+                            </View>
+                          )}
+                        </View>
+                      ) : (
+                        <Text
+                          style={{ fontSize: 11, color: c.mutedForeground }}
+                        >
+                          {item.quantity} x{" "}
+                          {formatPrice(item.priceAtTimeOfOrder)}
+                        </Text>
+                      )}
+                    </View>
                     <Text
                       style={{
                         fontSize: 13,
-                        fontWeight: "500",
+                        fontWeight: "600",
                         color: c.foreground,
+                        marginLeft: 12,
+                        alignSelf: "flex-start",
                       }}
-                      numberOfLines={1}
                     >
-                      {item.product.name}
-                    </Text>
-                    <Text style={{ fontSize: 11, color: c.mutedForeground }}>
-                      {item.quantity} x {formatPrice(item.priceAtTimeOfOrder)}
+                      {formatPrice(item.priceAtTimeOfOrder * item.quantity)}
                     </Text>
                   </View>
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      fontWeight: "600",
-                      color: c.foreground,
-                      marginLeft: 12,
-                    }}
-                  >
-                    {formatPrice(item.priceAtTimeOfOrder * item.quantity)}
-                  </Text>
+                  {i < order.items.length - 1 && (
+                    <View
+                      style={{
+                        height: 1,
+                        backgroundColor: c.border,
+                        marginHorizontal: 14,
+                      }}
+                    />
+                  )}
                 </View>
-                {i < order.items.length - 1 && (
-                  <View
-                    style={{
-                      height: 1,
-                      backgroundColor: c.border,
-                      marginHorizontal: 14,
-                    }}
-                  />
-                )}
-              </View>
-            ))}
+              );
+            })}
           </View>
         </View>
+
+        {/* Tickets Section */}
+        {hasTickets && (
+          <View style={{ gap: 6 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 2,
+              }}
+            >
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+              >
+                <Package size={13} color={c.mutedForeground} />
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "600",
+                    color: c.mutedForeground,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  Tiket Anda
+                </Text>
+              </View>
+
+              <Pressable
+                onPress={handleDownloadTicket}
+                disabled={downloading}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 5,
+                  backgroundColor: c.primary + "15",
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderRadius: 6,
+                }}
+              >
+                <Download size={12} color={c.primary} />
+                <Text
+                  style={{
+                    fontSize: 11,
+                    fontWeight: "600",
+                    color: c.primary,
+                  }}
+                >
+                  {downloading ? "Mengunduh..." : "Download Tiket"}
+                </Text>
+              </Pressable>
+            </View>
+
+            <View
+              style={{
+                backgroundColor: c.card,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: c.border,
+                padding: 16,
+                gap: 16,
+              }}
+            >
+              {allTickets.map((ticket, i) => (
+                <View
+                  key={ticket.id}
+                  style={{
+                    alignItems: "center",
+                    gap: 12,
+                    paddingBottom: i < allTickets.length - 1 ? 16 : 0,
+                    borderBottomWidth: i < allTickets.length - 1 ? 1 : 0,
+                    borderBottomColor: c.border,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: "100%",
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                    }}
+                  >
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          fontWeight: "600",
+                          color: c.foreground,
+                        }}
+                      >
+                        {ticket.productName}
+                      </Text>
+
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          fontWeight: "500",
+                          color: c.primary,
+                          marginTop: 2,
+                        }}
+                      >
+                        Code: {ticket.code}
+                      </Text>
+                    </View>
+                    <View
+                      style={{
+                        paddingHorizontal: 8,
+                        paddingVertical: 3,
+                        borderRadius: 20,
+                        backgroundColor:
+                          ticket.status === "VALID"
+                            ? "#34c75920"
+                            : ticket.status === "REDEEMED"
+                              ? c.muted
+                              : "#ff3b3020",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 10,
+                          fontWeight: "700",
+                          color:
+                            ticket.status === "VALID"
+                              ? "#34c759"
+                              : ticket.status === "REDEEMED"
+                                ? c.mutedForeground
+                                : "#ff3b30",
+                        }}
+                      >
+                        {ticket.status}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View
+                    style={{
+                      padding: 12,
+                      backgroundColor: "#ffffff",
+                      borderRadius: 10,
+                      borderWidth: 1,
+                      borderColor: c.border,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <QRCode
+                      value={ticket.code}
+                      size={120}
+                      backgroundColor="#ffffff"
+                      color="#000000"
+                    />
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Payment summary */}
         <View style={{ gap: 6 }}>
@@ -333,6 +661,12 @@ export function OrderDetailModal({
                     value: formatPrice(order.midtransFee),
                   }
                 : null,
+              order.appFee > 0
+                ? {
+                    label: "Biaya Aplikasi",
+                    value: formatPrice(order.appFee),
+                  }
+                : null,
               order.taxAmount
                 ? { label: "Pajak", value: formatPrice(order.taxAmount) }
                 : null,
@@ -379,6 +713,81 @@ export function OrderDetailModal({
             </View>
           </View>
         </View>
+
+        {/* Booking Info Section */}
+        {(order.bookingSlot || order.bookingDate) && (
+          <View style={{ gap: 6 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                marginBottom: 2,
+              }}
+            >
+              <Clock size={13} color={c.mutedForeground} />
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: "600",
+                  color: c.mutedForeground,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                Informasi Booking
+              </Text>
+            </View>
+            <View
+              style={{
+                backgroundColor: c.card,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: c.border,
+                overflow: "hidden",
+              }}
+            >
+              {[
+                order.bookingSlot?.date
+                  ? {
+                      label: "Tanggal",
+                      value: formatDate(order.bookingSlot.date),
+                    }
+                  : order.bookingDate
+                    ? {
+                        label: "Tanggal Booking",
+                        value: formatDate(order.bookingDate),
+                      }
+                    : null,
+                order.bookingSlot?.startTime && order.bookingSlot?.endTime
+                  ? {
+                      label: "Waktu Slot",
+                      value: `${order.bookingSlot.startTime.slice(0, 5)} - ${order.bookingSlot.endTime.slice(0, 5)}`,
+                    }
+                  : null,
+              ]
+                .filter(Boolean)
+                .map((row, i, arr) => (
+                  <View key={row!.label}>
+                    <View
+                      style={{ paddingHorizontal: 14, paddingVertical: 11 }}
+                    >
+                      <DetailRow label={row!.label} value={row!.value} c={c} />
+                    </View>
+                    {i < arr.length - 1 && (
+                      <View
+                        style={{
+                          height: 1,
+                          backgroundColor: c.border,
+                          marginHorizontal: 14,
+                        }}
+                      />
+                    )}
+                  </View>
+                ))}
+            </View>
+          </View>
+        )}
 
         {/* Queue info */}
         {order.queueMeta && (
