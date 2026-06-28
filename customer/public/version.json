@@ -4,5 +4,5 @@
   "apkUrl": "https://customer.bossapp.id/downloads/boss-release.apk",
   "minVersionCode": 1,
   "forceUpdate": false,
-  "releaseNotes": "**Perbaikan:**\n- Network error pada build lokal\n- Update dependency\n\n**Catatan:**\n- Hapus cache jika ada kendala"
+  "releaseNotes": "### 🚀 Yang Baru di Versi 1.0.1\n\nKami terus meningkatkan Boss App agar belanja Anda semakin nyaman! Berikut pembaruan pada versi ini:\n\n- 🔍 **Pencarian Produk**: Sekarang Anda bisa langsung mencari produk favorit di halaman outlet secara cepat.\n- 📍 **Peta & Petunjuk Arah**: Alamat outlet kini dapat diklik untuk langsung membuka petunjuk jalan di Google Maps atau Apple Maps.\n- 📸 **Tampilan Lebih Rapi**: Desain halaman outlet disempurnakan dengan informasi alamat dan foto cover yang lebih proporsional.\n- 🎫 **Informasi Jasa & Tiket Lengkap**: Informasi durasi layanan, kontak penyedia, jadwal event, lokasi detail, sisa kuota tiket, serta syarat & ketentuan kini tampil lebih lengkap.\n- 🔗 **Bagikan Produk**: Bagikan produk menarik langsung ke teman Anda melalui tombol share di pojok kanan atas.\n- ❤️ **Simpan Favorit**: Simpan outlet favorit dan produk kesukaan Anda agar lebih mudah ditemukan kembali.\n- ⚡ **Lebih Ringan & Lancar**: Perbaikan kendala loading, halaman error yang lebih informatif, serta peningkatan kecepatan aplikasi agar terasa lebih mulus."
 }
