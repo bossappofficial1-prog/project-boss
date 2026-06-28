@@ -53,7 +53,7 @@ export class ToolsRepository {
         order: {
           outletId,
           ...COMPLETED_FILTER,
-          createdAt: { gte: startDate, lte: endDate },
+        date: { gte: startDate, lte: endDate },
         },
       },
       select: {

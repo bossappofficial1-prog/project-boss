@@ -36,12 +36,36 @@ module.exports = (config) => {
       const appGradle = path.join(projectRoot, "android", "app", "build.gradle");
       let appContents = fs.readFileSync(appGradle, "utf8");
 
-      // Add release signing config (from env vars or defaults)
+      // Add release signing config (from env vars, local credentials.json, or defaults)
+      let localCreds = {};
+      try {
+        const credsPath = path.join(projectRoot, "credentials.json");
+        if (fs.existsSync(credsPath)) {
+          const creds = JSON.parse(fs.readFileSync(credsPath, "utf8"));
+          if (creds.android && creds.android.keystore) {
+            localCreds = creds.android.keystore;
+            // Resolve path relative to android/app/ directory
+            if (localCreds.keystorePath && !path.isAbsolute(localCreds.keystorePath)) {
+              localCreds.keystorePath = path.join("../../", localCreds.keystorePath);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("[google-services] Failed to parse credentials.json:", e);
+      }
+
       const keystorePath = process.env.ANDROID_KEYSTORE_PATH
+        || localCreds.keystorePath
         || "../../credentials/android/production-release.keystore";
-      const keystorePassword = process.env.ANDROID_KEYSTORE_PASSWORD || "";
-      const keyAlias = process.env.ANDROID_KEY_ALIAS || "";
-      const keyPassword = process.env.ANDROID_KEY_PASSWORD || "";
+      const keystorePassword = process.env.ANDROID_KEYSTORE_PASSWORD
+        || localCreds.keystorePassword
+        || "";
+      const keyAlias = process.env.ANDROID_KEY_ALIAS
+        || localCreds.keyAlias
+        || "";
+      const keyPassword = process.env.ANDROID_KEY_PASSWORD
+        || localCreds.keyPassword
+        || "";
 
       if (keystorePassword && !appContents.includes("signingConfigs.release")) {
         // Insert release signing config INSIDE signingConfigs block

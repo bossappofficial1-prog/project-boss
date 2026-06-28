@@ -265,9 +265,9 @@ export class ReportService extends BaseService {
   async getCompareOutletsReport(
     date: string,
     type: "daily" | "monthly" | "yearly",
-    ownerId: string,
+    businessId: string,
   ): Promise<OutletReport[]> {
-    const cachedkey = `report:compare:${ownerId}:${date}:${type}`;
+    const cachedkey = `report:compare:${businessId}:${date}:${type}`;
     const cached = await RedisUtils.get(cachedkey);
     if (cached) return cached as OutletReport[];
 
@@ -285,23 +285,36 @@ export class ReportService extends BaseService {
       end = endOfDay(refDate);
     }
 
-    // Simplified - in production you'd get outlets from business
-    const outletIds = [ownerId];
-    const reportDataPromises = outletIds.map((outletId) =>
-      this.reportRepository.getOutletReport([outletId], date, start, end, type as any).then((data) => ({
-        outletId,
+    const business = await this.db.business.findUnique({
+      where: { id: businessId },
+      include: { outlets: { select: { id: true, name: true } } },
+    });
+
+    if (!business) {
+      return [];
+    }
+
+    const outlets = business.outlets;
+    if (outlets.length === 0) {
+      return [];
+    }
+
+    const reportDataPromises = outlets.map((outlet) =>
+      this.reportRepository.getOutletReport([outlet.id], date, start, end, type as any).then((data) => ({
+        outletId: outlet.id,
+        outletName: outlet.name,
         data,
       })),
     );
 
     const results = await Promise.all(reportDataPromises);
 
-    const finalReport = results.map(({ outletId, data }) => {
+    const finalReport = results.map(({ outletId, outletName, data }) => {
       const { orders, expenses, stockLogs } = data;
       const stats = this.calculateStats(orders, expenses, stockLogs);
 
       return {
-        label: outletId,
+        label: outletName,
         outletId,
         jumlahTransaksi: stats.count,
         totalPendapatan: stats.revenue,

@@ -56,16 +56,16 @@ export class ReportController extends BaseController {
 
   getCompareOutletsReport = this.handler(async (req: Request, res: Response) => {
     const { type, date } = req.query;
-    const ownerId = (req as any).storedUser?.id;
+    const businessId = (req as any).storedUser?.businessId;
 
-    if (!ownerId) {
-      return this.error(res, "User not found", [], HttpStatus.UNAUTHORIZED);
+    if (!businessId) {
+      return this.error(res, "Business not found", [], HttpStatus.UNAUTHORIZED);
     }
 
     const report = await this.reportService.getCompareOutletsReport(
       date as string,
       type as "daily" | "monthly" | "yearly",
-      ownerId,
+      businessId,
     );
 
     return this.success(res, report);
