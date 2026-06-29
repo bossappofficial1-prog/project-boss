@@ -84,11 +84,11 @@ export default function DashboardLayout({
       <TwoFactorReminder />
       <SidebarProvider defaultOpen={true}>
         <Sidebar />
-        <SidebarInset className="flex flex-col flex-1">
+        <SidebarInset className="min-w-0 overflow-hidden">
           <Header />
 
           {/* Main Content with Responsive Padding */}
-          <main className="flex-1 overflow-auto bg-muted/50">
+          <main className="min-h-[calc(100vh-var(--header-height,4rem))] flex-1 overflow-auto bg-muted/50">
             <div className="w-full mx-auto max-w-400 p-4 md:p-6">
               {children}
             </div>

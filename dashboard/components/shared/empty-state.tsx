@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import React from "react";
 
 interface EmptyStateProps {
@@ -5,11 +6,23 @@ interface EmptyStateProps {
   title: string;
   description: string;
   action?: React.ReactNode;
+  fullHeight?: boolean;
 }
 
-export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
+export function EmptyState({
+  icon,
+  title,
+  description,
+  action,
+  fullHeight,
+}: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border py-16 text-center">
+    <div
+      className={cn(
+        fullHeight ? "h-120" : "h-64",
+        "flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border py-16 text-center",
+      )}
+    >
       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
         {icon}
       </div>

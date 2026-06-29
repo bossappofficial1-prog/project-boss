@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Clock, TrendingUp, ShoppingCart, DollarSign } from "lucide-react";
+import {
+  Clock,
+  TrendingUp,
+  ShoppingCart,
+  DollarSign,
+  ChartArea,
+} from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { SectionHeader } from "@/components/ui/section-header";
 import { SummaryCard } from "@/features/owner/report/summary-card";
@@ -13,6 +19,9 @@ import { DateRangeFilter } from "@/components/ui/date-range-filter";
 import { formatHour } from "@/features/peak-hours/utils";
 import { PerDayBreakdownCard } from "@/features/peak-hours/per-day-brakdown-card";
 import { HeatmapCard } from "@/features/peak-hours/heatmap-card";
+import Loading from "@/components/ui/loading";
+import { LoadingState } from "@/components/shared/loading-state";
+import { EmptyState } from "@/components/shared/empty-state";
 
 export default function JamRamai() {
   const { selectedOutletId } = useOutletStore();
@@ -22,7 +31,12 @@ export default function JamRamai() {
     dateRange: dateRangeValue,
   } = useStoreState();
   const [dateRange, setDateRange] = useState<DateRange | undefined>(
-    dateRangeValue,
+    !dateRangeValue?.from
+      ? {
+          from: new Date(new Date().setDate(new Date().getDate() - 30)),
+          to: new Date(),
+        }
+      : dateRangeValue,
   );
 
   const { peakHours } = useTools("peakHours", selectedOutletId!, {
@@ -30,27 +44,7 @@ export default function JamRamai() {
     to: dateRange?.to!,
   });
 
-  console.log(dateRange, dateRangeValue)
-
   const data = peakHours.data;
-
-  if (peakHours.isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Memuat data...</p>
-      </div>
-    );
-  }
-
-  if (!data) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">
-          Tidak ada data untuk rentang tanggal ini.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -58,58 +52,71 @@ export default function JamRamai() {
       <SectionHeader
         title="Analisis Jam Ramai"
         description="Pola transaksi berdasarkan hari dan jam operasional"
-        actions={
-          <DateRangeFilter value={dateRange} onChange={setDateRange} />
-        }
+        actions={<DateRangeFilter value={dateRange} onChange={setDateRange} />}
       />
 
-      {/* Summary */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {[
-          {
-            icon: <ShoppingCart className="h-4 w-4 text-muted-foreground" />,
-            label: "Total Order",
-            value: data.summary.totalOrders.toLocaleString("id-ID"),
-            sub: `~${data.summary.avgOrdersPerDay} order/hari`,
-          },
-          {
-            icon: <DollarSign className="h-4 w-4 text-muted-foreground" />,
-            label: "Total Omzet",
-            value: formatNumberCompactID(data.summary.totalRevenue),
-            sub: `~${formatNumberCompactID(data.summary.avgRevenuePerDay)}/hari`,
-          },
-          {
-            icon: <Clock className="h-4 w-4 text-muted-foreground" />,
-            label: "Jam Paling Ramai",
-            value: formatHour(data.summary.peakHour),
-            sub: `${data.summary.peakHourOrders} order di jam ini`,
-          },
-          {
-            icon: <TrendingUp className="h-4 w-4 text-muted-foreground" />,
-            label: "Hari Paling Ramai",
-            value: data.summary.peakDay,
-            sub: `${data.summary.peakDayOrders} order`,
-          },
-        ].map((item) => (
-          <SummaryCard
-            key={item.value}
-            title={item.label}
-            value={item.value}
-            description={item.sub}
-            icon={item.icon}
+      {peakHours.isLoading ? (
+        <LoadingState message="Sedang memuat data" />
+      ) : !data ? (
+        <EmptyState
+          fullHeight
+          title="Not Found"
+          description="Tidak ada data untuk rentang tanggal ini."
+          icon={<ChartArea />}
+        />
+      ) : (
+        <>
+          {/* Summary */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              {
+                icon: (
+                  <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                ),
+                label: "Total Order",
+                value: data.summary.totalOrders.toLocaleString("id-ID"),
+                sub: `~${data.summary.avgOrdersPerDay} order/hari`,
+              },
+              {
+                icon: <DollarSign className="h-4 w-4 text-muted-foreground" />,
+                label: "Total Omzet",
+                value: formatNumberCompactID(data.summary.totalRevenue),
+                sub: `~${formatNumberCompactID(data.summary.avgRevenuePerDay)}/hari`,
+              },
+              {
+                icon: <Clock className="h-4 w-4 text-muted-foreground" />,
+                label: "Jam Paling Ramai",
+                value: formatHour(data.summary.peakHour),
+                sub: `${data.summary.peakHourOrders} order di jam ini`,
+              },
+              {
+                icon: <TrendingUp className="h-4 w-4 text-muted-foreground" />,
+                label: "Hari Paling Ramai",
+                value: data.summary.peakDay,
+                sub: `${data.summary.peakDayOrders} order`,
+              },
+            ].map((item) => (
+              <SummaryCard
+                key={item.value}
+                title={item.label}
+                value={item.value}
+                description={item.sub}
+                icon={item.icon}
+              />
+            ))}
+          </div>
+
+          {/* Heatmap */}
+          <HeatmapCard
+            days={data.days}
+            heatmapFilter={heatmapFilter}
+            setHeatmapFilter={setHeatmapFilter}
           />
-        ))}
-      </div>
 
-      {/* Heatmap */}
-      <HeatmapCard
-        days={data.days}
-        heatmapFilter={heatmapFilter}
-        setHeatmapFilter={setHeatmapFilter}
-      />
-
-      {/* Per Day Breakdown */}
-      <PerDayBreakdownCard days={data.days} summary={data.summary} />
+          {/* Per Day Breakdown */}
+          <PerDayBreakdownCard days={data.days} summary={data.summary} />
+        </>
+      )}
     </div>
   );
 }
