@@ -10,14 +10,11 @@ import {
   Users,
   Package,
   Loader2,
-  TrendingUp,
-  TrendingDown,
   Info,
 } from "lucide-react";
 import { gooeyToast } from "goey-toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { SectionHeader } from "@/components/ui/section-header";
 import {
   Select,
@@ -32,14 +29,11 @@ import {
   useReportStaff,
 } from "@/hooks/use-report";
 import { useOutletStore } from "@/stores/outlet.store";
-import { DataTable } from "@/components/ui/data-table";
 import { ReportFinancialTable, Totals } from "./report-financial-table";
 import { ReportStaffTable } from "../staff/report-staff-table";
-import { Sparkline } from "../sparkline";
-import { formatCurrency, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import reportApi from "@/lib/apis/report";
 import { format } from "date-fns";
-import { ColumnDef } from "@tanstack/react-table";
 import { SelectOption } from "@/components/shared/select-option";
 import {
   formatComparePeriodLabel,

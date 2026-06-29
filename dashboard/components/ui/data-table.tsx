@@ -14,6 +14,7 @@ import {
   RowSelectionState,
   PaginationState,
   Updater,
+  getFacetedUniqueValues,
 } from "@tanstack/react-table";
 import type { LucideIcon } from "lucide-react";
 import React, {
@@ -124,6 +125,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { motion, AnimatePresence } from "framer-motion";
+import { SelectOption } from "../shared/select-option";
 
 // Enhanced DataTable Props with comprehensive feature set
 interface DataTableProps<TData, TValue> {
@@ -604,7 +606,7 @@ export function DataTable<TData, TValue>({
                           className={cn(
                             action.render ? "cursor-default" : "cursor-pointer",
                             action.variant === "destructive" &&
-                            "text-red-600 focus:text-red-600",
+                              "text-red-600 focus:text-red-600",
                             action.className,
                           )}
                         >
@@ -617,7 +619,7 @@ export function DataTable<TData, TValue>({
                                   className={cn(
                                     "h-4 w-4",
                                     action.variant === "destructive" &&
-                                    "text-red-600 focus:text-red-600",
+                                      "text-red-600 focus:text-red-600",
                                   )}
                                 />
                               )}
@@ -741,6 +743,7 @@ export function DataTable<TData, TValue>({
   const table = useReactTable({
     data: tableData,
     columns: enhancedColumns,
+    getFacetedUniqueValues: getFacetedUniqueValues(),
     state: {
       sorting,
       columnFilters,
@@ -753,11 +756,11 @@ export function DataTable<TData, TValue>({
     manualFiltering: serverSideSearch,
     pageCount: serverSidePagination
       ? Math.max(
-        1,
-        Math.ceil(
-          (totalItems ?? data.length) / Math.max(1, paginationState.pageSize),
-        ),
-      )
+          1,
+          Math.ceil(
+            (totalItems ?? data.length) / Math.max(1, paginationState.pageSize),
+          ),
+        )
       : undefined,
     enableRowSelection,
     enableColumnResizing,
@@ -839,9 +842,9 @@ export function DataTable<TData, TValue>({
     totalRowCount === 0
       ? 0
       : Math.min(
-        (tablePagination.pageIndex + 1) * tablePagination.pageSize,
-        totalRowCount,
-      );
+          (tablePagination.pageIndex + 1) * tablePagination.pageSize,
+          totalRowCount,
+        );
   const pageStartLabel = totalRowCount === 0 ? 0 : pageStart;
   const pageEndLabel = totalRowCount === 0 ? 0 : pageEnd;
 
@@ -996,7 +999,9 @@ export function DataTable<TData, TValue>({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
                 {title && (
-                  <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
+                  <h2 className="text-xl font-semibold tracking-tight">
+                    {title}
+                  </h2>
                 )}
                 {description && (
                   <p className="text-muted-foreground">{description}</p>
@@ -1041,31 +1046,49 @@ export function DataTable<TData, TValue>({
                 {/* Column-specific Search */}
                 {searchKey && (
                   <div className="relative">
-                    <Filter className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
+                    <SelectOption
+                      className=" w-full h-9 sm:w-50"
                       placeholder={`Filter by ${table.getColumn(searchKey)?.columnDef.header}...`}
-                      value={
-                        (table
-                          .getColumn(searchKey)
-                          ?.getFilterValue() as string) ?? ""
-                      }
-                      onChange={(event) => {
-                        const value = event.target.value;
+                      onValueChange={(value) => {
                         table.getColumn(searchKey)?.setFilterValue(value);
                         if (serverSideSearch) {
                           setGlobalFilterValue(value);
                         }
                       }}
-                      className="pl-8 w-full h-9 sm:w-50"
+                      value={
+                        (table
+                          .getColumn(searchKey)
+                          ?.getFilterValue() as string) ?? ""
+                      }
+                      options={Array.from(
+                        table
+                          .getColumn(searchKey)
+                          ?.getFacetedUniqueValues()
+                          .keys() ?? [],
+                      ).map((value) => ({
+                        label: String(value),
+                        value: String(value),
+                      }))}
                     />
                   </div>
                 )}
-
                 {/* Active Filters Indicator */}
                 {table.getState().columnFilters.length > 0 && (
-                  <Badge variant="secondary" className="hidden sm:inline-flex">
-                    {table.getState().columnFilters.length} filter(s)
-                  </Badge>
+                  <>
+                    <Button
+                      onClick={() => table.resetColumnFilters()}
+                      className="p-3 hover:bg-destructive hover:text-destructive"
+                      variant={"ghost"}
+                    >
+                      <X className="w-6 h-6 " /> Bersihkan
+                    </Button>
+                    <Badge
+                      variant="secondary"
+                      className="hidden sm:inline-flex"
+                    >
+                      {table.getState().columnFilters.length} filter(s)
+                    </Badge>
+                  </>
                 )}
               </div>
 
@@ -1268,7 +1291,7 @@ export function DataTable<TData, TValue>({
                 <TableHeader
                   className={cn(
                     stickyHeader &&
-                    "sticky top-0 z-10 bg-background/95 backdrop-blur-md shadow-sm",
+                      "sticky top-0 z-10 bg-background/95 backdrop-blur-md shadow-sm",
                   )}
                 >
                   {table.getHeaderGroups().map((headerGroup) => (
@@ -1285,7 +1308,7 @@ export function DataTable<TData, TValue>({
                             key={header.id}
                             className={cn(
                               canSort &&
-                              "cursor-pointer select-none hover:bg-muted/50",
+                                "cursor-pointer select-none hover:bg-muted/50",
                               "transition-colors",
                             )}
                             onClick={
@@ -1303,9 +1326,9 @@ export function DataTable<TData, TValue>({
                               {header.isPlaceholder
                                 ? null
                                 : flexRender(
-                                  header.column.columnDef.header,
-                                  header.getContext(),
-                                )}
+                                    header.column.columnDef.header,
+                                    header.getContext(),
+                                  )}
                               {canSort && (
                                 <div className="flex flex-col">
                                   {sorted === "asc" ? (
@@ -1401,9 +1424,9 @@ export function DataTable<TData, TValue>({
                             {header.isPlaceholder
                               ? null
                               : flexRender(
-                                header.column.columnDef.footer,
-                                header.getContext(),
-                              )}
+                                  header.column.columnDef.footer,
+                                  header.getContext(),
+                                )}
                           </TableCell>
                         ))}
                       </TableRow>
@@ -1524,7 +1547,7 @@ export function DataTable<TData, TValue>({
             initial={{ y: 100, x: "-50%", opacity: 0 }}
             animate={{ y: 0, x: "-50%", opacity: 1 }}
             exit={{ y: 100, x: "-50%", opacity: 0 }}
-            className="fixed bottom-8 left-1/2 z-[100] flex items-center gap-4 px-6 py-3 bg-foreground/90 dark:bg-muted/90 backdrop-blur-xl border border-border/50 rounded-full shadow-2xl shadow-black/20 text-background dark:text-foreground min-w-[320px] max-w-[90vw]"
+            className="fixed bottom-8 left-1/2 z-100 flex items-center gap-4 px-6 py-3 bg-foreground/90 dark:bg-muted/90 backdrop-blur-xl border border-border/50 rounded-full shadow-2xl shadow-black/20 text-background dark:text-foreground min-w-[320px] max-w-[90vw]"
           >
             <div className="flex items-center gap-3 pr-4 border-r border-background/20 dark:border-foreground/20">
               <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">
@@ -1554,7 +1577,7 @@ export function DataTable<TData, TValue>({
                     className={cn(
                       "flex items-center gap-2 h-9 px-4 rounded-full transition-all text-background dark:text-foreground hover:bg-background/10 dark:hover:bg-foreground/10",
                       action.variant === "destructive" &&
-                      "text-red-400 hover:text-red-300 hover:bg-red-500/10",
+                        "text-red-400 hover:text-red-300 hover:bg-red-500/10",
                     )}
                   >
                     {Icon && <Icon className="h-4 w-4" />}
