@@ -16,6 +16,7 @@ import {
   endOfYear,
 } from "date-fns";
 import { RedisUtils } from "../utils/redis.utils";
+import { id } from "date-fns/locale";
 
 interface OutletReport {
   label: string;
@@ -55,14 +56,27 @@ export class ReportService extends BaseService {
     const start = startOfDay(startDate);
     const end = endOfDay(endDate);
 
-    const revenueData = await this.reportRepository.getRevenueAggregate(outletId, start, end);
-    const expenseData = await this.reportRepository.getExpenseAggregate(outletId, start, end);
+    const revenueData = await this.reportRepository.getRevenueAggregate(
+      outletId,
+      start,
+      end,
+    );
+    const expenseData = await this.reportRepository.getExpenseAggregate(
+      outletId,
+      start,
+      end,
+    );
 
     const totalRevenue = revenueData._sum.totalAmount || 0;
     const totalExpense = expenseData._sum.amount || 0;
     const netProfit = totalRevenue - totalExpense;
 
-    const completedOrders = await this.reportRepository.getCompletedOrdersWithProducts(outletId, start, end);
+    const completedOrders =
+      await this.reportRepository.getCompletedOrdersWithProducts(
+        outletId,
+        start,
+        end,
+      );
 
     const productSales = completedOrders
       .flatMap((order: any) => order.items)
@@ -82,7 +96,15 @@ export class ReportService extends BaseService {
           }
           return acc;
         },
-        {} as Record<string, { productId: string; name: string; quantitySold: number; totalRevenue: number }>,
+        {} as Record<
+          string,
+          {
+            productId: string;
+            name: string;
+            quantitySold: number;
+            totalRevenue: number;
+          }
+        >,
       );
 
     const topSellingProducts = Object.values(productSales)
@@ -93,12 +115,21 @@ export class ReportService extends BaseService {
       outletName: outletId,
       period: { start: start.toISOString(), end: end.toISOString() },
       incomeStatement: {
-        totalRevenue: { amount: totalRevenue, transactionCount: revenueData._count.id },
-        totalExpense: { amount: totalExpense, transactionCount: expenseData._count.id },
+        totalRevenue: {
+          amount: totalRevenue,
+          transactionCount: revenueData._count.id,
+        },
+        totalExpense: {
+          amount: totalExpense,
+          transactionCount: expenseData._count.id,
+        },
         netProfit,
       },
       salesSummary: {
-        totalProductsSold: topSellingProducts.reduce((sum: number, p: any) => sum + p.quantitySold, 0),
+        totalProductsSold: topSellingProducts.reduce(
+          (sum: number, p: any) => sum + p.quantitySold,
+          0,
+        ),
         topSellingProducts,
       },
     };
@@ -107,7 +138,10 @@ export class ReportService extends BaseService {
     return data;
   }
 
-  private async resolveOutletIds(outletId: string, ownerId: string): Promise<string[]> {
+  private async resolveOutletIds(
+    outletId: string,
+    ownerId: string,
+  ): Promise<string[]> {
     if (outletId === "all") {
       // For "all" outlets, we need to get business by owner
       // This is a simplified version - in production you'd call outlet service
@@ -120,7 +154,7 @@ export class ReportService extends BaseService {
     outletId: string,
     date: string,
     type: "daily" | "weekly" | "monthly" | "yearly",
-    ownerId: string
+    ownerId: string,
   ): Promise<OutletReport[]> {
     const cachedkey = `report:outlet:${outletId}:${date}:${type}:${ownerId}`;
     const cached = await RedisUtils.get(cachedkey);
@@ -145,22 +179,29 @@ export class ReportService extends BaseService {
 
     const targetOutletIds = await this.resolveOutletIds(outletId, ownerId);
 
-    const { expenses, orders, stockLogs } = await this.reportRepository.getOutletReport(
-      targetOutletIds,
-      date,
-      start,
-      end,
-      type,
-    );
+    const { expenses, orders, stockLogs } =
+      await this.reportRepository.getOutletReport(
+        targetOutletIds,
+        date,
+        start,
+        end,
+        type,
+      );
 
     let finalReport = [];
 
     if (type === "daily") {
       // Hourly aggregation — 24 rows (00:00–23:00)
       for (let hour = 0; hour < 24; hour++) {
-        const hOrders = orders.filter((o: any) => o.createdAt.getHours() === hour);
-        const hExpenses = expenses.filter((e: any) => e.date.getHours() === hour);
-        const hLogs = stockLogs.filter((l: any) => l.createdAt.getHours() === hour);
+        const hOrders = orders.filter(
+          (o: any) => o.createdAt.getHours() === hour,
+        );
+        const hExpenses = expenses.filter(
+          (e: any) => e.date.getHours() === hour,
+        );
+        const hLogs = stockLogs.filter(
+          (l: any) => l.createdAt.getHours() === hour,
+        );
 
         const stats = this.calculateStats(hOrders, hExpenses, hLogs);
 
@@ -190,7 +231,7 @@ export class ReportService extends BaseService {
         const stats = this.calculateStats(dOrders, dExpenses, dLogs);
 
         return {
-          label: format(day, "EEEE, dd/MM"),
+          label: format(day, "EEEE, dd MMMM yyyy", { locale: id }),
           jumlahTransaksi: stats.count,
           totalPendapatan: stats.revenue,
           totalPajak: stats.totalPajak,
@@ -208,24 +249,38 @@ export class ReportService extends BaseService {
       const days = eachDayOfInterval({ start, end });
 
       finalReport = days.map((day) => {
-        const dayStr = format(day, "yyyy-MM-dd");
-        const dOrders = orders.filter((o: any) => format(o.createdAt, "yyyy-MM-dd") === dayStr);
-        const dExpenses = expenses.filter((e: any) => format(e.date, "yyyy-MM-dd") === dayStr);
-        const dLogs = stockLogs.filter((l: any) => format(l.createdAt, "yyyy-MM-dd") === dayStr);
+        const dayStr = format(day, "yyyy-MM-dd", { locale: id });
+        const dOrders = orders.filter(
+          (o: any) =>
+            format(o.createdAt, "yyyy-MM-dd", { locale: id }) === dayStr,
+        );
+        const dExpenses = expenses.filter(
+          (e: any) => format(e.date, "yyyy-MM-dd", { locale: id }) === dayStr,
+        );
+        const dLogs = stockLogs.filter(
+          (l: any) =>
+            format(l.createdAt, "yyyy-MM-dd", { locale: id }) === dayStr,
+        );
 
         const stats = this.calculateStats(dOrders, dExpenses, dLogs);
 
-        const trend = dOrders.length > 0
-          ? Array.from({ length: 8 }).map((_, h) => {
-            const hourOrders = dOrders.filter(
-              (o: any) => o.createdAt.getHours() >= h * 3 && o.createdAt.getHours() < (h + 1) * 3,
-            );
-            return hourOrders.reduce((sum: number, curr: any) => sum + curr.totalAmount, 0);
-          })
-          : [0, 0, 0, 0, 0, 0, 0, 0];
+        const trend =
+          dOrders.length > 0
+            ? Array.from({ length: 8 }).map((_, h) => {
+                const hourOrders = dOrders.filter(
+                  (o: any) =>
+                    o.createdAt.getHours() >= h * 3 &&
+                    o.createdAt.getHours() < (h + 1) * 3,
+                );
+                return hourOrders.reduce(
+                  (sum: number, curr: any) => sum + curr.totalAmount,
+                  0,
+                );
+              })
+            : [0, 0, 0, 0, 0, 0, 0, 0];
 
         return {
-          label: format(day, "dd MMM"),
+          label: format(day, "dd MMM", { locale: id }),
           jumlahTransaksi: stats.count,
           totalPendapatan: stats.revenue,
           totalPajak: stats.totalPajak,
@@ -245,14 +300,20 @@ export class ReportService extends BaseService {
         monthStart.setMonth(start.getMonth() + i);
         const monthEnd = endOfMonth(monthStart);
 
-        const mOrders = orders.filter((o: any) => o.createdAt >= monthStart && o.createdAt <= monthEnd);
-        const mExpenses = expenses.filter((e: any) => e.date >= monthStart && e.date <= monthEnd);
-        const mLogs = stockLogs.filter((l: any) => l.createdAt >= monthStart && l.createdAt <= monthEnd);
+        const mOrders = orders.filter(
+          (o: any) => o.createdAt >= monthStart && o.createdAt <= monthEnd,
+        );
+        const mExpenses = expenses.filter(
+          (e: any) => e.date >= monthStart && e.date <= monthEnd,
+        );
+        const mLogs = stockLogs.filter(
+          (l: any) => l.createdAt >= monthStart && l.createdAt <= monthEnd,
+        );
 
         const stats = this.calculateStats(mOrders, mExpenses, mLogs);
 
         finalReport.push({
-          label: format(monthStart, "MMMM yyyy"),
+          label: format(monthStart, "MMMM yyyy", { locale: id }),
           jumlahTransaksi: stats.count,
           totalPendapatan: stats.revenue,
           totalPajak: stats.totalPajak,
@@ -294,17 +355,20 @@ export class ReportService extends BaseService {
       end = endOfDay(refDate);
     }
 
-    const outlets = await this.reportRepository.getOutletsByBusinessId(businessId);
+    const outlets =
+      await this.reportRepository.getOutletsByBusinessId(businessId);
     if (outlets.length === 0) {
       return [];
     }
 
     const reportDataPromises = outlets.map((outlet) =>
-      this.reportRepository.getOutletReport([outlet.id], date, start, end, type as any).then((data) => ({
-        outletId: outlet.id,
-        outletName: outlet.name,
-        data,
-      })),
+      this.reportRepository
+        .getOutletReport([outlet.id], date, start, end, type as any)
+        .then((data) => ({
+          outletId: outlet.id,
+          outletName: outlet.name,
+          data,
+        })),
     );
 
     const results = await Promise.all(reportDataPromises);
@@ -369,7 +433,8 @@ export class ReportService extends BaseService {
       gaji,
       totalHpp,
       totalFees,
-      labaBersih: revenue - totalPajak - totalHpp - pengeluaran - gaji - totalFees,
+      labaBersih:
+        revenue - totalPajak - totalHpp - pengeluaran - gaji - totalFees,
       count: filteredOrders.length,
     };
   }
@@ -378,7 +443,7 @@ export class ReportService extends BaseService {
     outletId: string,
     date: string,
     type: "daily" | "weekly" | "monthly" | "yearly",
-    ownerId: string
+    ownerId: string,
   ): Promise<StaffReport[]> {
     const cachedkey = `report:staff:${outletId}:${date}:${type}:${ownerId}`;
     const cached = await RedisUtils.get(cachedkey);
@@ -403,9 +468,16 @@ export class ReportService extends BaseService {
 
     const targetOutletIds = await this.resolveOutletIds(outletId, ownerId);
 
-    const orders = await this.reportRepository.getOrdersForStaffReport(targetOutletIds, start, end);
+    const orders = await this.reportRepository.getOrdersForStaffReport(
+      targetOutletIds,
+      start,
+      end,
+    );
 
-    const cashierMap = new Map<string, { name: string; transactions: number; revenue: number }>();
+    const cashierMap = new Map<
+      string,
+      { name: string; transactions: number; revenue: number }
+    >();
 
     orders.forEach((order: any) => {
       const staffId = order.handledByStaff?.id || "owner";
@@ -431,7 +503,10 @@ export class ReportService extends BaseService {
       type: "CASHIER",
     }));
 
-    const serviceMap = new Map<string, { name: string; transactions: number; commission: number }>();
+    const serviceMap = new Map<
+      string,
+      { name: string; transactions: number; commission: number }
+    >();
 
     orders.forEach((order: any) => {
       order.items.forEach((item: any) => {
@@ -450,7 +525,8 @@ export class ReportService extends BaseService {
 
             let itemCommission = 0;
             if (service.commissionType === "PERCENTAGE") {
-              itemCommission = item.priceAtTimeOfOrder * (service.commissionValue / 100);
+              itemCommission =
+                item.priceAtTimeOfOrder * (service.commissionValue / 100);
             } else {
               itemCommission = service.commissionValue;
             }
@@ -553,7 +629,11 @@ export class ReportService extends BaseService {
     const sheet = workbook.addWorksheet(`Laporan ${typeLabel}`);
     sheet.columns = [
       { header: "No", key: "no", width: 6 },
-      { header: viewMode === "compare" ? "Outlet" : "Periode", key: "label", width: 28 },
+      {
+        header: viewMode === "compare" ? "Outlet" : "Periode",
+        key: "label",
+        width: 28,
+      },
       { header: "Jml Transaksi", key: "trx", width: 15 },
       { header: "(+) Pendapatan", key: "pendapatan", width: 20 },
       { header: "(+) PPN", key: "ppn", width: 18 },
@@ -565,7 +645,15 @@ export class ReportService extends BaseService {
     this.applyHeaderStyle(sheet);
 
     const currCols = [4, 5, 6, 7, 8, 9];
-    const totals = { trx: 0, pendapatan: 0, ppn: 0, pengeluaran: 0, gaji: 0, laba: 0, pembelian: 0 };
+    const totals = {
+      trx: 0,
+      pendapatan: 0,
+      ppn: 0,
+      pengeluaran: 0,
+      gaji: 0,
+      laba: 0,
+      pembelian: 0,
+    };
 
     data.forEach((item: any, i: number) => {
       const row = sheet.addRow({
@@ -612,7 +700,14 @@ export class ReportService extends BaseService {
     [
       ["Laporan", `Laporan Outlet - ${typeLabel}`],
       ["Outlet", outletName],
-      ["Tanggal Export", new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" })],
+      [
+        "Tanggal Export",
+        new Date().toLocaleDateString("id-ID", {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+        }),
+      ],
       ["Periode", date || new Date().toISOString().split("T")[0]],
     ].forEach((r) => info.addRow(r));
 
@@ -623,7 +718,7 @@ export class ReportService extends BaseService {
     outletId: string,
     date: string,
     type: "daily" | "weekly" | "monthly" | "yearly",
-    ownerId: string
+    ownerId: string,
   ): Promise<ExcelJS.Workbook> {
     const data = await this.getStaffReport(outletId, date, type, ownerId);
 
@@ -633,7 +728,14 @@ export class ReportService extends BaseService {
     workbook.creator = "BOSS App";
     workbook.created = new Date();
 
-    const typeLabel = type === "daily" ? "Harian" : type === "weekly" ? "Mingguan" : type === "yearly" ? "Tahunan" : "Bulanan";
+    const typeLabel =
+      type === "daily"
+        ? "Harian"
+        : type === "weekly"
+          ? "Mingguan"
+          : type === "yearly"
+            ? "Tahunan"
+            : "Bulanan";
     const cashiers = data.filter((d: any) => d.type === "CASHIER");
     const services = data.filter((d: any) => d.type === "SERVICE");
 
@@ -646,7 +748,8 @@ export class ReportService extends BaseService {
     ];
     this.applyHeaderStyle(cs);
 
-    let totalCashierTrx = 0, totalCashierRevenue = 0;
+    let totalCashierTrx = 0,
+      totalCashierRevenue = 0;
     cashiers.forEach((c: any, i: number) => {
       const row = cs.addRow({
         no: i + 1,
@@ -681,7 +784,8 @@ export class ReportService extends BaseService {
     ];
     this.applyHeaderStyle(ss);
 
-    let totalServiceTrx = 0, totalServiceComm = 0;
+    let totalServiceTrx = 0,
+      totalServiceComm = 0;
     services.forEach((s: any, i: number) => {
       const row = ss.addRow({
         no: i + 1,
@@ -713,7 +817,14 @@ export class ReportService extends BaseService {
     [
       ["Laporan", `Kinerja Staff - ${typeLabel}`],
       ["Outlet", outletName],
-      ["Tanggal Export", new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" })],
+      [
+        "Tanggal Export",
+        new Date().toLocaleDateString("id-ID", {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+        }),
+      ],
       ["Periode", date || new Date().toISOString().split("T")[0]],
       ["Total Kasir", String(cashiers.length)],
       ["Total Staff Layanan", String(services.length)],

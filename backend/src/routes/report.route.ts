@@ -9,13 +9,13 @@ router.use(protect);
 
 const resolveReport = () => getContainer().resolve("reportController");
 
-router.get("/financial-summary", (req, res) => resolveReport().getFinancialSummary(req, res));
+router.get("/financial-summary", resolveReport().getFinancialSummary);
 router.get("/daily/:outletId", getDailyReportController);
-router.get("/compare", (req, res) => resolveReport().getCompareOutletsReport(req, res));
-router.get("/outlet/:outletId", (req, res) => resolveReport().getOutletReport(req, res));
-router.get("/staff/:outletId", (req, res) => resolveReport().getStaffReport(req, res));
-router.get("/export/outlet/:outletId", (req, res) => resolveReport().exportOutletReportExcel(req, res));
-router.get("/export/staff/:outletId", (req, res) => resolveReport().exportStaffReportExcel(req, res));
-router.post("/export-transaction", (req, res) => resolveReport().exportTransactionReport(req, res));
+router.get("/compare", resolveReport().getCompareOutletsReport);
+router.get("/outlet/:outletId", resolveReport().getOutletReport);
+router.get("/staff/:outletId", resolveReport().getStaffReport);
+router.get("/export/outlet/:outletId", resolveReport().exportOutletReportExcel);
+router.get("/export/staff/:outletId", resolveReport().exportStaffReportExcel);
+router.post("/export-transaction", resolveReport().exportTransactionReport);
 
 export default router;

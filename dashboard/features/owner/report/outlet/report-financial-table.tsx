@@ -35,7 +35,7 @@ export function ReportFinancialTable({
   return (
     <DataTable
       data={data}
-      pageSize={50}
+      pageSize={10}
       globalFilter={false}
       showColumnVisibility={false}
       showTableInfo={false}

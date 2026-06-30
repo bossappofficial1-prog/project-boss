@@ -427,7 +427,7 @@ function ReportTableCard({
 }) {
   return (
     // [&_div.flex.flex-col.gap-4]:hidden hides DataTable toolbar — search/filter not needed in report context
-    <Card className="rounded-lg border border-border/80 bg-background shadow-sm overflow-hidden relative py-0 [&_div.flex.flex-col.gap-4]:hidden">
+    <Card className="rounded-lg border border-border/80 bg-background shadow-sm overflow-hidden relative py-0">
       {isLoading && (
         <div className="absolute inset-0 bg-background/70 backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-2">
           <div className="relative">
