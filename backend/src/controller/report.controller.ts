@@ -14,13 +14,13 @@ const summaryQuerySchema = z.object({
 });
 
 const exportOutletQuerySchema = z.object({
-  type: z.enum(["daily", "weekly", "monthly"]),
+  type: z.enum(["daily", "weekly", "monthly", "yearly"]),
   date: z.string().optional(),
   viewMode: z.enum(["time", "compare"]).default("time"),
 });
 
 const exportStaffQuerySchema = z.object({
-  type: z.enum(["daily", "weekly", "monthly"]),
+  type: z.enum(["daily", "weekly", "monthly", "yearly"]),
   date: z.string().optional(),
 });
 
@@ -47,7 +47,7 @@ export class ReportController extends BaseController {
     const report = await this.reportService.getOutletReport(
       outletId,
       date as string,
-      type as "daily" | "weekly" | "monthly",
+      type as "daily" | "weekly" | "monthly" | "yearly",
       ownerId!,
     );
 
@@ -79,7 +79,7 @@ export class ReportController extends BaseController {
     const report = await this.reportService.getStaffReport(
       outletId,
       date as string,
-      type as "daily" | "weekly" | "monthly",
+      type as "daily" | "weekly" | "monthly" | "yearly",
       ownerId!,
     );
 

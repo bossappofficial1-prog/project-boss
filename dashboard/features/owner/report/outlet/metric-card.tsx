@@ -5,6 +5,7 @@ import { ViewMode } from "./types";
 import { Badge } from "@/components/ui/badge";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { Sparkline } from "../sparkline";
+import type { OutletReport } from "@/hooks/use-report";
 
 function MetricCard({
   label,
@@ -30,7 +31,7 @@ function MetricCard({
       >
         {value}
       </p>
-      {sub && <p className="text-[11px] text-muted-foreground mt-1">{sub}</p>}
+      {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
     </Card>
   );
 }
@@ -43,7 +44,7 @@ export function FinancialMetricStrip({
 }: {
   totals: Totals;
   totalBeban: number;
-  activeData: any[];
+  activeData: OutletReport[];
   viewMode: ViewMode;
 }) {
   const isProfit = totals.labaBersih >= 0;
@@ -83,7 +84,7 @@ export function FinancialMetricStrip({
             <div className="flex items-center gap-2 mt-1.5">
               <Badge
                 className={cn(
-                  "text-[10px] font-semibold px-1.5 py-0 border-none shadow-none",
+                   "text-xs font-semibold px-1.5 py-0 border-none shadow-none",
                   isProfit
                     ? "bg-emerald-500/15 text-emerald-600"
                     : "bg-rose-500/15 text-rose-600",
@@ -96,7 +97,7 @@ export function FinancialMetricStrip({
                 )}
                 {isProfit ? "Untung" : "Rugi"} {marginPct}%
               </Badge>
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 dari omset
               </span>
             </div>
@@ -140,22 +141,22 @@ export function FinancialMetricStrip({
             {[
               {
                 label: "Laba",
-                color: "bg-emerald-500",
+                color: "bg-chart-3",
                 val: totals.labaBersih,
               },
-              { label: "HPP", color: "bg-amber-500", val: totals.totalHpp },
+              { label: "HPP", color: "bg-chart-4", val: totals.totalHpp },
               {
                 label: "Ops",
-                color: "bg-rose-500",
+                color: "bg-chart-1",
                 val: totals.totalPengeluaran,
               },
-              { label: "Komisi", color: "bg-blue-500", val: totals.gajiStaf },
+              { label: "Komisi", color: "bg-chart-2", val: totals.gajiStaf },
             ].map(({ label, color, val }) => (
               <div key={label} className="flex items-center gap-1">
                 <div
                   className={cn("w-1.5 h-1.5 rounded-full shrink-0", color)}
                 />
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   {label}: {fmt(val)}
                 </span>
               </div>

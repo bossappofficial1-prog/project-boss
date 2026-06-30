@@ -21,11 +21,11 @@ export function ReportStaffTable({ data, totals }: ReportStaffTableProps) {
   return (
     <DataTable
       data={data}
-      pageSize={50}
+      pageSize={10}
       globalFilter={false}
       showColumnVisibility={false}
       showTableInfo={false}
-      pagination={false}
+      pagination
       showFooter
       tableId="report-staff"
       emptyMessage="Belum ada data kinerja staff untuk periode ini."
@@ -45,10 +45,10 @@ export function ReportStaffTable({ data, totals }: ReportStaffTableProps) {
               <Badge
                 variant="outline"
                 className={cn(
-                  "font-bold text-[10px] uppercase tracking-wider px-2 py-0 shadow-none border-opacity-20",
+                  "font-bold text-xs uppercase tracking-wider px-2 py-0 shadow-none border-opacity-20",
                   item.type === "CASHIER"
-                    ? "bg-emerald-500/10 text-emerald-600 border-emerald-500"
-                    : "bg-indigo-500/10 text-indigo-600 border-indigo-500"
+                    ? "bg-chart-3/10 text-chart-3 border-chart-3"
+                    : "bg-chart-2/10 text-chart-2 border-chart-2"
                 )}>
                 {item.role}
               </Badge>

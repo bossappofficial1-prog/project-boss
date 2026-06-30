@@ -39,7 +39,7 @@ export function ReportFinancialTable({
       globalFilter={false}
       showColumnVisibility={false}
       showTableInfo={false}
-      pagination={false}
+      pagination
       showFooter
       tableId="report-financial"
       emptyMessage="Belum ada data laporan keuangan untuk periode ini."
@@ -47,23 +47,47 @@ export function ReportFinancialTable({
         {
           accessorKey: "label",
           header: labelHeader || "Tanggal",
-          cell: ({ row }) => <span className="font-bold text-foreground/90 text-xs">{row.original.label}</span>,
-          footer: () => <span className="font-semibold text-xs text-muted-foreground opacity-75">Total Periode</span>,
+          cell: ({ row }) => (
+            <span className="font-bold text-foreground/90 text-xs">
+              {row.original.label}
+            </span>
+          ),
+          footer: () => (
+            <span className="font-semibold text-xs text-muted-foreground opacity-75">
+              Total Periode
+            </span>
+          ),
         },
         {
           accessorKey: "jumlahTransaksi",
           header: "Trx",
-          cell: ({ row }) => <span className="font-bold text-foreground/80 tabular-nums text-xs">{row.original.jumlahTransaksi}</span>,
-          footer: () => <span className="font-bold tabular-nums text-xs">{totals.jumlahTransaksi}</span>,
+          cell: ({ row }) => (
+            <span className="font-bold text-foreground/80 tabular-nums text-xs">
+              {row.original.jumlahTransaksi}
+            </span>
+          ),
+          footer: () => (
+            <span className="font-bold tabular-nums text-xs">
+              {totals.jumlahTransaksi}
+            </span>
+          ),
         },
         {
           accessorKey: "totalPendapatan",
           header: "(+) Penjualan",
           cell({ row }) {
             const totalPendapatan = row.original.totalPendapatan;
-            return <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums text-xs">{formatCurrency(totalPendapatan)}</span>;
+            return (
+              <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums text-xs">
+                {formatCurrency(totalPendapatan)}
+              </span>
+            );
           },
-          footer: () => <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums text-xs">{formatCurrency(totals.totalPendapatan)}</span>,
+          footer: () => (
+            <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums text-xs">
+              {formatCurrency(totals.totalPendapatan)}
+            </span>
+          ),
         },
         {
           accessorKey: "totalPajak",
@@ -71,41 +95,47 @@ export function ReportFinancialTable({
           cell({ row }) {
             const p = row.original.totalPajak;
             return p ? (
-              <span className="font-bold text-blue-600 dark:text-blue-400 tabular-nums text-xs">{formatCurrency(p)}</span>
+              <span className="font-bold text-blue-600 dark:text-blue-400 tabular-nums text-xs">
+                {formatCurrency(p)}
+              </span>
             ) : (
               <span className="text-muted-foreground/40 text-xs">—</span>
             );
           },
           footer: () => (
-            <span className="font-bold text-blue-600 dark:text-blue-400 tabular-nums text-xs">{formatCurrency(totals.totalPajak)}</span>
+            <span className="font-bold text-blue-600 dark:text-blue-400 tabular-nums text-xs">
+              {formatCurrency(totals.totalPajak)}
+            </span>
           ),
         },
         ...(!hideTrend
           ? [
-            {
-              accessorKey: "trend",
-              header: "Tren",
-              cell({ row: rows }: { row: Row<OutletReport> }) {
-                const row = rows.original;
-                return (
-                  <div className="inline-flex items-center justify-center p-1.5 bg-muted/30 rounded-md border border-border/40">
-                    <Sparkline
-                      data={row.trend}
-                      color={row.labaBersih > 0 ? "#10b981" : "#f43f5e"}
-                    />
-                  </div>
-                );
+              {
+                accessorKey: "trend",
+                header: "Tren",
+                cell({ row }: { row: Row<OutletReport> }) {
+                  const original = row.original;
+                  return (
+                    <div className="inline-flex items-center justify-center p-1.5 bg-muted/30 rounded-md border border-border/40">
+                      <Sparkline
+                        data={original.trend}
+                        color={original.labaBersih > 0 ? "#10b981" : "#f43f5e"}
+                      />
+                    </div>
+                  );
+                },
+                footer: () => (
+                  <Activity className="w-4 h-4 mx-auto text-muted-foreground opacity-20" />
+                ),
               },
-              footer: () => <Activity className="w-4 h-4 mx-auto text-muted-foreground opacity-20" />,
-            } as any,
-          ]
+            ]
           : []),
         {
           accessorKey: "totalHpp",
           header: "(-) Modal (HPP)",
-          cell: (props: any) => (
+          cell: ({ row }: { row: Row<OutletReport> }) => (
             <span className="text-amber-600 dark:text-amber-400/80 font-bold tabular-nums text-xs">
-              {formatCurrency(props.row.original.totalHpp || 0)}
+              {formatCurrency(row.original.totalHpp || 0)}
             </span>
           ),
           footer: () => (
@@ -117,9 +147,9 @@ export function ReportFinancialTable({
         {
           accessorKey: "totalPengeluaran",
           header: "(-) Beban Ops",
-          cell: (props: any) => (
+          cell: ({ row }: { row: Row<OutletReport> }) => (
             <span className="text-rose-600 dark:text-rose-400/80 font-bold tabular-nums text-xs">
-              {formatCurrency(props.row.original.totalPengeluaran || 0)}
+              {formatCurrency(row.original.totalPengeluaran || 0)}
             </span>
           ),
           footer: () => (
@@ -131,9 +161,9 @@ export function ReportFinancialTable({
         {
           accessorKey: "gajiStaf",
           header: "(-) Komisi",
-          cell: (props: any) => (
+          cell: ({ row }: { row: Row<OutletReport> }) => (
             <span className="text-blue-600 dark:text-blue-400/80 font-bold tabular-nums text-xs">
-              {formatCurrency(props.row.original.gajiStaf || 0)}
+              {formatCurrency(row.original.gajiStaf || 0)}
             </span>
           ),
           footer: () => (
@@ -145,15 +175,16 @@ export function ReportFinancialTable({
         {
           accessorKey: "labaBersih",
           header: "= Laba Bersih",
-          cell: (props: any) => (
+          cell: ({ row }: { row: Row<OutletReport> }) => (
             <div
               className={cn(
                 "font-bold tabular-nums text-xs px-2 py-0.5 rounded-sm inline-block",
-                (props.row.original.labaBersih || 0) >= 0
+                (row.original.labaBersih || 0) >= 0
                   ? "text-emerald-600 bg-emerald-500/10"
-                  : "text-rose-600 bg-rose-500/10"
-              )}>
-              {formatCurrency(props.row.original.labaBersih || 0)}
+                  : "text-rose-600 bg-rose-500/10",
+              )}
+            >
+              {formatCurrency(row.original.labaBersih || 0)}
             </div>
           ),
           footer: () => (
@@ -162,8 +193,9 @@ export function ReportFinancialTable({
                 "font-bold tabular-nums text-xs px-2 py-1 rounded-sm inline-block",
                 (totals.labaBersih || 0) >= 0
                   ? "text-emerald-600 bg-emerald-500/10"
-                  : "text-rose-600 bg-rose-500/10"
-              )}>
+                  : "text-rose-600 bg-rose-500/10",
+              )}
+            >
               {formatCurrency(totals.labaBersih || 0)}
             </div>
           ),

@@ -1,12 +1,23 @@
 import { CompareFilterType, FilterType } from "./types";
 
 export const formatPeriodLabel = (type: FilterType, date: Date): string => {
-  if (type === "daily") {
+  if (type === "daily")
+    return date.toLocaleDateString("id-ID", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  if (type === "weekly") {
     const start = new Date(date);
-    start.setDate(date.getDate() - 9);
-    return `${start.toLocaleDateString("id-ID", { day: "2-digit", month: "short" })} – ${date.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}`;
+    const day = start.getDay();
+    const diff = start.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(start.setDate(diff));
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    return `${monday.toLocaleDateString("id-ID", { day: "2-digit", month: "short" })} – ${sunday.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}`;
   }
-  if (type === "weekly")
+  if (type === "monthly")
     return date.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
   return date.toLocaleDateString("id-ID", { year: "numeric" });
 };
@@ -17,7 +28,7 @@ export const formatComparePeriodLabel = (
 ): string => {
   if (type === "daily")
     return date.toLocaleDateString("id-ID", {
-      weekday: "short",
+      weekday: "long",
       day: "numeric",
       month: "long",
       year: "numeric",
@@ -33,18 +44,21 @@ export const formatStaffPeriodLabel = (
 ): string => {
   if (type === "daily")
     return date.toLocaleDateString("id-ID", {
-      weekday: "short",
+      weekday: "long",
       day: "numeric",
       month: "long",
       year: "numeric",
     });
   if (type === "weekly") {
-    const d = new Date(date);
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(d.setDate(diff));
-    const sunday = new Date(d.setDate(monday.getDate() + 6));
+    const start = new Date(date);
+    const day = start.getDay();
+    const diff = start.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(start.setDate(diff));
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
     return `${monday.toLocaleDateString("id-ID", { day: "2-digit", month: "short" })} – ${sunday.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}`;
   }
-  return date.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+  if (type === "monthly")
+    return date.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+  return date.toLocaleDateString("id-ID", { year: "numeric" });
 };

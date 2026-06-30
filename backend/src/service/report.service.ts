@@ -119,7 +119,7 @@ export class ReportService extends BaseService {
   async getOutletReport(
     outletId: string,
     date: string,
-    type: "daily" | "weekly" | "monthly",
+    type: "daily" | "weekly" | "monthly" | "yearly",
     ownerId: string
   ): Promise<OutletReport[]> {
     const cachedkey = `report:outlet:${outletId}:${date}:${type}:${ownerId}`;
@@ -129,15 +129,18 @@ export class ReportService extends BaseService {
     const refDate = date ? new Date(date) : new Date();
     let start: Date, end: Date;
 
-    if (type === "monthly") {
-      start = startOfYear(refDate);
-      end = endOfYear(refDate);
+    if (type === "daily") {
+      start = startOfDay(refDate);
+      end = endOfDay(refDate);
     } else if (type === "weekly") {
+      start = startOfWeek(refDate, { weekStartsOn: 1 });
+      end = endOfWeek(refDate, { weekStartsOn: 1 });
+    } else if (type === "monthly") {
       start = startOfMonth(refDate);
       end = endOfMonth(refDate);
     } else {
-      end = endOfDay(refDate);
-      start = subDays(startOfDay(refDate), 9);
+      start = startOfYear(refDate);
+      end = endOfYear(refDate);
     }
 
     const targetOutletIds = await this.resolveOutletIds(outletId, ownerId);
@@ -152,7 +155,91 @@ export class ReportService extends BaseService {
 
     let finalReport = [];
 
-    if (type === "monthly") {
+    if (type === "daily") {
+      // Hourly aggregation — 24 rows (00:00–23:00)
+      for (let hour = 0; hour < 24; hour++) {
+        const hOrders = orders.filter((o: any) => o.createdAt.getHours() === hour);
+        const hExpenses = expenses.filter((e: any) => e.date.getHours() === hour);
+        const hLogs = stockLogs.filter((l: any) => l.createdAt.getHours() === hour);
+
+        const stats = this.calculateStats(hOrders, hExpenses, hLogs);
+
+        finalReport.push({
+          label: `${String(hour).padStart(2, "0")}:00`,
+          jumlahTransaksi: stats.count,
+          totalPendapatan: stats.revenue,
+          totalPajak: stats.totalPajak,
+          totalPembelian: stats.pembelian,
+          totalPengeluaran: stats.pengeluaran,
+          gajiStaf: stats.gaji,
+          totalHpp: stats.totalHpp,
+          totalFees: stats.totalFees,
+          labaBersih: stats.labaBersih,
+          trend: [0, 0, 0, 0],
+        });
+      }
+    } else if (type === "weekly") {
+      // Daily aggregation — 7 rows (Senin–Minggu)
+      const days = eachDayOfInterval({ start, end });
+
+      finalReport = days.map((day) => {
+        const dOrders = orders.filter((o: any) => isSameDay(o.createdAt, day));
+        const dExpenses = expenses.filter((e: any) => isSameDay(e.date, day));
+        const dLogs = stockLogs.filter((l: any) => isSameDay(l.createdAt, day));
+
+        const stats = this.calculateStats(dOrders, dExpenses, dLogs);
+
+        return {
+          label: format(day, "EEEE, dd/MM"),
+          jumlahTransaksi: stats.count,
+          totalPendapatan: stats.revenue,
+          totalPajak: stats.totalPajak,
+          totalPembelian: stats.pembelian,
+          totalPengeluaran: stats.pengeluaran,
+          gajiStaf: stats.gaji,
+          totalHpp: stats.totalHpp,
+          totalFees: stats.totalFees,
+          labaBersih: stats.labaBersih,
+          trend: [0, 0, 0, 0],
+        };
+      });
+    } else if (type === "monthly") {
+      // Daily aggregation — 28-31 rows
+      const days = eachDayOfInterval({ start, end });
+
+      finalReport = days.map((day) => {
+        const dayStr = format(day, "yyyy-MM-dd");
+        const dOrders = orders.filter((o: any) => format(o.createdAt, "yyyy-MM-dd") === dayStr);
+        const dExpenses = expenses.filter((e: any) => format(e.date, "yyyy-MM-dd") === dayStr);
+        const dLogs = stockLogs.filter((l: any) => format(l.createdAt, "yyyy-MM-dd") === dayStr);
+
+        const stats = this.calculateStats(dOrders, dExpenses, dLogs);
+
+        const trend = dOrders.length > 0
+          ? Array.from({ length: 8 }).map((_, h) => {
+            const hourOrders = dOrders.filter(
+              (o: any) => o.createdAt.getHours() >= h * 3 && o.createdAt.getHours() < (h + 1) * 3,
+            );
+            return hourOrders.reduce((sum: number, curr: any) => sum + curr.totalAmount, 0);
+          })
+          : [0, 0, 0, 0, 0, 0, 0, 0];
+
+        return {
+          label: format(day, "dd MMM"),
+          jumlahTransaksi: stats.count,
+          totalPendapatan: stats.revenue,
+          totalPajak: stats.totalPajak,
+          totalPembelian: stats.pembelian,
+          totalPengeluaran: stats.pengeluaran,
+          gajiStaf: stats.gaji,
+          totalHpp: stats.totalHpp,
+          totalFees: stats.totalFees,
+          labaBersih: stats.labaBersih,
+          trend,
+        };
+      });
+    } else {
+      // Yearly — Monthly aggregation — 12 rows (Jan–Des)
       for (let i = 0; i < 12; i++) {
         const monthStart = new Date(start);
         monthStart.setMonth(start.getMonth() + i);
@@ -178,84 +265,6 @@ export class ReportService extends BaseService {
           trend: [0, 0, 0, 0],
         });
       }
-    } else if (type === "weekly") {
-      let weekIdx = 1;
-      let iterDate = new Date(start);
-
-      while (iterDate <= end) {
-        const wStart = new Date(iterDate);
-        let wEnd = endOfWeek(wStart, { weekStartsOn: 1 });
-        if (wEnd > end) wEnd = new Date(end);
-
-        const wOrders = orders.filter((o: any) => o.createdAt >= wStart && o.createdAt <= wEnd);
-        const wExpenses = expenses.filter((e: any) => e.date >= wStart && e.date <= wEnd);
-        const wLogs = stockLogs.filter((l: any) => l.createdAt >= wStart && l.createdAt <= wEnd);
-
-        const stats = this.calculateStats(wOrders, wExpenses, wLogs);
-
-        const trend = Array.from({ length: 7 }).map((_, dIdx) => {
-          const day = new Date(wStart);
-          day.setDate(wStart.getDate() + dIdx);
-          if (day > wEnd) return 0;
-          return wOrders
-            .filter((o: any) => isSameDay(o.createdAt, day))
-            .reduce((sum: number, curr: any) => sum + curr.totalAmount, 0);
-        });
-
-        finalReport.push({
-          label: `Minggu ${weekIdx++} (${format(wStart, "dd/MM")})`,
-          jumlahTransaksi: stats.count,
-          totalPendapatan: stats.revenue,
-          totalPajak: stats.totalPajak,
-          totalPembelian: stats.pembelian,
-          totalPengeluaran: stats.pengeluaran,
-          gajiStaf: stats.gaji,
-          totalHpp: stats.totalHpp,
-          totalFees: stats.totalFees,
-          labaBersih: stats.labaBersih,
-          trend: [0, 0, 0, 0],
-        });
-
-        iterDate = new Date(wEnd);
-        iterDate.setDate(iterDate.getDate() + 1);
-        iterDate = startOfDay(iterDate);
-      }
-    } else {
-      const days = eachDayOfInterval({ start, end });
-
-      finalReport = days.map((day) => {
-        const dayStr = format(day, "yyyy-MM-dd");
-        const dOrders = orders.filter((o: any) => format(o.createdAt, "yyyy-MM-dd") === dayStr);
-        const dExpenses = expenses.filter((e: any) => format(e.date, "yyyy-MM-dd") === dayStr);
-        const dLogs = stockLogs.filter((l: any) => format(l.createdAt, "yyyy-MM-dd") === dayStr);
-
-        const stats = this.calculateStats(dOrders, dExpenses, dLogs);
-
-        const trend = dOrders.length > 0
-          ? Array.from({ length: 8 }).map((_, h) => {
-            const hourOrders = dOrders.filter(
-              (o: any) => o.createdAt.getHours() >= h * 3 && o.createdAt.getHours() < (h + 1) * 3,
-            );
-            return hourOrders.reduce((sum: number, curr: any) => sum + curr.totalAmount, 0);
-          })
-          : [0, 0, 0, 0, 0, 0, 0, 0];
-
-        return {
-          label: format(day, "dd MMM yyyy"),
-          jumlahTransaksi: stats.count,
-          totalPendapatan: stats.revenue,
-          totalPajak: stats.totalPajak,
-          totalPembelian: stats.pembelian,
-          totalPengeluaran: stats.pengeluaran,
-          gajiStaf: stats.gaji,
-          totalHpp: stats.totalHpp,
-          totalFees: stats.totalFees,
-          labaBersih: stats.labaBersih,
-          trend,
-        };
-      });
-
-      finalReport.reverse();
     }
 
     await RedisUtils.set(cachedkey, finalReport, 15 * 60);
@@ -368,7 +377,7 @@ export class ReportService extends BaseService {
   async getStaffReport(
     outletId: string,
     date: string,
-    type: "daily" | "weekly" | "monthly",
+    type: "daily" | "weekly" | "monthly" | "yearly",
     ownerId: string
   ): Promise<StaffReport[]> {
     const cachedkey = `report:staff:${outletId}:${date}:${type}:${ownerId}`;
@@ -378,15 +387,18 @@ export class ReportService extends BaseService {
     const refDate = date ? new Date(date) : new Date();
     let start: Date, end: Date;
 
-    if (type === "monthly") {
-      start = startOfMonth(refDate);
-      end = endOfMonth(refDate);
+    if (type === "daily") {
+      start = startOfDay(refDate);
+      end = endOfDay(refDate);
     } else if (type === "weekly") {
       start = startOfWeek(refDate, { weekStartsOn: 1 });
       end = endOfWeek(refDate, { weekStartsOn: 1 });
+    } else if (type === "monthly") {
+      start = startOfMonth(refDate);
+      end = endOfMonth(refDate);
     } else {
-      start = startOfDay(refDate);
-      end = endOfDay(refDate);
+      start = startOfYear(refDate);
+      end = endOfYear(refDate);
     }
 
     const targetOutletIds = await this.resolveOutletIds(outletId, ownerId);
@@ -509,7 +521,7 @@ export class ReportService extends BaseService {
   async exportOutletReportToExcel(
     outletId: string,
     date: string,
-    type: "daily" | "weekly" | "monthly",
+    type: "daily" | "weekly" | "monthly" | "yearly",
     viewMode: "time" | "compare",
     ownerId: string,
   ): Promise<ExcelJS.Workbook> {
@@ -534,7 +546,9 @@ export class ReportService extends BaseService {
           ? "Harian"
           : type === "weekly"
             ? "Mingguan"
-            : "Bulanan";
+            : type === "yearly"
+              ? "Tahunan"
+              : "Bulanan";
 
     const sheet = workbook.addWorksheet(`Laporan ${typeLabel}`);
     sheet.columns = [
@@ -608,7 +622,7 @@ export class ReportService extends BaseService {
   async exportStaffReportToExcel(
     outletId: string,
     date: string,
-    type: "daily" | "weekly" | "monthly",
+    type: "daily" | "weekly" | "monthly" | "yearly",
     ownerId: string
   ): Promise<ExcelJS.Workbook> {
     const data = await this.getStaffReport(outletId, date, type, ownerId);
@@ -619,7 +633,7 @@ export class ReportService extends BaseService {
     workbook.creator = "BOSS App";
     workbook.created = new Date();
 
-    const typeLabel = type === "daily" ? "Harian" : type === "weekly" ? "Mingguan" : "Bulanan";
+    const typeLabel = type === "daily" ? "Harian" : type === "weekly" ? "Mingguan" : type === "yearly" ? "Tahunan" : "Bulanan";
     const cashiers = data.filter((d: any) => d.type === "CASHIER");
     const services = data.filter((d: any) => d.type === "SERVICE");
 

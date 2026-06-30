@@ -43,7 +43,7 @@ export class ReportRepository extends BaseRepository {
     date: string,
     startDate: Date,
     endDate: Date,
-    type: "daily" | "weekly" | "monthly"
+    type: "daily" | "weekly" | "monthly" | "yearly"
   ) {
     if (!outletIds || outletIds.length === 0) {
       return { orders: [], expenses: [], stockLogs: [] };

@@ -46,10 +46,9 @@ import {
   StaffMetricStrip,
   StokMetricStrip,
 } from "./metric-card";
-
-type FilterType = "daily" | "weekly" | "monthly";
-type CompareFilterType = "daily" | "monthly" | "yearly";
-type ViewMode = "time" | "compare";
+import type { FilterType, CompareFilterType, ViewMode } from "./types";
+import { PeriodPicker } from "@/components/ui/periode-picker";
+import { TabButton } from "@/components/ui/tab-button";
 
 const TABS = [
   { id: "keuangan", label: "Keuangan", icon: Receipt },
@@ -71,19 +70,14 @@ function useReportDashboardState(selectedOutletId?: string) {
     if (selectedOutletId) setOutletFilter(selectedOutletId);
   }, [selectedOutletId]);
 
-  const handleTabChange = useCallback(
-    (newTab: string) => {
-      setActiveTab(newTab);
-      if (newTab !== "keuangan" && period === "yearly") setPeriod("monthly");
-    },
-    [period],
-  );
+  const handleTabChange = useCallback((newTab: string) => {
+    setActiveTab(newTab);
+  }, []);
 
   const handleViewModeChange = useCallback(
     (newMode: ViewMode) => {
       setViewMode(newMode);
       if (newMode === "compare" && period === "weekly") setPeriod("monthly");
-      if (newMode === "time" && period === "yearly") setPeriod("monthly");
     },
     [period],
   );
@@ -92,32 +86,14 @@ function useReportDashboardState(selectedOutletId?: string) {
     (amount: number) => {
       setCurrentDate((prev) => {
         const d = new Date(prev);
-        if (activeTab === "keuangan") {
-          if (viewMode === "time") {
-            if (period === "daily") d.setDate(d.getDate() + amount * 10);
-            else if (period === "weekly") d.setMonth(d.getMonth() + amount);
-            else if (period === "monthly")
-              d.setFullYear(d.getFullYear() + amount);
-          } else {
-            if (period === "daily") d.setDate(d.getDate() + amount);
-            else if (period === "monthly") d.setMonth(d.getMonth() + amount);
-            else if (period === "yearly")
-              d.setFullYear(d.getFullYear() + amount);
-          }
-        } else if (activeTab === "staff") {
-          if (period === "daily") d.setDate(d.getDate() + amount);
-          else if (period === "weekly") d.setDate(d.getDate() + amount * 7);
-          else if (period === "monthly") d.setMonth(d.getMonth() + amount);
-        } else if (activeTab === "stok") {
-          if (period === "daily") d.setDate(d.getDate() + amount * 10);
-          else if (period === "weekly") d.setMonth(d.getMonth() + amount);
-          else if (period === "monthly")
-            d.setFullYear(d.getFullYear() + amount);
-        }
+        if (period === "daily") d.setDate(d.getDate() + amount);
+        else if (period === "weekly") d.setDate(d.getDate() + amount * 7);
+        else if (period === "monthly") d.setMonth(d.getMonth() + amount);
+        else if (period === "yearly") d.setFullYear(d.getFullYear() + amount);
         return d;
       });
     },
-    [activeTab, viewMode, period],
+    [period],
   );
 
   return {
@@ -128,6 +104,7 @@ function useReportDashboardState(selectedOutletId?: string) {
     period,
     setPeriod,
     currentDate,
+    setCurrentDate,
     outletFilter,
     setOutletFilter,
     isExporting,
@@ -227,6 +204,7 @@ export default function ReportFinancialContent() {
       { value: "daily", label: "Harian" },
       { value: "weekly", label: "Mingguan" },
       { value: "monthly", label: "Bulanan" },
+      { value: "yearly", label: "Tahunan" },
     ];
   }, [state.activeTab, state.viewMode]);
 
@@ -314,81 +292,46 @@ export default function ReportFinancialContent() {
       {/* Tab + Control Bar — all in one row */}
       <div className="flex flex-col lg:flex-row gap-2 lg:items-center lg:justify-between">
         {/* Tabs */}
-        <div className="flex items-center bg-muted/60 rounded-lg border border-border/40 p-0.5 gap-0.5 w-full lg:w-auto">
-          {TABS.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => state.setActiveTab(id)}
-              className={cn(
-                "flex-1 lg:flex-none flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer",
-                state.activeTab === id
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <Icon className="w-3.5 h-3.5 shrink-0" />
-              {label}
-            </button>
-          ))}
-        </div>
+        <TabButton
+          className="w-fit"
+          value={state.activeTab}
+          onValueChange={state.setActiveTab}
+          tabs={TABS.map(({ id, label, icon }) => ({
+            id,
+            label,
+            icon,
+          }))}
+        />
 
         {/* Controls */}
         <div className="flex flex-wrap items-center gap-2">
           {/* View mode toggle — only keuangan */}
           {state.activeTab === "keuangan" && (
-            <div className="flex items-center bg-muted/60 rounded-lg border border-border/40 p-0.5 gap-0.5">
-              {(["time", "compare"] as const).map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => state.setViewMode(mode)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer",
-                    state.viewMode === mode
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {mode === "time" ? "Waktu" : "Bandingkan"}
-                </button>
-              ))}
-            </div>
+            <TabButton
+              className="w-fit"
+              value={state.viewMode}
+              onValueChange={state.setViewMode}
+              tabs={(["time", "compare"] as const).map((mode) => ({
+                id: mode,
+                label: mode === "time" ? "Waktu" : "Bandingkan",
+              }))}
+            />
           )}
 
-          {/* Period selector */}
-          <SelectOption
+          <TabButton
+            className="w-fit"
             value={state.period}
             onValueChange={state.setPeriod}
-            className={cn(
-              "px-3 py-1.5 bg-muted/60 rounded-lg h-8.5 text-xs font-semibold border border-border/40 p-0.5 gap-0.5 transition-colors cursor-pointer",
-              "text-muted-foreground hover:text-foreground w-fit",
-            )}
-            options={getPeriodOptions().map((opt) => ({
-              value: opt.value,
+            tabs={getPeriodOptions().map((opt) => ({
+              id: opt.value,
               label: opt.label,
             }))}
           />
-
-          {/* Date navigator */}
-          <div className="flex items-center border border-border/60 rounded-lg bg-card overflow-hidden">
-            <button
-              onClick={() => state.adjustDate(-1)}
-              className="px-2 py-1.5 hover:bg-muted/60 transition-colors cursor-pointer border-r border-border/40"
-            >
-              <ChevronLeft className="w-3.5 h-3.5 text-muted-foreground" />
-            </button>
-            <div className="flex items-center gap-1.5 px-3 min-w-32.5 justify-center">
-              <CalendarIcon className="w-3 h-3 text-primary shrink-0" />
-              <span className="text-xs font-semibold tabular-nums text-foreground/90 truncate">
-                {dateLabel}
-              </span>
-            </div>
-            <button
-              onClick={() => state.adjustDate(1)}
-              className="px-2 py-1.5 hover:bg-muted/60 transition-colors cursor-pointer border-l border-border/40"
-            >
-              <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-            </button>
-          </div>
+          <PeriodPicker
+            granularity={state.period as any}
+            value={state.currentDate}
+            onValueChange={(date) => state.setCurrentDate(date)}
+          />
 
           {/* Export */}
           {(state.activeTab === "keuangan" || state.activeTab === "staff") && (
@@ -483,6 +426,7 @@ function ReportTableCard({
   loadingText: string;
 }) {
   return (
+    // [&_div.flex.flex-col.gap-4]:hidden hides DataTable toolbar — search/filter not needed in report context
     <Card className="rounded-lg border border-border/80 bg-background shadow-sm overflow-hidden relative py-0 [&_div.flex.flex-col.gap-4]:hidden">
       {isLoading && (
         <div className="absolute inset-0 bg-background/70 backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-2">
@@ -504,15 +448,15 @@ function ReportTableCard({
 
 function StokInfoBanner() {
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-blue-500/25 bg-blue-500/5 p-3.5">
-      <div className="h-6 w-6 rounded-full bg-blue-500/15 flex items-center justify-center shrink-0 mt-0.5">
-        <Info className="h-3.5 w-3.5 text-blue-600" />
+    <div className="flex items-start gap-3 rounded-lg border border-chart-2/25 bg-chart-2/5 p-3.5">
+      <div className="h-6 w-6 rounded-full bg-chart-2/15 flex items-center justify-center shrink-0 mt-0.5">
+        <Info className="h-3.5 w-3.5 text-chart-2" />
       </div>
       <div>
-        <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-0.5">
+        <p className="text-xs font-semibold text-chart-2 mb-0.5">
           Pembelian Stok ≠ Pengurang Laba
         </p>
-        <p className="text-[11px] text-muted-foreground leading-relaxed">
+        <p className="text-xs text-muted-foreground leading-relaxed">
           Pembelian dicatat sebagai penambahan aset (persediaan). Baru tercatat
           sebagai beban ketika barang terjual (HPP di tab Keuangan).
         </p>
