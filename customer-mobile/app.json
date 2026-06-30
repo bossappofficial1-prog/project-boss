@@ -15,7 +15,7 @@
     },
     "android": {
       "package": "id.bossapp.customer",
-      "versionCode": 2,
+      "versionCode": 3,
       "adaptiveIcon": {
         "backgroundColor": "#ffffff",
         "foregroundImage": "./assets/images/adaptive-icon-foreground.png"
