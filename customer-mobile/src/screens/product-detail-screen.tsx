@@ -791,121 +791,126 @@ export default function ProductDetailScreen() {
             </View>
           )}
 
-          {outlet && (from == "home" || from == "search") && (
-            <Pressable
-              onPress={() => router.push(`/outlet/${outlet.slug}`)}
-              style={{
-                padding: 12,
-                borderRadius: 12,
-                backgroundColor: c.muted,
-                gap: 8,
-              }}
-            >
-              <View
+          {outlet &&
+            (from == "home" || from == "search" || from == "save-products") && (
+              <Pressable
+                onPress={() => router.push(`/outlet/${outlet.slug}`)}
                 style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
+                  padding: 12,
+                  borderRadius: 12,
+                  backgroundColor: c.muted,
+                  gap: 8,
                 }}
               >
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontWeight: "500",
-                    color: c.foreground,
-                  }}
-                >
-                  Info Outlet
-                </Text>
-                <View
-                  style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 11,
-                      fontWeight: "500",
-                      color: c.primary,
-                    }}
-                  >
-                    Lihat
-                  </Text>
-                  <ChevronRight size={12} color={c.primary} />
-                </View>
-              </View>
-              <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
-              >
                 <View
                   style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 8,
-                    backgroundColor: c.card,
+                    flexDirection: "row",
                     alignItems: "center",
-                    justifyContent: "center",
-                    borderWidth: 0.5,
-                    borderColor: c.border,
+                    justifyContent: "space-between",
                   }}
                 >
-                  <Store size={18} color={c.mutedForeground} />
-                </View>
-                <View style={{ flex: 1 }}>
                   <Text
                     style={{
                       fontSize: 13,
                       fontWeight: "500",
                       color: c.foreground,
                     }}
-                    numberOfLines={1}
                   >
-                    {outlet.name}
+                    Info Outlet
                   </Text>
-                  {outlet.address && (
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 4,
-                        marginTop: 2,
-                      }}
-                    >
-                      <MapPin size={10} color={c.mutedForeground} />
-                      <Text
-                        style={{
-                          fontSize: 11,
-                          color: c.mutedForeground,
-                          flex: 1,
-                        }}
-                        numberOfLines={1}
-                      >
-                        {outlet.address}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-                <View
-                  style={{
-                    paddingVertical: 2,
-                    paddingHorizontal: 6,
-                    borderRadius: 4,
-                    backgroundColor: outlet.isOpen
-                      ? "rgba(34,197,94,0.1)"
-                      : "rgba(239,68,68,0.1)",
-                  }}
-                >
-                  <Text
+                  <View
                     style={{
-                      fontSize: 10,
-                      fontWeight: "600",
-                      color: outlet.isOpen ? c.success : c.destructive,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 4,
                     }}
                   >
-                    {outlet.isOpen ? "Buka" : "Tutup"}
-                  </Text>
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        fontWeight: "500",
+                        color: c.primary,
+                      }}
+                    >
+                      Lihat
+                    </Text>
+                    <ChevronRight size={12} color={c.primary} />
+                  </View>
                 </View>
-              </View>
-            </Pressable>
-          )}
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+                >
+                  <View
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 8,
+                      backgroundColor: c.card,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderWidth: 0.5,
+                      borderColor: c.border,
+                    }}
+                  >
+                    <Store size={18} color={c.mutedForeground} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: "500",
+                        color: c.foreground,
+                      }}
+                      numberOfLines={1}
+                    >
+                      {outlet.name}
+                    </Text>
+                    {outlet.address && (
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 4,
+                          marginTop: 2,
+                        }}
+                      >
+                        <MapPin size={10} color={c.mutedForeground} />
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            color: c.mutedForeground,
+                            flex: 1,
+                          }}
+                          numberOfLines={1}
+                        >
+                          {outlet.address}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  <View
+                    style={{
+                      paddingVertical: 2,
+                      paddingHorizontal: 6,
+                      borderRadius: 4,
+                      backgroundColor: outlet.isOpen
+                        ? "rgba(34,197,94,0.1)"
+                        : "rgba(239,68,68,0.1)",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 10,
+                        fontWeight: "600",
+                        color: outlet.isOpen ? c.success : c.destructive,
+                      }}
+                    >
+                      {outlet.isOpen ? "Buka" : "Tutup"}
+                    </Text>
+                  </View>
+                </View>
+              </Pressable>
+            )}
 
           <View style={{ height: 8 }} />
         </View>

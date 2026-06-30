@@ -161,9 +161,13 @@ module.exports = (config) => {
         appContents = fixSigningConfigs(
           appContents, keystorePath, keystorePassword, keyAlias, keyPassword
         );
-        // Change release build type to use release signing config
+        // Fix buildTypes: debug→debug signing, release→release signing
         appContents = appContents.replace(
-          /(^\s+release\s*\{[\s\S]*?)signingConfig signingConfigs\.debug/m,
+          /(^\s*debug\s*\{[\s\S]*?)signingConfig signingConfigs\.release/m,
+          "$1signingConfig signingConfigs.debug"
+        );
+        appContents = appContents.replace(
+          /(^\s*release\s*\{[\s\S]*?)signingConfig signingConfigs\.debug/m,
           "$1signingConfig signingConfigs.release"
         );
         console.log("[google-services] Added release signing config");

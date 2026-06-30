@@ -43,7 +43,9 @@ export default function SavedProductsScreen() {
             <Pressable
               onPress={() => {
                 if (item.outletSlug) {
-                  router.push(`/outlet/${item.outletSlug}/product/${item.id}`);
+                  router.push(
+                    `/outlet/${item.outletSlug}/product/${item.id}?from=save-products`,
+                  );
                 }
               }}
               style={{
@@ -62,8 +64,8 @@ export default function SavedProductsScreen() {
                   item.image?.startsWith("/")
                     ? defaultProduct
                     : item.image
-                    ? { uri: item.image }
-                    : defaultProduct
+                      ? { uri: item.image }
+                      : defaultProduct
                 }
                 style={{
                   width: 56,
