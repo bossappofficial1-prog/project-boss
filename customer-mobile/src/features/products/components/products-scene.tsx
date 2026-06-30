@@ -1,10 +1,17 @@
-import { useThemeColors } from "@/src/hooks/use-theme-colors";
-import type { OutletProduct } from "@/features/outlet";
-import { ProductRow } from "./product-row";
-import { router } from "expo-router";
-import { View } from "react-native";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ShoppingBag, Briefcase, Ticket } from "lucide-react-native";
+import type { OutletProduct } from "@/features/outlet";
+import { useThemeColors } from "@/src/hooks/use-theme-colors";
+import { router } from "expo-router";
+import { Briefcase, ShoppingBag, Ticket } from "lucide-react-native";
+import { useCallback, useRef } from "react";
+import {
+  ActivityIndicator,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  ScrollView,
+  View,
+} from "react-native";
+import { ProductRow } from "./product-row";
 
 export function ProductsScene({
   products,
@@ -13,6 +20,8 @@ export function ProductsScene({
   onAddToCart,
   outletId,
   type,
+  onEndReached,
+  isLoadingMore,
 }: {
   products: OutletProduct[];
   slug: string;
@@ -20,7 +29,27 @@ export function ProductsScene({
   onAddToCart: (p: OutletProduct) => void;
   outletId?: string;
   type?: "GOODS" | "SERVICE" | "TICKET";
+  onEndReached?: () => void;
+  isLoadingMore?: boolean;
 }) {
+  const loadMoreRef = useRef(false);
+
+  const handleScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+      const distanceFromBottom =
+        contentSize.height - layoutMeasurement.height - contentOffset.y;
+      if (distanceFromBottom < 120 && !loadMoreRef.current && onEndReached) {
+        loadMoreRef.current = true;
+        onEndReached();
+      }
+      if (distanceFromBottom > 200) {
+        loadMoreRef.current = false;
+      }
+    },
+    [onEndReached],
+  );
+
   if (products.length === 0) {
     const emptyTitle =
       type === "GOODS"
@@ -30,7 +59,7 @@ export function ProductsScene({
           : type === "TICKET"
             ? "Belum ada tiket"
             : "Belum ada produk";
-            
+
     const emptyDesc =
       type === "GOODS"
         ? "Outlet ini belum mengunggah barang dagangan."
@@ -60,13 +89,18 @@ export function ProductsScene({
   }
 
   return (
-    <View style={{ backgroundColor: c.card, paddingBottom: 16 }}>
-      {products.map((product, index) => (
-        <View key={product.id}>
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      nestedScrollEnabled
+      onScroll={handleScroll}
+      scrollEventThrottle={16}
+    >
+      {products.map((item, index) => (
+        <View key={item.id}>
           <ProductRow
-            product={product}
-            onPress={() => router.push(`/outlet/${slug}/product/${product.id}`)}
-            onAddToCart={() => onAddToCart(product)}
+            product={item}
+            onPress={() => router.push(`/outlet/${slug}/product/${item.id}`)}
+            onAddToCart={() => onAddToCart(item)}
             outletId={outletId}
           />
           {index < products.length - 1 && (
@@ -74,6 +108,11 @@ export function ProductsScene({
           )}
         </View>
       ))}
-    </View>
+      {isLoadingMore && (
+        <View style={{ paddingVertical: 16, alignItems: "center" }}>
+          <ActivityIndicator size="small" color={c.primary} />
+        </View>
+      )}
+    </ScrollView>
   );
 }

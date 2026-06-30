@@ -12,7 +12,7 @@ export async function getOutletById(id: string): Promise<OutletDetail> {
 }
 
 export async function getOutletProducts(
-  outletId: string,
+  slug: string,
   params?: { page?: number; limit?: number; type?: string }
 ): Promise<OutletProductsResponse> {
   const query = new URLSearchParams();
@@ -22,7 +22,7 @@ export async function getOutletProducts(
   if (params?.type) query.set("type", params.type);
 
   const res = await apiClient.get<OutletProductsResponse>(
-    `/products/outlet/${outletId}?${query.toString()}`
+    `/products/outlet/${slug}?${query.toString()}`
   );
   return res;
 }

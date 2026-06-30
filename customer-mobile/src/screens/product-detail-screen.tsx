@@ -7,6 +7,7 @@ import {
   useGetProductDetail,
 } from "@/features/outlet/hooks/use-outlet";
 import { resolveImageUrl } from "@/lib/image";
+import { CartFAB } from "@/src/components/ui/cart-fab";
 import { useThemeColors } from "@/src/hooks/use-theme-colors";
 import { mapProduct } from "@/src/lib/utils";
 import { useCartStore } from "@/src/stores/cart.store";
@@ -19,6 +20,7 @@ import {
   Bookmark,
   Calendar,
   Calendar1Icon,
+  ChevronRight,
   Clock,
   Mail,
   Map,
@@ -29,6 +31,7 @@ import {
   Plus,
   Share2,
   ShoppingCart,
+  Store,
   Tag,
   Ticket as TicketIcon,
 } from "lucide-react-native";
@@ -108,15 +111,27 @@ function getInitials(name: string): string {
 
 export default function ProductDetailScreen() {
   const c = useThemeColors();
-  const { slug, id } = useLocalSearchParams<{ slug: string; id: string }>();
+  const { slug, id, from } = useLocalSearchParams<{
+    slug: string;
+    id: string;
+    from?: string;
+  }>();
   const insets = useSafeAreaInsets();
   const snackbar = useSnackbar();
   const addItem = useCartStore((s) => s.addItem);
+  const cartItems = useCartStore((s) => s.items);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const { data: product, isLoading, error } = useGetProductDetail(id || "");
   const { data: outlet } = useGetOutletBySlug(slug || "");
+
+  const outletCartCount = useMemo(() => {
+    if (!outlet) return 0;
+    return cartItems
+      .filter((item) => item.outletId === outlet.id)
+      .reduce((sum, item) => sum + item.quantity, 0);
+  }, [cartItems, outlet]);
 
   const price =
     product?.goods?.sellingPrice ||
@@ -291,12 +306,22 @@ export default function ProductDetailScreen() {
 
   if (error || !product) {
     return (
-      <ErrorState
-        variant="notFound"
-        title="Produk tidak ditemukan"
-        description={error?.message}
-        onBack={() => router.back()}
-      />
+      <View
+        style={{
+          backgroundColor: c.background,
+          justifyContent: "center",
+          flex: 1,
+          height: "100%",
+        }}
+      >
+        <ErrorState
+          transparent
+          variant="notFound"
+          title="Outlet tidak ditemukan"
+          description={error?.message}
+          onBack={() => router.back()}
+        />
+      </View>
     );
   }
 
@@ -766,6 +791,122 @@ export default function ProductDetailScreen() {
             </View>
           )}
 
+          {outlet && (from == "home" || from == "search") && (
+            <Pressable
+              onPress={() => router.push(`/outlet/${outlet.slug}`)}
+              style={{
+                padding: 12,
+                borderRadius: 12,
+                backgroundColor: c.muted,
+                gap: 8,
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: "500",
+                    color: c.foreground,
+                  }}
+                >
+                  Info Outlet
+                </Text>
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      fontWeight: "500",
+                      color: c.primary,
+                    }}
+                  >
+                    Lihat
+                  </Text>
+                  <ChevronRight size={12} color={c.primary} />
+                </View>
+              </View>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+              >
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 8,
+                    backgroundColor: c.card,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderWidth: 0.5,
+                    borderColor: c.border,
+                  }}
+                >
+                  <Store size={18} color={c.mutedForeground} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "500",
+                      color: c.foreground,
+                    }}
+                    numberOfLines={1}
+                  >
+                    {outlet.name}
+                  </Text>
+                  {outlet.address && (
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 4,
+                        marginTop: 2,
+                      }}
+                    >
+                      <MapPin size={10} color={c.mutedForeground} />
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          color: c.mutedForeground,
+                          flex: 1,
+                        }}
+                        numberOfLines={1}
+                      >
+                        {outlet.address}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <View
+                  style={{
+                    paddingVertical: 2,
+                    paddingHorizontal: 6,
+                    borderRadius: 4,
+                    backgroundColor: outlet.isOpen
+                      ? "rgba(34,197,94,0.1)"
+                      : "rgba(239,68,68,0.1)",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 10,
+                      fontWeight: "600",
+                      color: outlet.isOpen ? c.success : c.destructive,
+                    }}
+                  >
+                    {outlet.isOpen ? "Buka" : "Tutup"}
+                  </Text>
+                </View>
+              </View>
+            </Pressable>
+          )}
+
           <View style={{ height: 8 }} />
         </View>
       </ScrollView>
@@ -883,6 +1024,8 @@ export default function ProductDetailScreen() {
           isOutletOpen={outlet.isOpen}
         />
       )}
+
+      <CartFAB count={outletCartCount} />
     </View>
   );
 }
@@ -917,7 +1060,7 @@ function GallerySlide({
           height: HERO_HEIGHT,
           backgroundColor: c.muted,
         }}
-        resizeMode="cover"
+        resizeMode="contain"
       />
     );
   }
@@ -926,6 +1069,7 @@ function GallerySlide({
     <View
       style={{
         width: SCREEN_WIDTH,
+        aspectRatio: 16 / 10,
         height: HERO_HEIGHT,
         backgroundColor: c.muted,
         alignItems: "center",

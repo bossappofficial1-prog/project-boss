@@ -90,7 +90,7 @@ export default function SearchScreen() {
     try {
       const outlet = await getOutletById(product.outletId);
       if (outlet.slug) {
-        router.push(`/outlet/${outlet.slug}/product/${product.id}`);
+        router.push(`/outlet/${outlet.slug}/product/${product.id}?from=search`);
       }
     } catch {
       // silent

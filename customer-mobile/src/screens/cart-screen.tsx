@@ -288,7 +288,7 @@ export default function CartScreen() {
         </View>
 
         <Pressable
-          disabled={!selectedOutletId}
+          disabled={!selectedOutletId || selectedCount == 0}
           onPress={() => {
             if (!selectedOutletId) return;
             router.push({
@@ -303,7 +303,11 @@ export default function CartScreen() {
             gap: 8,
             paddingVertical: 12,
             borderRadius: 12,
-            backgroundColor: selectedOutletId ? c.primary : c.muted,
+            backgroundColor: selectedOutletId
+              ? selectedCount === 0
+                ? c.muted
+                : c.primary
+              : c.muted,
           }}
         >
           <Text

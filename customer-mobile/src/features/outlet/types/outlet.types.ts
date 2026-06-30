@@ -76,13 +76,19 @@ export interface BookingSlot {
 }
 
 export interface OutletProductsResponse {
+  success: boolean;
+  message: string;
   data: OutletProduct[];
-  meta: {
-    total: number;
+  pagination: {
     page: number;
     limit: number;
+    total: number;
     totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
   };
+  timestamp: string;
+  path: string;
 }
 
 export interface Goods {

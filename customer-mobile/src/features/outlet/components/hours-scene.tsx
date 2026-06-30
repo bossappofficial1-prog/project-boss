@@ -1,9 +1,9 @@
-import { useThemeColors } from "@/src/hooks/use-theme-colors";
-import type { OutletDetail } from "@/features/outlet";
-import { formatTime } from "@/src/lib/utils";
-import { Text, View } from "react-native";
 import { EmptyState } from "@/components/ui/empty-state";
+import type { OutletDetail } from "@/features/outlet";
+import { useThemeColors } from "@/src/hooks/use-theme-colors";
+import { formatTime } from "@/src/lib/utils";
 import { Clock } from "lucide-react-native";
+import { FlatList, Text, View } from "react-native";
 
 const DAY_NAMES = [
   "Minggu",
@@ -36,8 +36,9 @@ export function HoursScene({
   }
 
   return (
-    <View style={{ backgroundColor: c.card, padding: 16 }}>
-      {operatingHours.map((hour) => {
+    <FlatList
+      data={operatingHours}
+      renderItem={({ item: hour }) => {
         const isToday = hour.dayOfWeek === today;
         return (
           <View
@@ -82,7 +83,10 @@ export function HoursScene({
             </View>
           </View>
         );
-      })}
-    </View>
+      }}
+      style={{ flex: 1, backgroundColor: c.card }}
+      contentContainerStyle={{ paddingHorizontal: 16 }}
+      showsVerticalScrollIndicator={false}
+    />
   );
 }

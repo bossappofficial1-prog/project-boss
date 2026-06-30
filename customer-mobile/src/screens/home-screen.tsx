@@ -222,7 +222,9 @@ export default function HomeScreen() {
                   <ProductCard
                     item={item}
                     onPress={() =>
-                      router.push(`/outlet/${item.slug}/product/${item.id}`)
+                      router.push(
+                        `/outlet/${item.slug}/product/${item.id}?from=home`,
+                      )
                     }
                     rank={index + 1}
                   />

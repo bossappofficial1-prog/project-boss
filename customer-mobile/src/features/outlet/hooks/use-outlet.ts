@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import {
   getOutletBySlug,
   getOutletProducts,
@@ -14,13 +14,21 @@ export function useGetOutletBySlug(slug: string) {
 }
 
 export function useGetOutletProducts(
-  outletId: string,
-  params?: { page?: number; limit?: number; type?: string }
+  slug: string,
+  params?: { limit?: number; type?: string }
 ) {
-  return useQuery({
-    queryKey: ["outlet-products", outletId, params],
-    queryFn: () => getOutletProducts(outletId, params),
-    enabled: !!outletId,
+  return useInfiniteQuery({
+    queryKey: ["outlet-products", slug, params],
+    queryFn: ({ pageParam = 1 }) =>
+      getOutletProducts(slug, { ...params, page: pageParam }),
+    getNextPageParam: (lastPage) => {
+      if (lastPage.pagination.hasNextPage) {
+        return lastPage.pagination.page + 1;
+      }
+      return undefined;
+    },
+    initialPageParam: 1,
+    enabled: !!slug,
   });
 }
 

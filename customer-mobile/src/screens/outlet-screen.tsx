@@ -8,6 +8,7 @@ import {
   useGetOutletProducts,
 } from "@/features/outlet/hooks/use-outlet";
 import { ProductsScene } from "@/features/products";
+import { CartFAB } from "@/src/components/ui/cart-fab";
 import { useThemeColors } from "@/src/hooks/use-theme-colors";
 import { formatTime, openInstagram, openWhatsApp } from "@/src/lib/utils";
 import { useCartStore } from "@/src/stores/cart.store";
@@ -42,7 +43,6 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function OutletDetailScreen() {
   const c = useThemeColors();
@@ -52,7 +52,7 @@ export default function OutletDetailScreen() {
     tableId?: string;
     tableName?: string;
   }>();
-  const insets = useSafeAreaInsets();
+
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [index, setIndex] = useState(0);
@@ -155,10 +155,19 @@ export default function OutletDetailScreen() {
       .reduce((sum, item) => sum + item.quantity, 0);
   }, [cartItems, outletData]);
 
-  const { data: productsRes, isLoading: productsLoading } =
-    useGetOutletProducts(slug || "", { limit: 50 });
+  const {
+    data: productsRes,
+    isLoading: productsLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useGetOutletProducts(slug || "", { limit: 10 });
 
-  const products = productsRes?.data || [];
+  const products = useMemo(
+    () => productsRes?.pages.flatMap((p) => p.data) ?? [],
+    [productsRes],
+  );
+
   const filteredProducts = useMemo(() => {
     if (!searchQuery.trim()) return products;
     const query = searchQuery.toLowerCase().trim();
@@ -298,38 +307,67 @@ export default function OutletDetailScreen() {
 
   if (error || !outletData) {
     return (
-      <ErrorState
-        variant="notFound"
-        title="Outlet tidak ditemukan"
-        description={error?.message}
-        onBack={() => router.back()}
-      />
+      <View
+        style={{
+          backgroundColor: c.background,
+          justifyContent: "center",
+          flex: 1,
+          height: "100%",
+        }}
+      >
+        <ErrorState
+          transparent
+          variant="notFound"
+          title="Outlet tidak ditemukan"
+          description={error?.message}
+          onBack={() => router.back()}
+        />
+      </View>
     );
   }
 
+  const imageSource = outletData.image?.startsWith("/default")
+    ? defaultOutlet
+    : { uri: outletData.image };
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: c.card,
-      }}
-    >
+    <View style={{ flex: 1, backgroundColor: c.card }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ flexGrow: 1 }}
         stickyHeaderIndices={[1]}
       >
         <View>
           {outletData.image ? (
-            <Image
-              source={
-                outletData.image.startsWith("/default")
-                  ? defaultOutlet
-                  : { uri: outletData.image }
-              }
-              style={{ width: "100%", height: 220, backgroundColor: c.muted }}
-              resizeMode="cover"
-            />
+            <View
+              style={{
+                width: "100%",
+                aspectRatio: 16 / 10,
+                backgroundColor: c.muted,
+                overflow: "hidden",
+              }}
+            >
+              <Image
+                source={imageSource}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
+                }}
+                resizeMode="cover"
+                blurRadius={15}
+              />
+
+              {/* 2. Gambar Utama */}
+              <Image
+                source={imageSource}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                }}
+                resizeMode="cover"
+              />
+            </View>
           ) : (
             <View
               style={{
@@ -473,7 +511,6 @@ export default function OutletDetailScreen() {
                   alignItems: "flex-start",
                   gap: 6,
                   marginTop: 2,
-                  opacity: 1,
                 }}
               >
                 <MapPin size={12} color={c.primary} style={{ marginTop: 2 }} />
@@ -572,87 +609,89 @@ export default function OutletDetailScreen() {
                 <Share2 color={c.foreground} size={14} />
               </Pressable>
             </View>
-
-            {/* Search Bar */}
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                backgroundColor: c.muted,
-                borderRadius: 8,
-                paddingHorizontal: 10,
-                height: 36,
-                borderWidth: 0.5,
-                borderColor: c.border,
-                marginTop: 4,
-              }}
-            >
-              <Search size={14} color={c.mutedForeground} />
-              <TextInput
-                placeholder="Cari produk di outlet ini..."
-                placeholderTextColor={c.mutedForeground}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                style={{
-                  flex: 1,
-                  marginLeft: 6,
-                  fontSize: 12,
-                  color: c.foreground,
-                  padding: 0,
-                }}
-                clearButtonMode="while-editing"
-              />
-              {searchQuery.length > 0 && (
-                <Pressable onPress={() => setSearchQuery("")}>
-                  <X size={14} color={c.mutedForeground} />
-                </Pressable>
-              )}
-            </View>
           </View>
         </View>
 
-        <View style={{ display: "none" }} />
+        {/* Search + Tabs — sticky (index 1) */}
+        <View style={{ backgroundColor: c.background }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: c.muted,
+              borderRadius: 8,
+              paddingHorizontal: 10,
+              height: 36,
+              borderWidth: 0.5,
+              borderColor: c.border,
+              marginHorizontal: 16,
+              marginTop: 8,
+              marginBottom: 8,
+            }}
+          >
+            <Search size={14} color={c.mutedForeground} />
+            <TextInput
+              placeholder="Cari produk di outlet ini..."
+              placeholderTextColor={c.mutedForeground}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              style={{
+                flex: 1,
+                marginLeft: 6,
+                fontSize: 12,
+                color: c.foreground,
+                padding: 0,
+              }}
+              clearButtonMode="while-editing"
+            />
+            {searchQuery.length > 0 && (
+              <Pressable onPress={() => setSearchQuery("")}>
+                <X size={14} color={c.mutedForeground} />
+              </Pressable>
+            )}
+          </View>
 
-        <View
-          style={{
-            flexDirection: "row",
-            backgroundColor: c.background,
-            borderBottomWidth: 0.5,
-            borderBottomColor: c.border,
-          }}
-        >
-          {routes.map((route, i) => {
-            const isActive = index === i;
-            const count = route.type
-              ? filteredProducts.filter((p) => p.type === route.type).length
-              : undefined;
-            return (
-              <Pressable
-                key={route.key}
-                onPress={() => goToTab(i)}
-                style={{
-                  flex: 1,
-                  alignItems: "center",
-                  paddingVertical: 12,
-                  borderBottomWidth: 2,
-                  borderBottomColor: isActive ? c.primary : "transparent",
-                }}
-              >
-                <Text
+          <View
+            style={{
+              flexDirection: "row",
+              borderBottomWidth: 0.5,
+              borderBottomColor: c.border,
+            }}
+          >
+            {routes.map((route, i) => {
+              const isActive = index === i;
+              const count = route.type
+                ? filteredProducts.filter((p) => p.type === route.type).length
+                : undefined;
+              return (
+                <Pressable
+                  key={route.key}
+                  onPress={() => goToTab(i)}
                   style={{
-                    fontSize: 13,
-                    fontWeight: isActive ? "500" : "400",
-                    color: isActive ? c.foreground : c.mutedForeground,
+                    flex: 1,
+                    alignItems: "center",
+                    paddingVertical: 12,
+                    borderBottomWidth: 2,
+                    borderBottomColor: isActive ? c.primary : "transparent",
                   }}
                 >
-                  {route.title}
-                  {count !== undefined ? ` (${count})` : ""}
-                </Text>
-              </Pressable>
-            );
-          })}
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: isActive ? "500" : "400",
+                      color: isActive ? c.foreground : c.mutedForeground,
+                    }}
+                  >
+                    {route.title}
+                    {count !== undefined ? ` (${count})` : ""}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
 
+        {/* Pager — fixed height so FlatList works */}
         <ScrollView
           ref={pagerRef}
           horizontal
@@ -660,9 +699,10 @@ export default function OutletDetailScreen() {
           showsHorizontalScrollIndicator={false}
           scrollEventThrottle={16}
           onMomentumScrollEnd={handlePagerScrollEnd}
+          style={{ height: layout.height - 100 }}
         >
           {routes.map((route) => (
-            <View key={route.key} style={{ width: layout.width }}>
+            <View key={route.key} style={{ width: layout.width, flex: 1 }}>
               {route.key === "hours" ? (
                 <HoursScene operatingHours={outletData.operatingHours} c={c} />
               ) : (
@@ -675,6 +715,12 @@ export default function OutletDetailScreen() {
                   onAddToCart={handleAddToCartSimple}
                   outletId={outletData.id}
                   type={route.type}
+                  onEndReached={() => {
+                    if (hasNextPage && !isFetchingNextPage) {
+                      fetchNextPage();
+                    }
+                  }}
+                  isLoadingMore={isFetchingNextPage}
                 />
               )}
             </View>
@@ -682,52 +728,10 @@ export default function OutletDetailScreen() {
         </ScrollView>
       </ScrollView>
 
-      {storedTableOutletId !== outletData.id && outletCartCount > 0 && (
-        <Pressable
-          onPress={() => router.push("/(tabs)/cart")}
-          style={{
-            position: "absolute",
-            bottom: 24,
-            right: 16,
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
-            paddingVertical: 12,
-            paddingHorizontal: 12,
-            borderRadius: 28,
-            backgroundColor: c.primary,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.25,
-            shadowRadius: 8,
-            elevation: 6,
-          }}
-        >
-          <View style={{ position: "relative" }}>
-            <ShoppingCart size={20} color={c.primaryForeground} />
-            <View
-              style={{
-                position: "absolute",
-                top: -6,
-                right: -8,
-                minWidth: 18,
-                height: 18,
-                borderRadius: 9,
-                backgroundColor: "#ffffff",
-                alignItems: "center",
-                justifyContent: "center",
-                paddingHorizontal: 4,
-              }}
-            >
-              <Text
-                style={{ fontSize: 10, fontWeight: "700", color: c.primary }}
-              >
-                {outletCartCount}
-              </Text>
-            </View>
-          </View>
-        </Pressable>
-      )}
+      <CartFAB
+        count={outletCartCount}
+        visible={storedTableOutletId !== outletData.id}
+      />
 
       {storedTableId && storedTableOutletId === outletData.id && (
         <View
