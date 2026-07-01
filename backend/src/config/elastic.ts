@@ -18,8 +18,8 @@ const elasticConfig = {
     requestTimeout: 60000,
     pingTimeout: 3000,
     maxRetries: 5,
-    sniffOnStart: true,
-    sniffOnConnectionFault: true,
+    sniffOnStart: false,
+    sniffOnConnectionFault: false,
     // SSL settings (if needed)
     tls: {
         rejectUnauthorized: false, // Set to true in production with proper certificates

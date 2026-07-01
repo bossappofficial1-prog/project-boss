@@ -3,7 +3,10 @@ import {
     bulkIndex,
     createIndexIfNotExists,
     ELASTIC_INDEXES,
-    refreshIndex
+    refreshIndex,
+    indexDocument,
+    deleteDocument,
+    searchDocuments
 } from '../utils/elastic.utils';
 import {
     PRODUCT_INDEX_MAPPING,
@@ -133,42 +136,120 @@ export const cleanupElasticsearchIndices = async (): Promise<void> => {
  * Reindex all data from database to Elasticsearch
  * This should be called after cleanup or for initial data sync
  */
+const getTypeKeywords = (type: string): string => {
+    switch (type) {
+        case 'FNB':
+            return 'makanan fnb resto kuliner restoran kafe cafe makan minum kulineran warung makan caffe food beverage culinary';
+        case 'RETAIL':
+            return 'toko ritel sejenisnya shop retail warung minimarket supermarket kelontong outlet retail butik boutique mart dagang jualan';
+        case 'EVENT':
+            return 'event acara tiket konser pameran seminar festival show pertunjukan gathering bazaar pasar malam';
+        case 'SERVICE':
+            return 'service layanan jasa salon bengkel spa barbershop cuci laundry klinik konsultasi rental sewa repair servis';
+        case 'CUSTOM':
+            return 'custom lainnya lain umum serbaguna';
+        default:
+            return '';
+    }
+};
+
+/**
+ * Reindex all data from database to Elasticsearch
+ * This should be called after cleanup or for initial data sync
+ */
 export const reindexAllData = async (): Promise<void> => {
     try {
         logger.info('🔄 Starting full reindex...');
 
-        // Import services dynamically to avoid circular dependencies
-        // Note: getAllOrdersService doesn't exist, we'll implement it later if needed
-
         // Reindex products
         logger.info('📦 Reindexing products...');
-        // TODO: Implement getAllProductsService or use existing services
-        logger.info('⚠️ Product reindexing skipped - implement getAllProductsService first');
+        const products = await db.product.findMany({
+            include: {
+                goods: true,
+                service: true,
+                category: true,
+                outlet: {
+                    include: {
+                        business: true
+                    }
+                }
+            }
+        });
+
+        if (products.length > 0) {
+            const productDocs = products.map((product: any) => ({
+                id: product.id,
+                data: {
+                    id: product.id,
+                    name: product.name,
+                    description: product.description || '',
+                    price: product.goods?.sellingPrice || product.service?.sellingPrice || 0,
+                    originalPrice: product.goods?.sellingPrice || product.service?.sellingPrice || 0,
+                    type: product.type,
+                    category: product.category?.name || '',
+                    stock: product.goods?.currentStock || 0,
+                    isActive: product.status === 'ACTIVE',
+                    outletId: product.outletId,
+                    outletName: product.outlet?.name || '',
+                    businessId: product.outlet?.businessId || '',
+                    businessName: product.outlet?.business?.name || '',
+                    tags: [],
+                    imageUrl: product.image || '',
+                    createdAt: product.createdAt,
+                    updatedAt: product.updatedAt,
+                }
+            }));
+            await bulkIndex(ELASTIC_INDEXES.PRODUCTS, productDocs);
+        }
 
         // Reindex outlets
         logger.info('🏪 Reindexing outlets...');
-        const outletsResult = await getAllOutletsService();
-        if (outletsResult && outletsResult.outlets && outletsResult.outlets.length > 0) {
-            const outletDocs = outletsResult.outlets.map((outlet: any) => ({
-                id: outlet.id,
-                data: {
+        const outlets = await db.outlet.findMany({
+            include: {
+                business: true,
+                operatingHours: true,
+            }
+        });
+
+        if (outlets.length > 0) {
+            const outletDocs = outlets.map((outlet: any) => {
+                const doc: any = {
                     id: outlet.id,
                     name: outlet.name,
-                    description: outlet.description,
-                    address: outlet.address,
-                    location: {
-                        lat: outlet.latitude,
-                        lon: outlet.longitude,
-                    },
+                    description: outlet.description || '',
+                    address: outlet.address || '',
                     latitude: outlet.latitude,
                     longitude: outlet.longitude,
                     businessId: outlet.businessId,
-                    businessName: outlet.business?.name,
-                    isActive: outlet.isActive,
+                    businessName: outlet.business?.name || '',
+                    isActive: outlet.isOpen,
+                    type: outlet.type,
+                    typeKeywords: getTypeKeywords(outlet.type),
                     createdAt: outlet.createdAt,
                     updatedAt: outlet.updatedAt,
+                };
+
+                if (outlet.latitude !== null && outlet.longitude !== null) {
+                    doc.location = {
+                        lat: outlet.latitude,
+                        lon: outlet.longitude,
+                    };
                 }
-            }));
+
+                if (outlet.operatingHours && outlet.operatingHours.length > 0) {
+                    doc.operatingHours = outlet.operatingHours.map((oh: any) => ({
+                        day: oh.dayOfWeek?.toString(),
+                        openTime: oh.openTime,
+                        closeTime: oh.closeTime,
+                        isOpen: oh.isOpen,
+                    }));
+                }
+
+                return {
+                    id: outlet.id,
+                    data: doc
+                };
+            });
 
             await bulkIndex(ELASTIC_INDEXES.OUTLETS, outletDocs);
         }
@@ -184,12 +265,195 @@ export const reindexAllData = async (): Promise<void> => {
     }
 };
 
+import { db } from '../config/prisma';
+
+export const syncProductToElastic = async (productId: string): Promise<void> => {
+    try {
+        const product = await db.product.findUnique({
+            where: { id: productId },
+            include: {
+                goods: true,
+                service: true,
+                category: true,
+                outlet: {
+                    include: {
+                        business: true
+                    }
+                }
+            }
+        });
+
+        if (!product) return;
+
+        const doc = {
+            id: product.id,
+            name: product.name,
+            description: product.description || '',
+            price: product.goods?.sellingPrice || product.service?.sellingPrice || 0,
+            originalPrice: product.goods?.sellingPrice || product.service?.sellingPrice || 0,
+            type: product.type,
+            category: product.category?.name || '',
+            stock: product.goods?.currentStock || 0,
+            isActive: product.status === 'ACTIVE',
+            outletId: product.outletId,
+            outletName: product.outlet?.name || '',
+            businessId: product.outlet?.businessId || '',
+            businessName: product.outlet?.business?.name || '',
+            tags: [],
+            imageUrl: product.image || '',
+            createdAt: product.createdAt,
+            updatedAt: product.updatedAt,
+        };
+
+        await indexDocument(ELASTIC_INDEXES.PRODUCTS, product.id, doc);
+    } catch (error) {
+        logger.error(`Failed to sync product ${productId} to Elasticsearch:`, error);
+    }
+};
+
+export const deleteProductFromElastic = async (productId: string): Promise<void> => {
+    try {
+        await deleteDocument(ELASTIC_INDEXES.PRODUCTS, productId);
+    } catch (error) {
+        logger.error(`Failed to delete product ${productId} from Elasticsearch:`, error);
+    }
+};
+
+export const syncOutletToElastic = async (outletId: string): Promise<void> => {
+    try {
+        const outlet = await db.outlet.findUnique({
+            where: { id: outletId },
+            include: {
+                business: true,
+                operatingHours: true,
+            }
+        });
+
+        if (!outlet) return;
+
+        const doc: any = {
+            id: outlet.id,
+            name: outlet.name,
+            description: outlet.description || '',
+            address: outlet.address || '',
+            latitude: outlet.latitude,
+            longitude: outlet.longitude,
+            businessId: outlet.businessId,
+            businessName: outlet.business?.name || '',
+            isActive: outlet.isOpen,
+            type: outlet.type,
+            typeKeywords: getTypeKeywords(outlet.type),
+            createdAt: outlet.createdAt,
+            updatedAt: outlet.updatedAt,
+        };
+
+        if (outlet.latitude !== null && outlet.longitude !== null) {
+            doc.location = {
+                lat: outlet.latitude,
+                lon: outlet.longitude,
+            };
+        }
+
+        if (outlet.operatingHours && outlet.operatingHours.length > 0) {
+            doc.operatingHours = outlet.operatingHours.map((oh: any) => ({
+                day: oh.dayOfWeek?.toString(),
+                openTime: oh.openTime,
+                closeTime: oh.closeTime,
+                isOpen: oh.isOpen,
+            }));
+        }
+
+        await indexDocument(ELASTIC_INDEXES.OUTLETS, outlet.id, doc);
+    } catch (error) {
+        logger.error(`Failed to sync outlet ${outletId} to Elasticsearch:`, error);
+    }
+};
+
+export const deleteOutletFromElastic = async (outletId: string): Promise<void> => {
+    try {
+        await deleteDocument(ELASTIC_INDEXES.OUTLETS, outletId);
+    } catch (error) {
+        logger.error(`Failed to delete outlet ${outletId} from Elasticsearch:`, error);
+    }
+};
+
+export const searchProductsInElastic = async (
+    name: string,
+    outletId?: string
+): Promise<string[]> => {
+    try {
+        const must: any[] = [
+            {
+                multi_match: {
+                    query: name,
+                    fields: ['name^3', 'name.autocomplete^2', 'description'],
+                    fuzziness: 'AUTO',
+                }
+            }
+        ];
+
+        const filter: any[] = [
+            { term: { isActive: true } }
+        ];
+
+        if (outletId) {
+            filter.push({ term: { outletId } });
+        }
+
+        const query = {
+            bool: { must, filter }
+        };
+
+        const result = await searchDocuments(ELASTIC_INDEXES.PRODUCTS, query, {
+            size: 100,
+            _source: false
+        });
+
+        return result.hits.map((hit: any) => hit._id);
+    } catch (error) {
+        logger.error(`Elasticsearch product search failed:`, error);
+        return [];
+    }
+};
+
+export const searchOutletsInElastic = async (
+    name: string,
+    take: number = 10,
+    skip: number = 0
+): Promise<{ ids: string[]; total: number }> => {
+    try {
+        const query = {
+            bool: {
+                must: [
+                    {
+                        multi_match: {
+                            query: name,
+                            fields: ['name^3', 'address', 'typeKeywords^2'],
+                            fuzziness: 'AUTO',
+                        }
+                    }
+                ]
+            }
+        };
+
+        const result = await searchDocuments(ELASTIC_INDEXES.OUTLETS, query, {
+            from: skip,
+            size: take,
+            _source: false
+        });
+
+        const ids = result.hits.map((hit: any) => hit._id);
+        const total = typeof result.total === 'number' ? result.total : result.total?.value || 0;
+
+        return { ids, total };
+    } catch (error) {
+        logger.error(`Elasticsearch outlet search failed:`, error);
+        return { ids: [], total: 0 };
+    }
+};
+
 export class ElasticService {
     async indexOutlet(outlet: Outlet) {
-        await esClient.index({
-            index: `outlets`,
-            id: outlet.id.toString(),
-            document: outlet
-        })
+        await syncOutletToElastic(outlet.id);
     }
 }

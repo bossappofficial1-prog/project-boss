@@ -3,8 +3,6 @@ import { Expo, ExpoPushMessage } from "expo-server-sdk";
 import userRouter from "./user.route";
 import authRouter from "./auth.route";
 import integrationRouter from "./integration.route";
-import ResponseUtil from "../utils/response";
-
 
 import productRouter from "./product.route";
 import orderRouter from "./order.route";
@@ -119,10 +117,10 @@ apiRouter.get("/payment-methods", async (req, res) => {
 apiRouter.post("/test-push", async (req, res) => {
   const { token, title, body } = req.body;
   if (!token) {
-    return ResponseUtil.error(res, "Token diperlukan", 400);
+    return ResponseUtil.error(res, "Token diperlukan", [], 400);
   }
   if (!Expo.isExpoPushToken(token)) {
-    return ResponseUtil.error(res, "Token Expo tidak valid", 400);
+    return ResponseUtil.error(res, "Token Expo tidak valid", [], 400);
   }
   try {
     const expo = new Expo();
@@ -138,12 +136,15 @@ apiRouter.post("/test-push", async (req, res) => {
     const [ticket] = await expo.sendPushNotificationsAsync([message]);
     console.log("[test-push] Ticket:", JSON.stringify(ticket));
     if (ticket.status === "error") {
-      return ResponseUtil.error(res, `Expo error: ${ticket.message}`, 500);
+      return ResponseUtil.error(res, `Expo error: ${ticket.message}`, [], 500);
     }
-    return ResponseUtil.success(res, { ticketId: ticket.id, message: "Notifikasi terkirim ke Expo" });
+    return ResponseUtil.success(res, {
+      ticketId: ticket.id,
+      message: "Notifikasi terkirim ke Expo",
+    });
   } catch (error: any) {
     console.error("[test-push] Error:", error);
-    return ResponseUtil.error(res, error.message, 500);
+    return ResponseUtil.error(res, error.message, [], 500);
   }
 });
 

@@ -21,6 +21,11 @@ import { config } from "../config";
 import { ImageService } from "./image.service";
 import { ProductMediaService, MediaItemInput } from "./product-media.service";
 import { RedisUtils } from "../utils/redis.utils";
+import {
+  syncProductToElastic,
+  deleteProductFromElastic,
+  searchProductsInElastic,
+} from "./elastic.service";
 
 /**
  * Calculates and overrides the virtual current stock for a product if it has a recipe.
@@ -77,6 +82,12 @@ export async function createProductService(data: CreateProductInput) {
 
   await PlanLimitService.invalidateUsageCache(businessId);
   await RedisUtils.deleteByPattern(`pos:products:${data.outletId}:*`);
+
+  // Sync with Elasticsearch in background
+  syncProductToElastic(createdProduct.id).catch((err) => {
+    console.error(`Failed to sync product ${createdProduct.id} to ES:`, err);
+  });
+
   return createdProduct;
 }
 
@@ -224,6 +235,12 @@ export async function updateProductService(id: string, data: UpdateProductInput)
   if (existingProduct.outletId) {
     await RedisUtils.deleteByPattern(`pos:products:${existingProduct.outletId}:*`);
   }
+
+  // Sync with Elasticsearch in background
+  syncProductToElastic(id).catch((err) => {
+    console.error(`Failed to sync product ${id} to ES:`, err);
+  });
+
   return product;
 }
 
@@ -256,6 +273,11 @@ export async function deleteProductService(id: string) {
   if (businessId) {
     await PlanLimitService.invalidateUsageCache(businessId);
   }
+
+  // Delete from Elasticsearch in background
+  deleteProductFromElastic(id).catch((err) => {
+    console.error(`Failed to delete product ${id} from ES:`, err);
+  });
 
   return product;
 }
@@ -621,6 +643,25 @@ export async function bulkCreateProductsFromExcelService(
  * Searches for products by name globally.
  */
 export async function searchProductsByNameService(name: string) {
+  if (name && name.trim() !== "") {
+    try {
+      const matchedIds = await searchProductsInElastic(name);
+      if (matchedIds && matchedIds.length > 0) {
+        return db.product.findMany({
+          where: {
+            id: { in: matchedIds },
+          },
+          include: {
+            goods: true,
+            service: true,
+            ticket: true,
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Elasticsearch search failed, falling back to DB:", error);
+    }
+  }
   return ProductRepository.searchByName(name);
 }
 

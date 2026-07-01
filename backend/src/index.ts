@@ -11,6 +11,7 @@ import { setUpJobs } from "./jobs";
 import { bootstrapQueues } from "./bootstrap/queue.bootstrap";
 import { IntegrationService } from "./service/integration.service";
 import { workerManager } from "./workers/worker-manager";
+import { initializeElasticsearch } from "./service/elastic.service";
 
 
 function getNetworkAdresses(): string[] {
@@ -39,6 +40,9 @@ async function startServer(port: number) {
         await bootstrapQueues();
 
         setUpJobs();
+
+        // Initialize Elasticsearch
+        await initializeElasticsearch();
 
         const rabbitMQConnected = await connectRabbitMQ();
 

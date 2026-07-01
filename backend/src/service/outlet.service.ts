@@ -23,6 +23,11 @@ import { EventPublisher } from "../events/publisher";
 import { decodeQRFromUrl } from "../utils/qr-decoder";
 import { PlanLimitService } from "./plan-limit.service";
 import { redis } from "../config/redis";
+import {
+  syncOutletToElastic,
+  deleteOutletFromElastic,
+  searchOutletsInElastic,
+} from "./elastic.service";
 
 export async function createOutletService(
   data: CreateOutletInput,
@@ -69,6 +74,12 @@ export async function createOutletService(
     await EventPublisher.publishOutletCreated(outlet);
     await PlanLimitService.invalidateUsageCache(business.id);
     await invalidateMapCache(outlet.id);
+
+    // Sync with Elasticsearch in background
+    syncOutletToElastic(outlet.id).catch((err) => {
+      console.error(`Failed to sync outlet ${outlet.id} to ES:`, err);
+    });
+
     return outlet;
   } catch (error: any) {
     if (error.code == "P2002") {
@@ -598,6 +609,14 @@ export async function updateOutletService(
   if (data.manualQrImageUrl && outlet.manualQrImageUrl)
     ImageService.deleteImageByUrl(outlet.manualQrImageUrl);
   await invalidateMapCache(id);
+
+  if (updatedOutlet) {
+    // Sync with Elasticsearch in background
+    syncOutletToElastic(id).catch((err) => {
+      console.error(`Failed to sync outlet ${id} to ES:`, err);
+    });
+  }
+
   return updatedOutlet;
 }
 
@@ -623,6 +642,12 @@ export async function deleteOutletService(id: string, ownerId: string) {
   if (outlet.image) ImageService.deleteImageByUrl(outlet.image);
   await PlanLimitService.invalidateUsageCache(business.id);
   await invalidateMapCache(id);
+
+  // Delete from Elasticsearch in background
+  deleteOutletFromElastic(id).catch((err) => {
+    console.error(`Failed to delete outlet ${id} from ES:`, err);
+  });
+
   return deletedOutlet;
 }
 
@@ -631,6 +656,40 @@ export async function getAllOutletsService(
   take?: number,
   skip?: number,
 ) {
+  const parsedTake = take ? take : 10;
+  const parsedSkip = skip ? skip : 0;
+
+  if (search && search.trim() !== "") {
+    try {
+      const { ids, total } = await searchOutletsInElastic(search, parsedTake, parsedSkip);
+      if (ids && ids.length > 0) {
+        const outletsRaw = await db.outlet.findMany({
+          where: {
+            id: { in: ids },
+          },
+          include: {
+            business: { select: { id: true, name: true } },
+            operatingHours: true,
+            _count: { select: { staff: true, products: true } },
+          },
+        });
+
+        // Reorder results to match the order of IDs returned by Elasticsearch
+        const outletsMap = new Map(outletsRaw.map((o) => [o.id, o]));
+        const sortedOutletsRaw = ids
+          .map((id) => outletsMap.get(id))
+          .filter((o): o is NonNullable<typeof o> => o !== undefined);
+
+        const outletsWithStatus = mapOutletsWithOpenStatus(sortedOutletsRaw);
+        const outlets = removeOperatingHoursFromOutlets(outletsWithStatus);
+
+        return { outlets, total };
+      }
+    } catch (error) {
+      console.error("Elasticsearch search failed, falling back to DB:", error);
+    }
+  }
+
   const { outlets: outletRaw, total } =
     await OutletRepository.findManyWithPagination(
       undefined,
