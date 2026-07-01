@@ -228,6 +228,21 @@ const getTypeKeywords = (type: string): string => {
     }
 };
 
+const getProductTypeKeywords = (productTypes: string[]): string => {
+    let keywords = '';
+    if (productTypes.includes('GOODS')) {
+        keywords += ' barang ritel toko retail warung minimarket supermarket kelontong outlet retail butik boutique mart dagang jualan';
+    }
+    if (productTypes.includes('SERVICE')) {
+        keywords += ' service layanan jasa salon bengkel spa barbershop cuci laundry klinik konsultasi rental sewa repair servis';
+    }
+    if (productTypes.includes('TICKET')) {
+        keywords += ' event acara tiket konser pameran seminar festival show pertunjukan gathering bazaar pasar malam';
+    }
+    return keywords;
+};
+
+
 /**
  * Reindex all data from database to Elasticsearch
  * This should be called after cleanup or for initial data sync
@@ -283,11 +298,18 @@ export const reindexAllData = async (): Promise<void> => {
             include: {
                 business: true,
                 operatingHours: true,
+                products: {
+                    select: {
+                        type: true
+                    }
+                }
             }
         });
 
         if (outlets.length > 0) {
             const outletDocs = outlets.map((outlet: any) => {
+                const productTypes = (outlet.products || []).map((p: any) => p.type);
+                const typeKeywords = `${getTypeKeywords(outlet.type)} ${getProductTypeKeywords(productTypes)}`.trim();
                 const doc: any = {
                     id: outlet.id,
                     name: outlet.name,
@@ -299,7 +321,7 @@ export const reindexAllData = async (): Promise<void> => {
                     businessName: outlet.business?.name || '',
                     isActive: outlet.isOpen,
                     type: outlet.type,
-                    typeKeywords: getTypeKeywords(outlet.type),
+                    typeKeywords,
                     createdAt: outlet.createdAt,
                     updatedAt: outlet.updatedAt,
                 };
@@ -381,6 +403,9 @@ export const syncProductToElastic = async (productId: string): Promise<void> => 
         };
 
         await indexDocument(ELASTIC_INDEXES.PRODUCTS, product.id, doc);
+        
+        // Auto-sync the parent outlet to update its typeKeywords based on product types
+        await syncOutletToElastic(product.outletId);
     } catch (error) {
         logger.error(`Failed to sync product ${productId} to Elasticsearch:`, error);
     }
@@ -388,7 +413,27 @@ export const syncProductToElastic = async (productId: string): Promise<void> => 
 
 export const deleteProductFromElastic = async (productId: string): Promise<void> => {
     try {
+        let outletId: string | null = null;
+        try {
+            const esDoc = await elasticClient.get({
+                index: ELASTIC_INDEXES.PRODUCTS,
+                id: productId,
+                _source: ['outletId']
+            });
+            if (esDoc && (esDoc as any)._source) {
+                outletId = (esDoc as any)._source.outletId;
+            } else if (esDoc && (esDoc as any).body && (esDoc as any).body._source) {
+                outletId = (esDoc as any).body._source.outletId;
+            }
+        } catch (e) {
+            // Ignore if product not found in ES
+        }
+
         await deleteDocument(ELASTIC_INDEXES.PRODUCTS, productId);
+
+        if (outletId) {
+            await syncOutletToElastic(outletId);
+        }
     } catch (error) {
         logger.error(`Failed to delete product ${productId} from Elasticsearch:`, error);
     }
@@ -401,10 +446,18 @@ export const syncOutletToElastic = async (outletId: string): Promise<void> => {
             include: {
                 business: true,
                 operatingHours: true,
+                products: {
+                    select: {
+                        type: true
+                    }
+                }
             }
         });
 
         if (!outlet) return;
+
+        const productTypes = (outlet.products || []).map((p: any) => p.type);
+        const typeKeywords = `${getTypeKeywords(outlet.type)} ${getProductTypeKeywords(productTypes)}`.trim();
 
         const doc: any = {
             id: outlet.id,
@@ -417,7 +470,7 @@ export const syncOutletToElastic = async (outletId: string): Promise<void> => {
             businessName: outlet.business?.name || '',
             isActive: outlet.isOpen,
             type: outlet.type,
-            typeKeywords: getTypeKeywords(outlet.type),
+            typeKeywords,
             createdAt: outlet.createdAt,
             updatedAt: outlet.updatedAt,
         };
