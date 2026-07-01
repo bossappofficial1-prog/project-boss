@@ -340,8 +340,16 @@ export class ReportService extends BaseService {
       // Yearly — Monthly aggregation — 12 rows (Jan–Des)
       const targetYear = wibRefDate.getFullYear();
       for (let i = 0; i < 12; i++) {
-        const monthStart = new Date(`${targetYear}-${String(i + 1).padStart(2, "0")}-01T00:00:00+07:00`);
-        const monthEnd = WIBUtil.periodEndWIB(endOfMonth(monthStart));
+        const monthStart = new Date(
+          `${targetYear}-${String(i + 1).padStart(2, "0")}-01T00:00:00+07:00`,
+        );
+        const nextMonthStart =
+          i === 11
+            ? new Date(`${targetYear + 1}-01-01T00:00:00+07:00`)
+            : new Date(
+                `${targetYear}-${String(i + 2).padStart(2, "0")}-01T00:00:00+07:00`,
+              );
+        const monthEnd = new Date(nextMonthStart.getTime() - 1);
         const labelDate = new Date(targetYear, i, 1);
 
         const mOrders = orders.filter(
