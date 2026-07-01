@@ -1,6 +1,7 @@
 import { db } from '../config/prisma';
 import { OrderStatus, PaymentStatus } from '@prisma/client';
 import { getOutletByIdService } from './outlet.service';
+import { WIBUtil } from '../utils/date';
 
 export class DailyReportService {
     static async getDailyReport(outletId: string, startDate?: Date, endDate?: Date) {
@@ -45,10 +46,10 @@ export class DailyReportService {
         });
         const dailyExpenses = expensesRaw.map(e => ({ date: e.date, _sum: { amount: e.amount } }));
 
-        // Create maps for revenue and expense lookups
+        // Create maps for revenue and expense lookups using WIB timezone
         const revenueMap = new Map<string, { jumlahTransaksi: number; totalPendapatan: number }>();
         for (const rev of dailyRevenue) {
-            const key = rev.createdAt.toISOString().split('T')[0];
+            const key = WIBUtil.toDateString(rev.createdAt);
             const existing = revenueMap.get(key) || { jumlahTransaksi: 0, totalPendapatan: 0 };
             revenueMap.set(key, {
                 jumlahTransaksi: existing.jumlahTransaksi + rev._count.id,
@@ -58,16 +59,17 @@ export class DailyReportService {
 
         const expenseMap = new Map<string, number>();
         for (const exp of dailyExpenses) {
-            const key = exp.date.toISOString().split('T')[0];
+            const key = WIBUtil.toDateString(exp.date);
             const existing = expenseMap.get(key) || 0;
             expenseMap.set(key, existing + (exp._sum.amount || 0));
         }
 
-        // Generate all dates in the range
+        // Generate all dates in the range using WIB
         const dates: string[] = [];
-        const tempDate = new Date(actualStartDate);
-        while (tempDate <= actualEndDate) {
-            dates.push(tempDate.toISOString().split('T')[0]);
+        let tempDate = WIBUtil.startOfDayWIB(actualStartDate);
+        const endDateWIB = WIBUtil.startOfDayWIB(actualEndDate);
+        while (tempDate <= endDateWIB) {
+            dates.push(WIBUtil.toDateString(tempDate));
             tempDate.setDate(tempDate.getDate() + 1);
         }
 

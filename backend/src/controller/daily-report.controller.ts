@@ -5,6 +5,7 @@ import { DailyReportService } from '../service/daily-report.service';
 import { z } from 'zod';
 import { AppError } from '../errors/app-error';
 import { HttpStatus } from '../constants/http-status';
+import { WIBUtil } from '../utils/date';
 
 // Validation schema for query parameters
 const dateRangeSchema = z.object({
@@ -27,8 +28,8 @@ export const getDailyReportController = asyncHandler(async (req: Request, res: R
 
     const report = await DailyReportService.getDailyReport(
         outletId as string,
-        startDate ? new Date(startDate as string) : undefined,
-        endDate ? new Date(`${endDate}T23:59:59.999Z`) : undefined // End of the day
+        startDate ? new Date(`${startDate}T00:00:00+07:00`) : undefined,
+        endDate ? WIBUtil.endOfDayWIB(new Date(endDate)) : undefined
     );
 
     ResponseUtil.success(res, { daily: report.data, summary: report.summary });

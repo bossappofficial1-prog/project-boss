@@ -7,6 +7,7 @@ import { generateTransactionReportPDF, TransactionReportData } from "../service/
 import { EmailService } from "../service/email.service";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import { WIBUtil } from "../utils/date";
 import logger from "../utils/pino.logger";
 
 interface GenerateTransactionReportPayload {
@@ -66,9 +67,9 @@ export class GenerateTransactionReportQueue extends BaseQueue<GenerateTransactio
             const pendingCount = transactions.filter((t) => t.status === 'PENDING').length;
 
             // 5. Format data untuk template PDF
-            const periodStart = format(new Date(startDate), 'dd MMM yyyy', { locale: localeId });
-            const periodEnd = format(new Date(endDate), 'dd MMM yyyy', { locale: localeId });
-            const docNumber = `EST/${format(new Date(), 'yyyy/MM')}/${String(job.id).padStart(3, '0')}`;
+            const periodStart = format(new Date(startDate), 'dd MMM yyyy', { locale: localeId, timeZone: 'Asia/Jakarta' });
+            const periodEnd = format(new Date(endDate), 'dd MMM yyyy', { locale: localeId, timeZone: 'Asia/Jakarta' });
+            const docNumber = `EST/${format(new Date(), 'yyyy/MM', { timeZone: 'Asia/Jakarta' })}/${String(job.id).padStart(3, '0')}`;
 
             const reportData: TransactionReportData = {
                 docNumber,
@@ -78,10 +79,10 @@ export class GenerateTransactionReportQueue extends BaseQueue<GenerateTransactio
                 totalRevenue: totals.total_revenue,
                 totalTransactions: counts.transactionCount,
                 pendingCount,
-                generatedAt: format(new Date(), 'dd MMM yyyy HH:mm:ss', { locale: localeId }),
+                generatedAt: format(new Date(), 'dd MMM yyyy HH:mm:ss', { locale: localeId, timeZone: 'Asia/Jakarta' }),
                 transactions: transactions.map((trx, index) => ({
                     id: trx.orderId || `TRX-${String(index + 1).padStart(3, '0')}`,
-                    date: format(new Date(trx.createdAt), 'dd MMM HH:mm'),
+                    date: format(new Date(trx.createdAt), 'dd MMM HH:mm', { timeZone: 'Asia/Jakarta' }),
                     outletName: trx.order?.outlet?.name || '-',
                     amount: trx.amount,
                     status: trx.status,

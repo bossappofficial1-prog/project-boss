@@ -17,6 +17,7 @@ import {
 } from "date-fns";
 import { RedisUtils } from "../utils/redis.utils";
 import { id } from "date-fns/locale";
+import { WIBUtil } from "../utils/date";
 
 interface OutletReport {
   label: string;
@@ -48,7 +49,7 @@ export class ReportService extends BaseService {
   }
 
   async getFinancialSummary(outletId: string, startDate: Date, endDate: Date) {
-    const cachedkey = `report:summary:${outletId}:${startDate.toISOString()}:${endDate.toISOString()}`;
+    const cachedkey = `report:summary:${outletId}:${WIBUtil.toDateString(startDate)}:${WIBUtil.toDateString(endDate)}`;
 
     const cached = await RedisUtils.get(cachedkey);
     if (cached) return cached;
@@ -113,7 +114,10 @@ export class ReportService extends BaseService {
 
     const data = {
       outletName: outletId,
-      period: { start: start.toISOString(), end: end.toISOString() },
+      period: { 
+        start: WIBUtil.toDateString(start), 
+        end: WIBUtil.toDateString(end) 
+      },
       incomeStatement: {
         totalRevenue: {
           amount: totalRevenue,
@@ -164,8 +168,8 @@ export class ReportService extends BaseService {
     let start: Date, end: Date;
 
     if (type === "daily") {
-      start = startOfDay(refDate);
-      end = endOfDay(refDate);
+      start = WIBUtil.startOfDayWIB(refDate);
+      end = WIBUtil.endOfDayWIB(refDate);
     } else if (type === "weekly") {
       start = startOfWeek(refDate, { weekStartsOn: 1 });
       end = endOfWeek(refDate, { weekStartsOn: 1 });
@@ -191,16 +195,25 @@ export class ReportService extends BaseService {
     let finalReport = [];
 
     if (type === "daily") {
-      // Hourly aggregation — 24 rows (00:00–23:00)
+      // Hourly aggregation — 24 rows (00:00–23:00) in WIB
       for (let hour = 0; hour < 24; hour++) {
         const hOrders = orders.filter(
-          (o: any) => o.createdAt.getHours() === hour,
+          (o: any) => {
+            const wibDate = new Date(o.createdAt.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+            return wibDate.getHours() === hour;
+          },
         );
         const hExpenses = expenses.filter(
-          (e: any) => e.date.getHours() === hour,
+          (e: any) => {
+            const wibDate = new Date(e.date.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+            return wibDate.getHours() === hour;
+          },
         );
         const hLogs = stockLogs.filter(
-          (l: any) => l.createdAt.getHours() === hour,
+          (l: any) => {
+            const wibDate = new Date(l.createdAt.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+            return wibDate.getHours() === hour;
+          },
         );
 
         const stats = this.calculateStats(hOrders, hExpenses, hLogs);
@@ -231,7 +244,7 @@ export class ReportService extends BaseService {
         const stats = this.calculateStats(dOrders, dExpenses, dLogs);
 
         return {
-          label: format(day, "EEEE, dd MMMM yyyy", { locale: id }),
+          label: format(day, "EEEE, dd MMMM yyyy", { locale: id, timeZone: 'Asia/Jakarta' }),
           jumlahTransaksi: stats.count,
           totalPendapatan: stats.revenue,
           totalPajak: stats.totalPajak,
@@ -249,17 +262,17 @@ export class ReportService extends BaseService {
       const days = eachDayOfInterval({ start, end });
 
       finalReport = days.map((day) => {
-        const dayStr = format(day, "yyyy-MM-dd", { locale: id });
+        const dayStr = format(day, "yyyy-MM-dd", { locale: id, timeZone: 'Asia/Jakarta' });
         const dOrders = orders.filter(
           (o: any) =>
-            format(o.createdAt, "yyyy-MM-dd", { locale: id }) === dayStr,
+            format(o.createdAt, "yyyy-MM-dd", { locale: id, timeZone: 'Asia/Jakarta' }) === dayStr,
         );
         const dExpenses = expenses.filter(
-          (e: any) => format(e.date, "yyyy-MM-dd", { locale: id }) === dayStr,
+          (e: any) => format(e.date, "yyyy-MM-dd", { locale: id, timeZone: 'Asia/Jakarta' }) === dayStr,
         );
         const dLogs = stockLogs.filter(
           (l: any) =>
-            format(l.createdAt, "yyyy-MM-dd", { locale: id }) === dayStr,
+            format(l.createdAt, "yyyy-MM-dd", { locale: id, timeZone: 'Asia/Jakarta' }) === dayStr,
         );
 
         const stats = this.calculateStats(dOrders, dExpenses, dLogs);
@@ -268,9 +281,11 @@ export class ReportService extends BaseService {
           dOrders.length > 0
             ? Array.from({ length: 8 }).map((_, h) => {
                 const hourOrders = dOrders.filter(
-                  (o: any) =>
-                    o.createdAt.getHours() >= h * 3 &&
-                    o.createdAt.getHours() < (h + 1) * 3,
+                  (o: any) => {
+                    const wibDate = new Date(o.createdAt.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+                    const wibHour = wibDate.getHours();
+                    return wibHour >= h * 3 && wibHour < (h + 1) * 3;
+                  },
                 );
                 return hourOrders.reduce(
                   (sum: number, curr: any) => sum + curr.totalAmount,
@@ -280,7 +295,7 @@ export class ReportService extends BaseService {
             : [0, 0, 0, 0, 0, 0, 0, 0];
 
         return {
-          label: format(day, "dd MMM", { locale: id }),
+          label: format(day, "dd MMM", { locale: id, timeZone: 'Asia/Jakarta' }),
           jumlahTransaksi: stats.count,
           totalPendapatan: stats.revenue,
           totalPajak: stats.totalPajak,
@@ -313,7 +328,7 @@ export class ReportService extends BaseService {
         const stats = this.calculateStats(mOrders, mExpenses, mLogs);
 
         finalReport.push({
-          label: format(monthStart, "MMMM yyyy", { locale: id }),
+          label: format(monthStart, "MMMM yyyy", { locale: id, timeZone: 'Asia/Jakarta' }),
           jumlahTransaksi: stats.count,
           totalPendapatan: stats.revenue,
           totalPajak: stats.totalPajak,
@@ -351,8 +366,8 @@ export class ReportService extends BaseService {
       start = startOfMonth(refDate);
       end = endOfMonth(refDate);
     } else {
-      start = startOfDay(refDate);
-      end = endOfDay(refDate);
+      start = WIBUtil.startOfDayWIB(refDate);
+      end = WIBUtil.endOfDayWIB(refDate);
     }
 
     const outlets =
@@ -453,8 +468,8 @@ export class ReportService extends BaseService {
     let start: Date, end: Date;
 
     if (type === "daily") {
-      start = startOfDay(refDate);
-      end = endOfDay(refDate);
+      start = WIBUtil.startOfDayWIB(refDate);
+      end = WIBUtil.endOfDayWIB(refDate);
     } else if (type === "weekly") {
       start = startOfWeek(refDate, { weekStartsOn: 1 });
       end = endOfWeek(refDate, { weekStartsOn: 1 });
@@ -702,13 +717,9 @@ export class ReportService extends BaseService {
       ["Outlet", outletName],
       [
         "Tanggal Export",
-        new Date().toLocaleDateString("id-ID", {
-          day: "2-digit",
-          month: "long",
-          year: "numeric",
-        }),
+        WIBUtil.formatDate(new Date(), "dd MMMM yyyy"),
       ],
-      ["Periode", date || new Date().toISOString().split("T")[0]],
+      ["Periode", date || WIBUtil.todayString()],
     ].forEach((r) => info.addRow(r));
 
     return workbook;
@@ -819,13 +830,9 @@ export class ReportService extends BaseService {
       ["Outlet", outletName],
       [
         "Tanggal Export",
-        new Date().toLocaleDateString("id-ID", {
-          day: "2-digit",
-          month: "long",
-          year: "numeric",
-        }),
+        WIBUtil.formatDate(new Date(), "dd MMMM yyyy"),
       ],
-      ["Periode", date || new Date().toISOString().split("T")[0]],
+      ["Periode", date || WIBUtil.todayString()],
       ["Total Kasir", String(cashiers.length)],
       ["Total Staff Layanan", String(services.length)],
     ].forEach((r) => info.addRow(r));

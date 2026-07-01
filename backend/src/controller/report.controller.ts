@@ -6,6 +6,7 @@ import { z } from "zod";
 import { exportTransactionReportSchema } from "../schemas/export-report.schema";
 import { generateTransactionReportQueue } from "../queues/generate-transaction-report.queue";
 import { BusinessRepository } from "../repositories/business.repository";
+import { WIBUtil } from "../utils/date";
 
 const summaryQuerySchema = z.object({
   outletId: z.string(),
@@ -126,7 +127,7 @@ export class ReportController extends BaseController {
       ownerId!,
     );
 
-    const filename = `Laporan_Outlet_${new Date().toISOString().split("T")[0]}.xlsx`;
+    const filename = `Laporan_Outlet_${WIBUtil.todayString()}.xlsx`;
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
     await workbook.xlsx.write(res);
@@ -145,7 +146,7 @@ export class ReportController extends BaseController {
       ownerId!,
     );
 
-    const filename = `Laporan_Staff_${new Date().toISOString().split("T")[0]}.xlsx`;
+    const filename = `Laporan_Staff_${WIBUtil.todayString()}.xlsx`;
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
     await workbook.xlsx.write(res);

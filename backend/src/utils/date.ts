@@ -1,4 +1,7 @@
 import { format, addMinutes } from 'date-fns';
+import { id } from 'date-fns/locale';
+
+const WIB_TIMEZONE = 'Asia/Jakarta';
 
 export const DateUtil = {
     now(): string {
@@ -11,6 +14,45 @@ export const DateUtil = {
 
     addMinutes(date: Date, minutes: number): Date {
         return addMinutes(date, minutes);
+    }
+};
+
+export const WIBUtil = {
+    /**
+     * Convert Date to YYYY-MM-DD string in WIB timezone
+     */
+    toDateString(date: Date): string {
+        return date.toLocaleDateString('sv-SE', { timeZone: WIB_TIMEZONE });
+    },
+
+    /**
+     * Get current date string in WIB timezone (YYYY-MM-DD)
+     */
+    todayString(): string {
+        return this.toDateString(new Date());
+    },
+
+    /**
+     * Format date in WIB with date-fns locale
+     */
+    formatDate(date: Date, fmt: string = 'dd MMMM yyyy'): string {
+        return format(date, fmt, { locale: id, timeZone: WIB_TIMEZONE });
+    },
+
+    /**
+     * Get start of day in WIB
+     */
+    startOfDayWIB(date: Date = new Date()): Date {
+        const wibStr = this.toDateString(date);
+        return new Date(`${wibStr}T00:00:00+07:00`);
+    },
+
+    /**
+     * Get end of day in WIB
+     */
+    endOfDayWIB(date: Date = new Date()): Date {
+        const wibStr = this.toDateString(date);
+        return new Date(`${wibStr}T23:59:59.999+07:00`);
     }
 };
 
