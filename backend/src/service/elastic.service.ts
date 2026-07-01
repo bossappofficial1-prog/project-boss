@@ -18,6 +18,8 @@ import logger from '../utils/pino.logger';
 import { getAllOutletsService } from './outlet.service';
 import { Outlet } from '@prisma/client';
 
+export let isElasticsearchConnected = false;
+
 /**
  * Initialize Elasticsearch connection and create required indices
  */
@@ -29,6 +31,7 @@ export const initializeElasticsearch = async (): Promise<void> => {
         const isConnected = await testElasticConnection();
         if (!isConnected) {
             logger.error('❌ Failed to connect to Elasticsearch');
+            isElasticsearchConnected = false;
             return;
         }
 
@@ -60,9 +63,11 @@ export const initializeElasticsearch = async (): Promise<void> => {
             ),
         ]);
 
+        isElasticsearchConnected = true;
         logger.info('✅ Elasticsearch initialization completed successfully');
     } catch (error) {
         logger.error('❌ Failed to initialize Elasticsearch:', error);
+        isElasticsearchConnected = false;
         // Don't throw error to prevent app from crashing
         // Elasticsearch is optional for basic functionality
     }
@@ -381,6 +386,9 @@ export const searchProductsInElastic = async (
     name: string,
     outletId?: string
 ): Promise<string[]> => {
+    if (!isElasticsearchConnected) {
+        return [];
+    }
     try {
         const must: any[] = [
             {
@@ -411,7 +419,8 @@ export const searchProductsInElastic = async (
 
         return result.hits.map((hit: any) => hit._id);
     } catch (error) {
-        logger.error(`Elasticsearch product search failed:`, error);
+        logger.error(`Elasticsearch product search failed, disabling ES search:`, error);
+        isElasticsearchConnected = false;
         return [];
     }
 };
@@ -421,6 +430,9 @@ export const searchOutletsInElastic = async (
     take: number = 10,
     skip: number = 0
 ): Promise<{ ids: string[]; total: number }> => {
+    if (!isElasticsearchConnected) {
+        return { ids: [], total: 0 };
+    }
     try {
         const query = {
             bool: {
@@ -447,7 +459,8 @@ export const searchOutletsInElastic = async (
 
         return { ids, total };
     } catch (error) {
-        logger.error(`Elasticsearch outlet search failed:`, error);
+        logger.error(`Elasticsearch outlet search failed, disabling ES search:`, error);
+        isElasticsearchConnected = false;
         return { ids: [], total: 0 };
     }
 };
