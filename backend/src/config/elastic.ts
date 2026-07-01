@@ -1,4 +1,4 @@
-import { Client } from '@elastic/elasticsearch';
+import { Client, HttpConnection } from '@elastic/elasticsearch';
 import logger from '../utils/logger';
 
 const ELASTIC_NODE = process.env.ELASTIC_NODE || 'http://localhost:9200';
@@ -8,6 +8,7 @@ const ELASTIC_PASSWORD = process.env.ELASTIC_PASSWORD;
 // Elasticsearch client configuration
 const elasticConfig = {
     node: ELASTIC_NODE,
+    Connection: HttpConnection,
     ...(ELASTIC_USERNAME && ELASTIC_PASSWORD && {
         auth: {
             username: ELASTIC_USERNAME,
@@ -79,4 +80,4 @@ export const checkElasticHealth = async () => {
 
 export default elasticClient;
 
-export const esClient = new Client({ node: ELASTIC_NODE });
+export const esClient = new Client({ node: ELASTIC_NODE, Connection: HttpConnection });
