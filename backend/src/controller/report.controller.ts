@@ -30,6 +30,22 @@ export class ReportController extends BaseController {
     super();
   }
 
+  private extractDate(query: any): string | undefined {
+    const type = query.type;
+    let date = query.date as string;
+
+    if (!date) {
+      if (type === "weekly" && query.startDate) {
+        date = query.startDate as string;
+      } else if (type === "monthly" && query.month && query.year) {
+        date = `${query.year}-${String(query.month).padStart(2, "0")}-01`;
+      } else if (type === "yearly" && query.year) {
+        date = `${query.year}-01-01`;
+      }
+    }
+    return date;
+  }
+
   getFinancialSummary = this.handler(async (req: Request, res: Response) => {
     const query = summaryQuerySchema.parse(req.query);
     const summary = await this.reportService.getFinancialSummary(
@@ -43,12 +59,13 @@ export class ReportController extends BaseController {
   getOutletReport = this.handler(async (req: Request, res: Response) => {
     const outletId = req.params.outletId as string;
     const ownerId = (req as any).storedUser?.id;
-    const { type, date } = req.query;
+    const type = req.query.type as "daily" | "weekly" | "monthly" | "yearly";
+    const date = this.extractDate(req.query);
 
     const report = await this.reportService.getOutletReport(
       outletId,
       date as string,
-      type as "daily" | "weekly" | "monthly" | "yearly",
+      type,
       ownerId!,
     );
 
@@ -56,7 +73,8 @@ export class ReportController extends BaseController {
   });
 
   getCompareOutletsReport = this.handler(async (req: Request, res: Response) => {
-    const { type, date } = req.query;
+    const type = req.query.type as "daily" | "monthly" | "yearly";
+    const date = this.extractDate(req.query);
     const businessId = (req as any).storedUser?.businessId;
 
     if (!businessId) {
@@ -65,7 +83,7 @@ export class ReportController extends BaseController {
 
     const report = await this.reportService.getCompareOutletsReport(
       date as string,
-      type as "daily" | "monthly" | "yearly",
+      type,
       businessId,
     );
 
@@ -74,13 +92,14 @@ export class ReportController extends BaseController {
 
   getStaffReport = this.handler(async (req: Request, res: Response) => {
     const outletId = req.params.outletId as string;
-    const { type, date } = req.query;
+    const type = req.query.type as "daily" | "weekly" | "monthly" | "yearly";
+    const date = this.extractDate(req.query);
     const ownerId = (req as any).storedUser?.id;
 
     const report = await this.reportService.getStaffReport(
       outletId,
       date as string,
-      type as "daily" | "weekly" | "monthly" | "yearly",
+      type,
       ownerId!,
     );
 
@@ -118,10 +137,11 @@ export class ReportController extends BaseController {
     const outletId = req.params.outletId as string;
     const query = exportOutletQuerySchema.parse(req.query);
     const ownerId = (req as any).storedUser?.id;
+    const date = query.date || this.extractDate(req.query) || new Date().toISOString();
 
     const workbook = await this.reportService.exportOutletReportToExcel(
       outletId,
-      query.date || new Date().toISOString(),
+      date,
       query.type,
       query.viewMode,
       ownerId!,
@@ -138,10 +158,11 @@ export class ReportController extends BaseController {
     const outletId = req.params.outletId as string;
     const query = exportStaffQuerySchema.parse(req.query);
     const ownerId = (req as any).storedUser?.id;
+    const date = query.date || this.extractDate(req.query) || new Date().toISOString();
 
     const workbook = await this.reportService.exportStaffReportToExcel(
       outletId,
-      query.date || new Date().toISOString(),
+      date,
       query.type,
       ownerId!,
     );

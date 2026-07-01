@@ -8,6 +8,7 @@ import {
   addYears,
   startOfWeek,
   endOfWeek,
+  parseISO,
 } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import {
@@ -26,12 +27,55 @@ import {
 
 export type PeriodGranularity = "daily" | "weekly" | "monthly" | "yearly";
 
+export type PeriodValue =
+  | { type: "daily"; date: string } // format: yyyy-MM-dd
+  | { type: "weekly"; startDate: string; endDate: string } // format: yyyy-MM-dd
+  | { type: "monthly"; month: number; year: number } // month: 1-12
+  | { type: "yearly"; year: number };
+
 type PeriodPickerProps = {
   granularity: PeriodGranularity;
-  value: Date;
-  onValueChange: (date: Date) => void;
+  value: PeriodValue;
+  onValueChange: (value: PeriodValue) => void;
   className?: string;
 };
+
+function generatePeriodValue(
+  granularity: PeriodGranularity,
+  date: Date,
+): PeriodValue {
+  switch (granularity) {
+    case "daily":
+      return { type: "daily", date: format(date, "yyyy-MM-dd") };
+    case "weekly":
+      return {
+        type: "weekly",
+        startDate: format(startOfWeek(date, { weekStartsOn: 1 }), "yyyy-MM-dd"),
+        endDate: format(endOfWeek(date, { weekStartsOn: 1 }), "yyyy-MM-dd"),
+      };
+    case "monthly":
+      return {
+        type: "monthly",
+        month: date.getMonth() + 1, // +1 agar bulan dimulai dari 1 (Jan) - 12 (Des)
+        year: date.getFullYear(),
+      };
+    case "yearly":
+      return { type: "yearly", year: date.getFullYear() };
+  }
+}
+
+function getInternalDate(value: PeriodValue): Date {
+  switch (value.type) {
+    case "daily":
+      return parseISO(value.date);
+    case "weekly":
+      return parseISO(value.startDate);
+    case "monthly":
+      return new Date(value.year, value.month - 1, 1);
+    case "yearly":
+      return new Date(value.year, 0, 1);
+  }
+}
 
 function getWeekLabel(date: Date) {
   const start = startOfWeek(date, { weekStartsOn: 1 });
@@ -80,8 +124,17 @@ export function PeriodPicker({
 }: PeriodPickerProps) {
   const [open, setOpen] = useState(false);
 
-  const handlePrev = () => onValueChange(shiftDate(granularity, value, -1));
-  const handleNext = () => onValueChange(shiftDate(granularity, value, 1));
+  const internalDate = getInternalDate(value);
+
+  const handlePrev = () => {
+    const newDate = shiftDate(granularity, internalDate, -1);
+    onValueChange(generatePeriodValue(granularity, newDate));
+  };
+
+  const handleNext = () => {
+    const newDate = shiftDate(granularity, internalDate, 1);
+    onValueChange(generatePeriodValue(granularity, newDate));
+  };
 
   return (
     <div className={cn("flex items-center gap-1", className)}>
@@ -98,17 +151,17 @@ export function PeriodPicker({
         <PopoverTrigger asChild>
           <Button variant="outline" className="h-8 gap-2 font-normal">
             <CalendarIcon className="size-4 text-muted-foreground" />
-            {getLabel(granularity, value)}
+            {getLabel(granularity, internalDate)}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="center">
           {granularity === "daily" && (
             <Calendar
               mode="single"
-              selected={value}
+              selected={internalDate}
               onSelect={(date) => {
                 if (!date) return;
-                onValueChange(date);
+                onValueChange(generatePeriodValue("daily", date));
                 setOpen(false);
               }}
               locale={localeId}
@@ -119,18 +172,18 @@ export function PeriodPicker({
           {granularity === "weekly" && (
             <Calendar
               mode="single"
-              selected={value}
+              selected={internalDate}
               onSelect={(date) => {
                 if (!date) return;
-                onValueChange(date);
+                onValueChange(generatePeriodValue("weekly", date));
                 setOpen(false);
               }}
               locale={localeId}
               weekStartsOn={1}
               modifiers={{
                 selectedWeek: (date) => {
-                  const start = startOfWeek(value, { weekStartsOn: 1 });
-                  const end = endOfWeek(value, { weekStartsOn: 1 });
+                  const start = startOfWeek(internalDate, { weekStartsOn: 1 });
+                  const end = endOfWeek(internalDate, { weekStartsOn: 1 });
                   return date >= start && date <= end;
                 },
               }}
@@ -143,9 +196,9 @@ export function PeriodPicker({
 
           {granularity === "monthly" && (
             <MonthPicker
-              value={value}
+              value={internalDate}
               onChange={(date) => {
-                onValueChange(date);
+                onValueChange(generatePeriodValue("monthly", date));
                 setOpen(false);
               }}
             />
@@ -153,9 +206,9 @@ export function PeriodPicker({
 
           {granularity === "yearly" && (
             <YearPicker
-              value={value}
+              value={internalDate}
               onChange={(date) => {
-                onValueChange(date);
+                onValueChange(generatePeriodValue("yearly", date));
                 setOpen(false);
               }}
             />

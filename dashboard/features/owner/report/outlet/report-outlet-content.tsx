@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import {
   Calendar as CalendarIcon,
   FileSpreadsheet,
@@ -22,47 +22,35 @@ import { useOutletStore } from "@/stores/outlet.store";
 import { ReportOutleTable, Totals } from "./report-outlet-table";
 import { SummaryCard } from "../summary-card";
 import reportApi from "@/lib/apis/report";
+import { PeriodPicker, type PeriodValue } from "@/components/ui/periode-picker";
 
 type FilterType = "daily" | "weekly" | "monthly";
 type CompareFilterType = "daily" | "monthly" | "yearly";
 type ViewMode = "time" | "compare";
 
-interface FilterButtonProps {
-  children: React.ReactNode;
-  active: boolean;
-  onClick: () => void;
-}
-
 export default function ReportOutlerContent() {
   const { outlets, selectedOutlet } = useOutletStore();
   const [viewMode, setViewMode] = useState<ViewMode>("time");
-
-  // States for Time Report
   const [filterType, setFilterType] = useState<FilterType>("daily");
-
-  // States for Compare Report
   const [compareFilterType, setCompareFilterType] = useState<CompareFilterType>("daily");
-
-  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [periodValue, setPeriodValue] = useState<PeriodValue>(() => {
+    const now = new Date();
+    return { type: "daily", date: now.toISOString().split("T")[0] };
+  });
   const [outletFilter, setOutletFilter] = useState<string>(selectedOutlet?.id || "all");
   const [isExporting, setIsExporting] = useState(false);
 
-  React.useEffect(() => {
-    if (selectedOutlet?.id) {
-      setOutletFilter(selectedOutlet.id);
-    }
+  useEffect(() => {
+    if (selectedOutlet?.id) setOutletFilter(selectedOutlet.id);
   }, [selectedOutlet?.id]);
 
-  // Fetch Data based on View Mode
   const { data: timeData, isLoading: isLoadingTime } = useReportOutlet(
     outletFilter,
-    filterType,
-    currentDate.toISOString(),
+    periodValue,
   );
 
   const { data: compareData, isLoading: isLoadingCompare } = useCompareOutletsReport(
-    compareFilterType,
-    currentDate.toISOString(),
+    periodValue,
   );
 
   const activeData = viewMode === "time" ? timeData : compareData;
@@ -89,32 +77,23 @@ export default function ReportOutlerContent() {
     );
   }, [activeData]);
 
-  const adjustDate = (amount: number): void => {
-    const newDate = new Date(currentDate);
-
-    if (viewMode === "time") {
-      if (filterType === "daily") newDate.setDate(newDate.getDate() + amount * 10);
-      if (filterType === "weekly") newDate.setMonth(newDate.getMonth() + amount);
-      if (filterType === "monthly") newDate.setFullYear(newDate.getFullYear() + amount);
-    } else {
-      // Compare Mode
-      if (compareFilterType === "daily") newDate.setDate(newDate.getDate() + amount);
-      if (compareFilterType === "monthly") newDate.setMonth(newDate.getMonth() + amount);
-      if (compareFilterType === "yearly") newDate.setFullYear(newDate.getFullYear() + amount);
+  const currentDate = useMemo(() => {
+    switch (periodValue.type) {
+      case "daily":
+        return new Date(periodValue.date);
+      case "weekly":
+        return new Date(periodValue.startDate);
+      case "monthly":
+        return new Date(periodValue.year, periodValue.month - 1, 1);
+      case "yearly":
+        return new Date(periodValue.year, 0, 1);
     }
-
-    setCurrentDate(newDate);
-  };
+  }, [periodValue]);
 
   const handleExport = useCallback(async () => {
     setIsExporting(true);
     try {
-      const activeType = viewMode === "time" ? filterType : compareFilterType;
-      const blob = await reportApi.exportOutletExcel(outletFilter, {
-        type: activeType,
-        date: currentDate.toISOString(),
-        viewMode,
-      });
+      const blob = await reportApi.exportOutletExcel(outletFilter, periodValue, viewMode);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -129,7 +108,7 @@ export default function ReportOutlerContent() {
     } finally {
       setIsExporting(false);
     }
-  }, [outletFilter, filterType, compareFilterType, currentDate, viewMode]);
+  }, [outletFilter, periodValue, viewMode]);
 
   return (
     <>
@@ -269,28 +248,11 @@ export default function ReportOutlerContent() {
         </div>
 
         {/* Date Selector */}
-        <div className="flex items-center justify-between lg:justify-center w-full lg:w-auto gap-2 lg:gap-6 px-1 lg:px-2">
-          <button
-            onClick={() => adjustDate(-1)}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors shrink-0">
-            <ChevronLeft className="w-6 h-6" />
-          </button>
-
-          <div className="flex items-center justify-center gap-2 lg:gap-3 font-bold text-slate-900 dark:text-white flex-1 lg:flex-none min-w-0">
-            <CalendarIcon className="w-5 h-5 text-emerald-500 hidden sm:block shrink-0" />
-            <span className="text-sm sm:text-base lg:text-lg text-center truncate px-2">
-              {viewMode === "time"
-                ? formatPeriodLabel(filterType, currentDate)
-                : formatComparePeriodLabel(compareFilterType, currentDate)}
-            </span>
-          </div>
-
-          <button
-            onClick={() => adjustDate(1)}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors shrink-0">
-            <ChevronRight className="w-6 h-6" />
-          </button>
-        </div>
+        <PeriodPicker
+          granularity={filterType}
+          value={periodValue}
+          onValueChange={setPeriodValue}
+        />
 
         {/* Verif Indicator */}
         <div className="hidden lg:flex items-center gap-2 text-[10px] text-slate-400 dark:text-slate-500 pr-4 uppercase tracking-widest font-bold">
@@ -320,7 +282,7 @@ export default function ReportOutlerContent() {
   );
 }
 
-const FilterButton: React.FC<FilterButtonProps> = ({ children, active, onClick }) => {
+const FilterButton: React.FC<{ children: React.ReactNode; active: boolean; onClick: () => void }> = ({ children, active, onClick }) => {
   return (
     <button
       onClick={onClick}
@@ -328,40 +290,4 @@ const FilterButton: React.FC<FilterButtonProps> = ({ children, active, onClick }
       {children}
     </button>
   );
-};
-
-const formatPeriodLabel = (type: FilterType, date: Date): string => {
-  if (type === "daily") {
-    // Show "10 Days until DD MMM YYYY"
-    const start = new Date(date);
-    start.setDate(date.getDate() - 9);
-    return `${start.toLocaleDateString("id-ID", { day: "2-digit", month: "short" })} - ${date.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}`;
-  }
-  if (type === "weekly") {
-    // Shows Month
-    return date.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
-  }
-  if (type === "monthly") {
-    // Shows Year
-    return date.toLocaleDateString("id-ID", { year: "numeric" });
-  }
-  return "";
-};
-
-const formatComparePeriodLabel = (type: CompareFilterType, date: Date): string => {
-  if (type === "daily") {
-    return date.toLocaleDateString("id-ID", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  }
-  if (type === "monthly") {
-    return date.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
-  }
-  if (type === "yearly") {
-    return date.toLocaleDateString("id-ID", { year: "numeric" });
-  }
-  return "";
 };

@@ -1,5 +1,33 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/apis/base";
+import type { PeriodValue } from "@/components/ui/periode-picker";
+
+function periodToParams(period: PeriodValue): Record<string, string | number> {
+  switch (period.type) {
+    case "daily":
+      return { type: "daily", date: period.date };
+    case "weekly":
+      return {
+        type: "weekly",
+        date: period.startDate,
+        startDate: period.startDate,
+        endDate: period.endDate,
+      };
+    case "monthly":
+      return {
+        type: "monthly",
+        date: `${period.year}-${String(period.month).padStart(2, "0")}-01`,
+        month: period.month,
+        year: period.year,
+      };
+    case "yearly":
+      return {
+        type: "yearly",
+        date: `${period.year}-01-01`,
+        year: period.year,
+      };
+  }
+}
 
 export interface OutletReport {
   label: string;
@@ -15,15 +43,14 @@ export interface OutletReport {
   trend: number[];
 }
 
-export function useReportOutlet(outletId: string, type: any, date?: string) {
+export function useReportOutlet(outletId: string, period: PeriodValue) {
+  const params = periodToParams(period);
   return useQuery({
-    queryKey: ["outlet-report", type, date, outletId],
+    queryKey: ["outlet-report", outletId, period],
     enabled: !!outletId,
     queryFn: async (): Promise<OutletReport[]> => {
       return (
-        await apiClient.get(`/reports/outlet/${outletId}`, {
-          params: { type, date },
-        })
+        await apiClient.get(`/reports/outlet/${outletId}`, { params })
       ).data.data;
     },
     staleTime: 5 * 60_000,
@@ -31,14 +58,13 @@ export function useReportOutlet(outletId: string, type: any, date?: string) {
   });
 }
 
-export function useCompareOutletsReport(type: any, date?: string) {
+export function useCompareOutletsReport(period: PeriodValue) {
+  const params = periodToParams(period);
   return useQuery({
-    queryKey: ["compare-outlets-report", type, date],
+    queryKey: ["compare-outlets-report", period],
     queryFn: async (): Promise<OutletReport[]> => {
       return (
-        await apiClient.get(`/reports/compare`, {
-          params: { type, date },
-        })
+        await apiClient.get(`/reports/compare`, { params })
       ).data.data;
     },
     staleTime: 5 * 60_000,
@@ -56,15 +82,14 @@ export interface StaffReportItem {
   commission: number;
 }
 
-export function useReportStaff(outletId: string, type: any, date?: string) {
+export function useReportStaff(outletId: string, period: PeriodValue) {
+  const params = periodToParams(period);
   return useQuery({
-    queryKey: ["staff-report", type, date, outletId],
+    queryKey: ["staff-report", outletId, period],
     enabled: !!outletId,
     queryFn: async (): Promise<StaffReportItem[]> => {
       return (
-        await apiClient.get(`/reports/staff/${outletId}`, {
-          params: { type, date },
-        })
+        await apiClient.get(`/reports/staff/${outletId}`, { params })
       ).data.data;
     },
     staleTime: 5 * 60_000,

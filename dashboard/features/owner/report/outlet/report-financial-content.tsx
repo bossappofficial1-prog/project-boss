@@ -2,16 +2,14 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import {
-  Calendar as CalendarIcon,
   FileSpreadsheet,
-  ChevronLeft,
-  ChevronRight,
   Receipt,
   Users,
   Package,
   Loader2,
   Info,
 } from "lucide-react";
+import { format, parseISO, startOfWeek, endOfWeek } from "date-fns";
 import { gooeyToast } from "goey-toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -33,8 +31,6 @@ import { ReportFinancialTable, Totals } from "./report-financial-table";
 import { ReportStaffTable } from "../staff/report-staff-table";
 import { cn } from "@/lib/utils";
 import reportApi from "@/lib/apis/report";
-import { format } from "date-fns";
-import { SelectOption } from "@/components/shared/select-option";
 import {
   formatComparePeriodLabel,
   formatPeriodLabel,
@@ -47,8 +43,44 @@ import {
   StokMetricStrip,
 } from "./metric-card";
 import type { FilterType, CompareFilterType, ViewMode } from "./types";
-import { PeriodPicker } from "@/components/ui/periode-picker";
+import { PeriodPicker, type PeriodValue } from "@/components/ui/periode-picker";
 import { TabButton } from "@/components/ui/tab-button";
+
+function makePeriodValue(granularity: string, date: Date): PeriodValue {
+  switch (granularity) {
+    case "daily":
+      return { type: "daily", date: format(date, "yyyy-MM-dd") };
+    case "weekly":
+      return {
+        type: "weekly",
+        startDate: format(startOfWeek(date, { weekStartsOn: 1 }), "yyyy-MM-dd"),
+        endDate: format(endOfWeek(date, { weekStartsOn: 1 }), "yyyy-MM-dd"),
+      };
+    case "monthly":
+      return {
+        type: "monthly",
+        month: date.getMonth() + 1,
+        year: date.getFullYear(),
+      };
+    case "yearly":
+      return { type: "yearly", year: date.getFullYear() };
+    default:
+      return { type: "daily", date: format(date, "yyyy-MM-dd") };
+  }
+}
+
+function periodToDate(value: PeriodValue): Date {
+  switch (value.type) {
+    case "daily":
+      return parseISO(value.date);
+    case "weekly":
+      return parseISO(value.startDate);
+    case "monthly":
+      return new Date(value.year, value.month - 1, 1);
+    case "yearly":
+      return new Date(value.year, 0, 1);
+  }
+}
 
 const TABS = [
   { id: "keuangan", label: "Keuangan", icon: Receipt },
@@ -60,7 +92,9 @@ function useReportDashboardState(selectedOutletId?: string) {
   const [activeTab, setActiveTab] = useState<string>("keuangan");
   const [viewMode, setViewMode] = useState<ViewMode>("time");
   const [period, setPeriod] = useState<string>("daily");
-  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [periodValue, setPeriodValue] = useState<PeriodValue>(() =>
+    makePeriodValue("daily", new Date()),
+  );
   const [outletFilter, setOutletFilter] = useState<string>(
     selectedOutletId || "all",
   );
@@ -69,6 +103,12 @@ function useReportDashboardState(selectedOutletId?: string) {
   useEffect(() => {
     if (selectedOutletId) setOutletFilter(selectedOutletId);
   }, [selectedOutletId]);
+
+  // Regenerate periodValue when period (granularity) changes
+  useEffect(() => {
+    const currentDate = periodToDate(periodValue);
+    setPeriodValue(makePeriodValue(period, currentDate));
+  }, [period]);
 
   const handleTabChange = useCallback((newTab: string) => {
     setActiveTab(newTab);
@@ -82,20 +122,6 @@ function useReportDashboardState(selectedOutletId?: string) {
     [period],
   );
 
-  const adjustDate = useCallback(
-    (amount: number) => {
-      setCurrentDate((prev) => {
-        const d = new Date(prev);
-        if (period === "daily") d.setDate(d.getDate() + amount);
-        else if (period === "weekly") d.setDate(d.getDate() + amount * 7);
-        else if (period === "monthly") d.setMonth(d.getMonth() + amount);
-        else if (period === "yearly") d.setFullYear(d.getFullYear() + amount);
-        return d;
-      });
-    },
-    [period],
-  );
-
   return {
     activeTab,
     setActiveTab: handleTabChange,
@@ -103,13 +129,12 @@ function useReportDashboardState(selectedOutletId?: string) {
     setViewMode: handleViewModeChange,
     period,
     setPeriod,
-    currentDate,
-    setCurrentDate,
+    periodValue,
+    setPeriodValue,
     outletFilter,
     setOutletFilter,
     isExporting,
     setIsExporting,
-    adjustDate,
   };
 }
 
@@ -119,15 +144,13 @@ export default function ReportFinancialContent() {
 
   const { data: timeData, isLoading: isLoadingTime } = useReportOutlet(
     state.outletFilter,
-    state.period,
-    state.currentDate.toISOString(),
+    state.periodValue,
   );
   const { data: compareData, isLoading: isLoadingCompare } =
-    useCompareOutletsReport(state.period, state.currentDate.toISOString());
+    useCompareOutletsReport(state.periodValue);
   const { data: staffData, isLoading: isLoadingStaff } = useReportStaff(
     state.outletFilter,
-    state.period,
-    format(state.currentDate, "yyyy-MM-dd"),
+    state.periodValue,
   );
 
   const activeData = state.viewMode === "time" ? timeData : compareData;
@@ -208,38 +231,40 @@ export default function ReportFinancialContent() {
     ];
   }, [state.activeTab, state.viewMode]);
 
+  const currentDate = useMemo(
+    () => periodToDate(state.periodValue),
+    [state.periodValue],
+  );
+
   const dateLabel = useMemo(() => {
     if (state.activeTab === "keuangan") {
       return state.viewMode === "time"
-        ? formatPeriodLabel(state.period as FilterType, state.currentDate)
+        ? formatPeriodLabel(state.period as FilterType, currentDate)
         : formatComparePeriodLabel(
             state.period as CompareFilterType,
-            state.currentDate,
+            currentDate,
           );
     }
     if (state.activeTab === "staff")
-      return formatStaffPeriodLabel(
-        state.period as FilterType,
-        state.currentDate,
-      );
-    return formatPeriodLabel(state.period as FilterType, state.currentDate);
-  }, [state.activeTab, state.viewMode, state.period, state.currentDate]);
+      return formatStaffPeriodLabel(state.period as FilterType, currentDate);
+    return formatPeriodLabel(state.period as FilterType, currentDate);
+  }, [state.activeTab, state.viewMode, state.period, currentDate]);
 
   const handleExport = useCallback(async () => {
     state.setIsExporting(true);
     try {
       let blob: Blob;
       if (state.activeTab === "keuangan") {
-        blob = await reportApi.exportOutletExcel(state.outletFilter, {
-          type: state.period,
-          date: state.currentDate.toISOString(),
-          viewMode: state.viewMode,
-        });
+        blob = await reportApi.exportOutletExcel(
+          state.outletFilter,
+          state.periodValue,
+          state.viewMode,
+        );
       } else if (state.activeTab === "staff") {
-        blob = await reportApi.exportStaffExcel(state.outletFilter, {
-          type: state.period,
-          date: format(state.currentDate, "yyyy-MM-dd"),
-        });
+        blob = await reportApi.exportStaffExcel(
+          state.outletFilter,
+          state.periodValue,
+        );
       } else return;
 
       const url = window.URL.createObjectURL(blob);
@@ -256,13 +281,7 @@ export default function ReportFinancialContent() {
     } finally {
       state.setIsExporting(false);
     }
-  }, [
-    state.outletFilter,
-    state.period,
-    state.currentDate,
-    state.viewMode,
-    state.activeTab,
-  ]);
+  }, [state.outletFilter, state.periodValue, state.viewMode, state.activeTab]);
 
   return (
     <div className="space-y-5">
@@ -329,8 +348,8 @@ export default function ReportFinancialContent() {
           />
           <PeriodPicker
             granularity={state.period as any}
-            value={state.currentDate}
-            onValueChange={(date) => state.setCurrentDate(date)}
+            value={state.periodValue}
+            onValueChange={state.setPeriodValue}
           />
 
           {/* Export */}

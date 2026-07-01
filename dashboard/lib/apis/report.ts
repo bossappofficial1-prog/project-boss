@@ -1,5 +1,33 @@
 import { apiCall } from './base';
 import { apiClient } from './base';
+import type { PeriodValue } from '@/components/ui/periode-picker';
+
+function periodToParams(period: PeriodValue): Record<string, string | number> {
+	switch (period.type) {
+		case "daily":
+			return { type: "daily", date: period.date };
+		case "weekly":
+			return {
+				type: "weekly",
+				date: period.startDate,
+				startDate: period.startDate,
+				endDate: period.endDate,
+			};
+		case "monthly":
+			return {
+				type: "monthly",
+				date: `${period.year}-${String(period.month).padStart(2, "0")}-01`,
+				month: period.month,
+				year: period.year,
+			};
+		case "yearly":
+			return {
+				type: "yearly",
+				date: `${period.year}-01-01`,
+				year: period.year,
+			};
+	}
+}
 
 export interface DailyReportRow {
 	tanggal: string; // YYYY-MM-DD
@@ -61,8 +89,10 @@ export const reportApi = {
 
 	async exportOutletExcel(
 		outletId: string,
-		params: { type: string; date?: string; viewMode?: string }
+		period: PeriodValue,
+		viewMode?: string,
 	): Promise<Blob> {
+		const params = { ...periodToParams(period), viewMode };
 		const response = await apiClient.get(`/reports/export/outlet/${outletId}`, {
 			params,
 			responseType: 'blob',
@@ -72,8 +102,9 @@ export const reportApi = {
 
 	async exportStaffExcel(
 		outletId: string,
-		params: { type: string; date?: string }
+		period: PeriodValue,
 	): Promise<Blob> {
+		const params = periodToParams(period);
 		const response = await apiClient.get(`/reports/export/staff/${outletId}`, {
 			params,
 			responseType: 'blob',

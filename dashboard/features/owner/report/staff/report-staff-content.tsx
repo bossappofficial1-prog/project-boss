@@ -1,53 +1,43 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import {
-  Calendar as CalendarIcon,
-  ChevronLeft,
-  ChevronRight,
-  Download,
   FileSpreadsheet,
   Loader2,
   Receipt,
   Users,
   Wallet,
+  Download,
 } from "lucide-react";
-import { format } from "date-fns";
 import { gooeyToast } from "goey-toast";
 import { useReportStaff } from "@/hooks/use-report";
 import { useOutletStore } from "@/stores/outlet.store";
 import { ReportStaffTable } from "./report-staff-table";
 import { SummaryCard } from "../summary-card";
-import { DateFilterControl } from "./date-filter-control";
 import { SelectOption } from "@/components/shared/select-option";
 import reportApi from "@/lib/apis/report";
+import { PeriodPicker, type PeriodValue } from "@/components/ui/periode-picker";
 
 type FilterType = "daily" | "weekly" | "monthly";
-
-interface FilterButtonProps {
-  children: React.ReactNode;
-  active: boolean;
-  onClick: () => void;
-}
 
 export default function ReportStaffContent() {
   const { outlets, selectedOutlet } = useOutletStore();
 
   const [filterType, setFilterType] = useState<FilterType>("daily");
-  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [periodValue, setPeriodValue] = useState<PeriodValue>(() => {
+    const now = new Date();
+    return { type: "daily", date: now.toISOString().split("T")[0] };
+  });
   const [outletFilter, setOutletFilter] = useState<string>(selectedOutlet?.id || "all");
   const [isExporting, setIsExporting] = useState(false);
 
-  React.useEffect(() => {
-    if (selectedOutlet?.id) {
-      setOutletFilter(selectedOutlet.id);
-    }
+  useEffect(() => {
+    if (selectedOutlet?.id) setOutletFilter(selectedOutlet.id);
   }, [selectedOutlet?.id]);
 
   const { data, isLoading } = useReportStaff(
     outletFilter,
-    filterType,
-    format(currentDate, "yyyy-MM-dd"),
+    periodValue,
   );
 
   const totals = useMemo(() => {
@@ -61,22 +51,10 @@ export default function ReportStaffContent() {
     );
   }, [data]);
 
-  const adjustDate = (amount: number): void => {
-    const newDate = new Date(currentDate);
-    if (filterType === "daily") newDate.setDate(newDate.getDate() + amount);
-    if (filterType === "weekly") newDate.setDate(newDate.getDate() + amount * 7); // Move by week
-    if (filterType === "monthly") newDate.setMonth(newDate.getMonth() + amount);
-
-    setCurrentDate(newDate);
-  };
-
   const handleExport = useCallback(async () => {
     setIsExporting(true);
     try {
-      const blob = await reportApi.exportStaffExcel(outletFilter, {
-        type: filterType,
-        date: format(currentDate, "yyyy-MM-dd"),
-      });
+      const blob = await reportApi.exportStaffExcel(outletFilter, periodValue);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -91,7 +69,7 @@ export default function ReportStaffContent() {
     } finally {
       setIsExporting(false);
     }
-  }, [outletFilter, filterType, currentDate]);
+  }, [outletFilter, periodValue]);
 
   return (
     <>
@@ -153,12 +131,10 @@ export default function ReportStaffContent() {
           />
         </div>
 
-        <DateFilterControl
-          currentLabel={formatPeriodLabel(filterType, currentDate)}
-          filterType={filterType}
-          onNext={() => adjustDate(1)}
-          onPrev={() => adjustDate(-1)}
-          setFilterType={setFilterType}
+        <PeriodPicker
+          granularity={filterType}
+          value={periodValue}
+          onValueChange={setPeriodValue}
         />
 
         {/* Table */}
@@ -177,37 +153,3 @@ export default function ReportStaffContent() {
     </>
   );
 }
-
-const FilterButton: React.FC<FilterButtonProps> = ({ children, active, onClick }) => {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-5 py-2 text-xs font-bold transition-all rounded-md ${active ? "bg-emerald-600 text-white shadow-md" : "text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300"}`}>
-      {children}
-    </button>
-  );
-};
-
-const formatPeriodLabel = (type: FilterType, date: Date): string => {
-  if (type === "daily") {
-    return date.toLocaleDateString("id-ID", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  }
-  if (type === "weekly") {
-    // Show start - end of week
-    const start = new Date(date);
-    const day = start.getDay();
-    const diff = start.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
-    const monday = new Date(start.setDate(diff));
-    const sunday = new Date(start.setDate(monday.getDate() + 6));
-    return `${monday.toLocaleDateString("id-ID", { day: "2-digit", month: "short" })} - ${sunday.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}`;
-  }
-  if (type === "monthly") {
-    return date.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
-  }
-  return "";
-};
