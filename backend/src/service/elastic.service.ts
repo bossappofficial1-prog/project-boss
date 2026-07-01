@@ -19,6 +19,53 @@ import { getAllOutletsService } from './outlet.service';
 import { Outlet } from '@prisma/client';
 
 export let isElasticsearchConnected = false;
+let lastConnectAttempt = 0;
+const RETRY_INTERVAL = 30000; // 30 seconds
+
+export const getElasticConnectionStatus = async (): Promise<boolean> => {
+    if (isElasticsearchConnected) return true;
+
+    const now = Date.now();
+    if (now - lastConnectAttempt < RETRY_INTERVAL) {
+        return false;
+    }
+
+    lastConnectAttempt = now;
+    logger.info('🔄 Retrying Elasticsearch connection in background...');
+    const isConnected = await testElasticConnection();
+    if (isConnected) {
+        logger.info('✅ Elasticsearch reconnected successfully! Re-initializing indices...');
+        try {
+            await Promise.all([
+                createIndexIfNotExists(
+                    ELASTIC_INDEXES.PRODUCTS,
+                    PRODUCT_INDEX_MAPPING.mappings,
+                    PRODUCT_INDEX_MAPPING.settings
+                ),
+                createIndexIfNotExists(
+                    ELASTIC_INDEXES.OUTLETS,
+                    OUTLET_INDEX_MAPPING.mappings,
+                    OUTLET_INDEX_MAPPING.settings
+                ),
+                createIndexIfNotExists(
+                    ELASTIC_INDEXES.ORDERS,
+                    ORDER_INDEX_MAPPING.mappings,
+                    ORDER_INDEX_MAPPING.settings
+                ),
+                createIndexIfNotExists(
+                    ELASTIC_INDEXES.BUSINESSES,
+                    BUSINESS_INDEX_MAPPING.mappings,
+                    BUSINESS_INDEX_MAPPING.settings
+                ),
+            ]);
+            isElasticsearchConnected = true;
+            return true;
+        } catch (error) {
+            logger.error('❌ Failed to re-initialize indices after reconnect:', error);
+        }
+    }
+    return false;
+};
 
 /**
  * Initialize Elasticsearch connection and create required indices
@@ -31,6 +78,29 @@ export const initializeElasticsearch = async (): Promise<void> => {
         const isConnected = await testElasticConnection();
         if (!isConnected) {
             logger.error('❌ Failed to connect to Elasticsearch');
+            isElasticsearchConnected = false;
+            return;
+        }
+
+        // Wait for cluster health to be ready (green or yellow)
+        let clusterReady = false;
+        for (let attempt = 1; attempt <= 10; attempt++) {
+            try {
+                const health = await elasticClient.cluster.health();
+                const status = (health as any).status;
+                if (status === 'green' || status === 'yellow') {
+                    clusterReady = true;
+                    break;
+                }
+                logger.info(`⏳ Elasticsearch cluster is initializing (status: ${status}). Waiting 5s (attempt ${attempt}/10)...`);
+            } catch (err) {
+                logger.info(`⏳ Waiting for Elasticsearch cluster API to be ready (attempt ${attempt}/10)...`);
+            }
+            await new Promise((resolve) => setTimeout(resolve, 5000));
+        }
+
+        if (!clusterReady) {
+            logger.error('❌ Elasticsearch cluster was not ready after 50 seconds. Skipping index initialization.');
             isElasticsearchConnected = false;
             return;
         }
@@ -386,7 +456,8 @@ export const searchProductsInElastic = async (
     name: string,
     outletId?: string
 ): Promise<string[]> => {
-    if (!isElasticsearchConnected) {
+    const isConnected = await getElasticConnectionStatus();
+    if (!isConnected) {
         return [];
     }
     try {
@@ -430,7 +501,8 @@ export const searchOutletsInElastic = async (
     take: number = 10,
     skip: number = 0
 ): Promise<{ ids: string[]; total: number }> => {
-    if (!isElasticsearchConnected) {
+    const isConnected = await getElasticConnectionStatus();
+    if (!isConnected) {
         return { ids: [], total: 0 };
     }
     try {
